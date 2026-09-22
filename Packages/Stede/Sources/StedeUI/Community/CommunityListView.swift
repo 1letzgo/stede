@@ -32,13 +32,15 @@ struct CommunityListView: View {
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         }
                     }
-                    StedeSectionHeader(title: mine.isEmpty ? "Communities" : "Weitere", symbol: "person.2.fill")
-                    if others.isEmpty, model.state == .loaded || model.state == .empty {
+                    if !others.isEmpty {
+                        StedeSectionHeader(title: mine.isEmpty ? "Communities" : "Weitere", symbol: "person.2.fill")
+                        ForEach(others) { community in
+                            NavigationLink(value: community) { CommunityCard(community: community, membership: nil) }
+                                .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
+                        }
+                    } else if mine.isEmpty, model.state == .loaded || model.state == .empty {
+                        StedeSectionHeader(title: "Communities", symbol: "person.2.fill")
                         InfoCard { Text("Noch keine Community in \(auth.tenant?.municipality ?? "dieser Gemeinde"). Leg die erste an.").foregroundStyle(.secondary) }
-                    }
-                    ForEach(others) { community in
-                        NavigationLink(value: community) { CommunityCard(community: community, membership: nil) }
-                            .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                     }
                     if auth.isSignedIn {
                         Button { showsEditor = true } label: {
