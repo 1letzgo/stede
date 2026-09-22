@@ -46,7 +46,7 @@ struct CommunityEventInfo: Identifiable, Hashable {
 }
 
 /// Die eine Terminkarte für Community-Termine — in der Community und im
-/// Kalender-Tab identisch: Foto oben, Logo, Titel, Zeit-Pille, Text, Ort,
+/// Kalender-Tab identisch: Logo, Titel, Zeit-Pille, Text, Ort,
 /// Zusage-Pillen, Mithelfen. Tipp auf die Karte öffnet die Detailansicht.
 struct CommunityEventCard: View {
     let info: CommunityEventInfo
@@ -59,8 +59,8 @@ struct CommunityEventCard: View {
     /// Vorhanden, wenn der Nutzer den Termin bearbeiten darf.
     var onEdit: (() -> Void)?
     var onOpen: (() -> Void)?
-    /// In der Wochenliste bleibt das Foto weg — es steht im Detail.
-    var showsPhoto = true
+    /// Karten zeigen kein Foto mehr als Kopf — es steht im Detail.
+    var showsPhoto = false
     /// In tagesweise gegliederten Listen reicht die Uhrzeit.
     var showsDate = true
 
