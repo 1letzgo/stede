@@ -1,3 +1,4 @@
+import PhotosUI
 import StedeCore
 import SwiftUI
 
@@ -116,7 +117,7 @@ struct CommunityCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+            CommunityAvatar(logoURL: community.logoURL)
             VStack(alignment: .leading, spacing: 4) {
                 Text(community.name).font(.headline).fontDesign(.rounded)
                 if !community.description.isEmpty {
@@ -153,10 +154,32 @@ struct CommunityEditorView: View {
     @State private var joinPolicy: CommunityJoinPolicy = .approval
     @State private var error: String?
     @State private var saving = false
+    @State private var logoItem: PhotosPickerItem?
+    @State private var logoData: Data?
+    @State private var removeLogo = false
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Logo") {
+                    HStack(spacing: 14) {
+                        if let logoData, let image = EventPhotoResizer.image(from: logoData) {
+                            image.resizable().scaledToFill().frame(width: 72, height: 72).clipShape(StedeTheme.chipShape)
+                        } else if let path = existing?.logoPath, !removeLogo {
+                            CommunityAvatar(logoURL: Backend.communityLogoURL(path: path), side: 72)
+                        } else {
+                            StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal, side: 72)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            PhotosPicker(selection: $logoItem, matching: .images) {
+                                Label(logoData == nil && (existing?.logoPath == nil || removeLogo) ? "Logo auswählen" : "Anderes Logo", systemImage: "photo")
+                            }
+                            if logoData != nil || (existing?.logoPath != nil && !removeLogo) {
+                                Button("Logo entfernen", role: .destructive) { logoData = nil; logoItem = nil; removeLogo = true }
+                            }
+                        }
+                    }
+                }
                 Section("Community") {
                     TextField("Name", text: $name)
                     TextField("Beschreibung", text: $description, axis: .vertical).lineLimit(2 ... 5)
@@ -187,6 +210,14 @@ struct CommunityEditorView: View {
                         .disabled(name.trimmingCharacters(in: .whitespaces).count < 3 || saving)
                 }
             }
+            .onChange(of: logoItem) {
+                Task {
+                    if let item = logoItem, let data = try? await item.loadTransferable(type: Data.self) {
+                        logoData = EventPhotoResizer.jpeg(from: data, maxSide: 512)
+                        removeLogo = false
+                    }
+                }
+            }
             .onAppear {
                 if let existing {
                     name = existing.name; description = existing.description
@@ -203,10 +234,18 @@ struct CommunityEditorView: View {
         let client = CommunityClient()
         do {
             if let existing {
-                try await client.updateCommunity(id: existing.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy)
+                var logoPath: String? = removeLogo ? nil : existing.logoPath
+                if let logoData { logoPath = try await client.uploadCommunityLogo(logoData, communityID: existing.id) }
+                try await client.updateCommunity(id: existing.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, logoPath: logoPath)
+                if let old = existing.logoPath, old != logoPath { try? await client.deleteCommunityLogo(path: old) }
                 onSave(nil)
             } else {
-                let created = try await client.createCommunity(tenantID: tenant.id, name: name.trimmingCharacters(in: .whitespaces), description: description, visibility: visibility, joinPolicy: joinPolicy, userID: userID)
+                var created = try await client.createCommunity(tenantID: tenant.id, name: name.trimmingCharacters(in: .whitespaces), description: description, visibility: visibility, joinPolicy: joinPolicy, userID: userID)
+                if let logoData {
+                    let path = try await client.uploadCommunityLogo(logoData, communityID: created.id)
+                    try await client.setCommunityLogo(id: created.id, logoPath: path)
+                    created.logoPath = path
+                }
                 onSave(created)
             }
             dismiss()

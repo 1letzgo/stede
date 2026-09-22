@@ -2,15 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Die App nutzt nur HTTPS über URLSession, also ausschließlich die
-	     Verschlüsselung des Betriebssystems. Damit entfällt die
-	     Ausfuhr-Frage bei jedem Upload. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<!-- Welche Gemeinde diese App ist; das Backend hält je Mandant eigene Communities. -->
-	<key>StedeTenantSlug</key>
-	<string>stede</string>
-	<!-- Rückkehr aus Magic-Link-Mails: stede://auth-callback -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -22,5 +13,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>StedeTenantSlug</key>
+	<string>stede</string>
 </dict>
 </plist>

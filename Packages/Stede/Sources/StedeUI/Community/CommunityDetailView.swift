@@ -88,7 +88,7 @@ struct CommunityDetailView: View {
     @ViewBuilder private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+                CommunityAvatar(logoURL: model.community.logoURL)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.community.name).font(.headline).fontDesign(.rounded)
                     pills
@@ -133,13 +133,17 @@ struct CommunityDetailView: View {
     @ViewBuilder private var eventsSection: some View {
         if model.events.isEmpty { InfoCard { Text("Noch keine Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in
-            CommunityEventCard(event: event, participation: model.myParticipations[event.id]) { status in
-                Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status) } }
-            } onEdit: {
-                editingEvent = event
-            } canEdit: {
-                isAdmin || event.createdBy == auth.userID
-            }
+            CommunityEventCard(
+                title: event.title, community: nil, starts: event.startsAt, ends: event.endsAt,
+                location: event.location, description: event.description, imageURL: event.imageURL,
+                isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
+                participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
+                onParticipate: { status in
+                    Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status) } }
+                },
+                signIn: { showsAccount = true },
+                onEdit: (isAdmin || event.createdBy == auth.userID) ? { editingEvent = event } : nil
+            )
         }
         Button { showsNewEvent = true } label: {
             StedeColorChip(title: "Termin anlegen", symbol: "plus", color: StedeTheme.ink, prominent: true)
@@ -205,7 +209,7 @@ struct CommunityDetailView: View {
     @ViewBuilder private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+                CommunityAvatar(logoURL: model.community.logoURL)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.community.name).font(.headline).fontDesign(.rounded)
                     pills
@@ -267,85 +271,6 @@ struct CommunityDetailView: View {
             .fixedSize(horizontal: false, vertical: true)
             .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
-    }
-}
-
-struct CommunityEventCard: View {
-    let event: CommunityEvent
-    let participation: ParticipationStatus?
-    let onParticipate: (ParticipationStatus?) -> Void
-    let onEdit: () -> Void
-    let canEdit: () -> Bool
-
-    private static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
-        .weekday(.abbreviated).day().month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
-
-    private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
-        .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
-
-    private var tint: Color { event.cancelledAt != nil ? StedeTheme.harborRed : StedeTheme.seaTeal }
-    @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let url = event.imageURL {
-                EventPhoto(url: url, height: imageHeight)
-            }
-            details
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .stedeCard(highlighted: participation == .going)
-    }
-
-    private var details: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: event.cancelledAt != nil ? "calendar.badge.exclamationmark" : "calendar", color: tint)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title).font(.headline).fontDesign(.rounded).strikethrough(event.cancelledAt != nil)
-                    HStack(spacing: 6) {
-                        StedeTagPill(text: event.startsAt.formatted(Self.dateFormat) + (event.endsAt.map { "–\($0.formatted(Self.timeFormat))" } ?? ""), color: tint)
-                        if event.cancelledAt != nil { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
-                        else if event.isPublic { StedeTagPill(text: "öffentlich", color: StedeTheme.duneGreen) }
-                    }
-                }
-                Spacer(minLength: 8)
-                if canEdit() {
-                    Button { onEdit() } label: { StedeActionChip(title: "Bearbeiten", symbol: "pencil") }
-                        .buttonStyle(StedeCardButtonStyle())
-                }
-            }
-            if !event.description.isEmpty { Text(event.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(4) }
-            if let location = event.location, !location.isEmpty {
-                Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
-            }
-            if event.cancelledAt == nil {
-                ParticipationChips(participation: participation, onParticipate: onParticipate)
-            }
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// Foto oben in der Terminkarte, formatfüllend und an der Kartenkante beschnitten.
-struct EventPhoto: View {
-    let url: URL
-    let height: CGFloat
-
-    var body: some View {
-        AsyncImage(url: url) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFill()
-            default:
-                Rectangle().fill(StedeTheme.seaTeal.opacity(0.12))
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: height)
-        .clipped()
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
 

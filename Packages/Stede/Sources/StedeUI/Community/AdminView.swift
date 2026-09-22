@@ -18,7 +18,7 @@ struct AdminView: View {
                             ForEach(model.pendingCommunities) { community in
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack(alignment: .top, spacing: 12) {
-                                        StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+                                        CommunityAvatar(logoURL: community.logoURL)
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(community.name).font(.headline).fontDesign(.rounded)
                                             StedeTagPill(text: community.joinPolicy == .open ? "offen" : "auf Anfrage", color: StedeTheme.mudflat)

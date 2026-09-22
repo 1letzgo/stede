@@ -11,7 +11,7 @@ import AppKit
 enum EventPhotoResizer {
     static let maxSide: CGFloat = 1200
 
-    static func jpeg(from data: Data) -> Data? {
+    static func jpeg(from data: Data, maxSide: CGFloat = EventPhotoResizer.maxSide) -> Data? {
         #if canImport(UIKit)
         guard let image = UIImage(data: data) else { return nil }
         let scale = min(1, maxSide / max(image.size.width, image.size.height))

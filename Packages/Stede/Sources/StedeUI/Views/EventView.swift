@@ -25,13 +25,27 @@ struct EventView: View {
                                         EventCard(event: event, tint: section.part.tint)
                                             .id("event-\(event.id)")
                                     case .community(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, imageURL: event.imageURL, isPublic: event.isPublic, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
-                                            Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
-                                        } signIn: { showsAccount = true }
+                                        CommunityEventCard(
+                                            title: event.title, community: event.communityName, starts: event.startsAt, ends: event.endsAt,
+                                            location: event.location, description: event.description, imageURL: event.imageURL,
+                                            isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
+                                            participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
+                                            onParticipate: { status in
+                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                            },
+                                            signIn: { showsAccount = true }
+                                        )
                                     case .publicEvent(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, imageURL: event.imageURL, isPublic: true, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
-                                            Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
-                                        } signIn: { showsAccount = true }
+                                        CommunityEventCard(
+                                            title: event.title, community: event.communityName, starts: event.startsAt, ends: event.endsAt,
+                                            location: event.location, description: event.description, imageURL: event.imageURL,
+                                            isPublic: true, isCancelled: false,
+                                            participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
+                                            onParticipate: { status in
+                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                            },
+                                            signIn: { showsAccount = true }
+                                        )
                                     }
                                 }
                             }
@@ -115,65 +129,6 @@ private enum CalendarEntry: Identifiable {
         case .community(let e): e.startsAt
         case .publicEvent(let e): e.startsAt
         }
-    }
-}
-
-/// Karte für Community-Termine im Stadt-Kalender: wie die Stadt-Karte, mit Community-Pille.
-private struct CalendarCommunityCard: View {
-    let title: String
-    let community: String
-    let time: Date
-    let end: Date?
-    let location: String?
-    let description: String
-    let imageURL: URL?
-    let isPublic: Bool
-    let tint: Color
-    let participation: ParticipationStatus?
-    let isSignedIn: Bool
-    let onParticipate: (ParticipationStatus?) -> Void
-    let signIn: () -> Void
-
-    private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
-        .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
-
-    @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let imageURL { EventPhoto(url: imageURL, height: imageHeight) }
-            details
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .stedeCard(highlighted: participation == .going)
-    }
-
-    private var details: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Label(end.map { "\(time.formatted(Self.timeFormat))–\($0.formatted(Self.timeFormat))" } ?? time.formatted(Self.timeFormat), systemImage: "clock")
-                    .font(.subheadline.weight(.semibold)).monospacedDigit()
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(tint.opacity(0.18), in: Capsule()).foregroundStyle(tint)
-                StedeTagPill(text: community, color: StedeTheme.seaTeal)
-                if !isPublic { StedeTagPill(text: "intern", color: StedeTheme.mudflat) }
-                Spacer()
-            }
-            Text(title).font(.headline)
-            if !description.isEmpty { Text(description).font(.subheadline).foregroundStyle(.secondary).lineLimit(4) }
-            if let location, !location.isEmpty {
-                Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
-            }
-            if isSignedIn {
-                ParticipationChips(participation: participation, onParticipate: onParticipate)
-            } else {
-                Button(action: signIn) {
-                    StedeColorChip(title: "Anmelden, um zuzusagen", symbol: "person.crop.circle", color: StedeTheme.ink)
-                }
-                .buttonStyle(StedeCardButtonStyle())
-            }
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

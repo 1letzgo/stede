@@ -39,6 +39,7 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
     public var joinPolicy: CommunityJoinPolicy
     public var status: CommunityStatus
     public var inviteCode: String?
+    public var logoPath: String?
     public let createdBy: UUID
     public let createdAt: Date
     public var memberCount: Int?
@@ -48,10 +49,13 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
         case tenantId = "tenant_id"
         case joinPolicy = "join_policy"
         case inviteCode = "invite_code"
+        case logoPath = "logo_path"
         case createdBy = "created_by"
         case createdAt = "created_at"
         case memberCount = "member_count"
     }
+
+    public var logoURL: URL? { logoPath.map(Backend.communityLogoURL) }
 }
 
 public nonisolated struct CommunityMember: Codable, Hashable, Sendable, Identifiable {

@@ -112,9 +112,9 @@ final class CommunityDetailModel {
         } catch { lastError = error.localizedDescription }
     }
 
-    func updateSettings(name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy) async -> Bool {
+    func updateSettings(name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, logoPath: String?) async -> Bool {
         do {
-            try await client.updateCommunity(id: community.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy)
+            try await client.updateCommunity(id: community.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, logoPath: logoPath)
             community = try await client.community(id: community.id)
             return true
         } catch {

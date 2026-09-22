@@ -35,7 +35,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Communities
 
-    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, created_by, created_at, member_count"
+    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count"
 
     /// Alle sichtbaren Communities des Mandanten: gelistete plus eigene.
     public func communities(tenantID: UUID) async throws -> [Community] {
@@ -60,13 +60,29 @@ public nonisolated struct CommunityClient: Sendable {
         }
         let created: Community = try await client.from("communities")
             .insert(Draft(tenant_id: tenantID, name: name, description: description, visibility: visibility, join_policy: joinPolicy, created_by: userID))
-            .select("id, tenant_id, name, description, visibility, join_policy, status, invite_code, created_by, created_at").single().execute().value
+            .select("id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at").single().execute().value
         return created
     }
 
-    public func updateCommunity(id: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy) async throws {
-        struct Patch: Encodable { let name: String; let description: String; let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy }
-        try await client.from("communities").update(Patch(name: name, description: description, visibility: visibility, join_policy: joinPolicy)).eq("id", value: id).execute()
+    public func updateCommunity(id: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, logoPath: String?) async throws {
+        struct Patch: Encodable { let name: String; let description: String; let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let logo_path: String? }
+        try await client.from("communities").update(Patch(name: name, description: description, visibility: visibility, join_policy: joinPolicy, logo_path: logoPath)).eq("id", value: id).execute()
+    }
+
+    public func setCommunityLogo(id: UUID, logoPath: String?) async throws {
+        struct Patch: Encodable { let logo_path: String? }
+        try await client.from("communities").update(Patch(logo_path: logoPath)).eq("id", value: id).execute()
+    }
+
+    /// Logo in den öffentlichen Bucket; Pfad `<community_id>/<uuid>.jpg`.
+    public func uploadCommunityLogo(_ data: Data, communityID: UUID) async throws -> String {
+        let path = "\(communityID.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        try await client.storage.from("community-logos").upload(path, data: data, options: FileOptions(contentType: "image/jpeg"))
+        return path
+    }
+
+    public func deleteCommunityLogo(path: String) async throws {
+        _ = try await client.storage.from("community-logos").remove(paths: [path])
     }
 
     /// App-Admin: Anträge des Mandanten.
