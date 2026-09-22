@@ -10,7 +10,7 @@ struct EventView: View {
         var title: String {
             switch self {
             case .all: "Alle"
-            case .city: "Öffentliche"
+            case .city: "Öffentlich"
             case .communities: "Communities"
             case .mine: "Meine"
             }
@@ -94,24 +94,24 @@ struct EventView: View {
 
     // MARK: Filter
 
+    /// Vier gleich breite Chips wie der Richtungsumschalter der Bahn — nichts scrollt.
     private var filterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: StedeTheme.SelectionRow.spacing) {
-                ForEach(Filter.allCases, id: \.self) { item in
-                    Button {
-                        filterRaw = item.rawValue
-                    } label: {
-                        Label(item.title, systemImage: item.symbol)
-                            .stedeSelectionChip(isSelected: filter == item)
-                    }
-                    .buttonStyle(StedeCardButtonStyle())
-                    .accessibilityAddTraits(filter == item ? .isSelected : [])
+        HStack(spacing: StedeTheme.SelectionRow.spacing) {
+            ForEach(Filter.allCases, id: \.self) { item in
+                Button {
+                    filterRaw = item.rawValue
+                } label: {
+                    Text(item.title)
+                        .frame(maxWidth: .infinity)
+                        .stedeSelectionChip(isSelected: filter == item)
+                        .minimumScaleFactor(0.8)
                 }
+                .buttonStyle(StedeCardButtonStyle())
+                .accessibilityAddTraits(filter == item ? .isSelected : [])
             }
-            .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
         }
-        .frame(height: StedeTheme.SelectionRow.height)
-        .scrollIndicators(.hidden)
+        .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
+        .fixedSize(horizontal: false, vertical: true)
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 
