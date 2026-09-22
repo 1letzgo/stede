@@ -217,7 +217,7 @@ struct CommunityDetailView: View {
             StedeIconChip(symbol: "person.fill", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather, side: 30)
             Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
-            if member.role != .member { StedeTagPill(text: member.role == .owner ? "Owner" : "Admin", color: StedeTheme.heather) }
+            if member.role != .member { StedeTagPill(text: member.role == .owner ? "Leitung" : "Admin", color: StedeTheme.heather) }
             if isAdmin, member.role != .owner, member.userId != auth.userID {
                 Menu {
                     if member.role == .member { Button("Zum Admin machen") { Task { await model.setMember(member, role: .admin) } } }
@@ -246,7 +246,7 @@ struct CommunityDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Label(model.community.visibility == .listed ? "In der Community-Liste sichtbar" : "Nur per Einladungscode", systemImage: model.community.visibility == .listed ? "eye" : "eye.slash")
                 Label(model.community.joinPolicy == .open ? "Beitritt sofort" : "Admins bestätigen den Beitritt", systemImage: "person.badge.plus")
-                if let membership { Label("Deine Rolle: \(membership.role == .owner ? "Owner" : membership.role == .admin ? "Admin" : "Mitglied")", systemImage: "person.text.rectangle") }
+                if let membership { Label("Deine Rolle: \(membership.role == .owner ? "Leitung" : membership.role == .admin ? "Admin" : "Mitglied")", systemImage: "person.text.rectangle") }
             }
             .font(.caption)
             if isAdmin {
@@ -269,7 +269,7 @@ struct CommunityDetailView: View {
                 }
             }
         } else {
-            Text("Als Owner kannst du die Community nicht verlassen – übergib die Rolle oder archiviere sie.")
+            Text("Als Leitung kannst du die Community nicht verlassen – übergib die Rolle oder archiviere sie.")
                 .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
         }
     }

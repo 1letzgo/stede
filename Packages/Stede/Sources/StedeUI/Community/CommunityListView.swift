@@ -95,7 +95,7 @@ struct CommunityListView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
-        .sheet(isPresented: $showsAdmin) { NavigationStack { AdminView() } }
+        .sheet(isPresented: $showsAdmin) { AdminView() }
         .sheet(isPresented: $showsEditor) {
             CommunityEditorView(existing: nil) { _ in Task { await model.load(tenantID: auth.tenant?.id); await auth.refresh() } }
         }
@@ -140,7 +140,7 @@ struct CommunityCard: View {
                     if let membership {
                         switch membership.status {
                         case .pending: StedeTagPill(text: "Anfrage offen", color: StedeTheme.sunAmber)
-                        case .active: StedeTagPill(text: membership.role == .member ? "Mitglied" : (membership.role == .owner ? "Owner" : "Admin"), color: StedeTheme.duneGreen)
+                        case .active: StedeTagPill(text: membership.role == .member ? "Mitglied" : (membership.role == .owner ? "Leitung" : "Admin"), color: StedeTheme.duneGreen)
                         case .banned: EmptyView()
                         }
                     }
@@ -206,7 +206,7 @@ struct CommunityEditorView: View {
                     }
                 }
                 if existing == nil {
-                    Section { Text("Nach dem Antrag gibt die Gemeinde-App die Community frei. Du bist dann Owner.").font(.footnote).foregroundStyle(.secondary) }
+                    Section { Text("Nach dem Antrag gibt die Gemeinde-App die Community frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
                 }
                 if let error { Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) } }
             }
