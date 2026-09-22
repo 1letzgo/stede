@@ -297,8 +297,7 @@ struct ParticipationRow: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.subheadline.weight(.bold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: StedeTheme.chipHeight)
                 .background(selected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.16)), in: Capsule())
                 .foregroundStyle(selected ? Color.white : color)
         }

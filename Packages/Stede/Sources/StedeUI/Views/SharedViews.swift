@@ -260,7 +260,7 @@ struct StedeColorChip: View {
         .fontDesign(.rounded)
         .lineLimit(1)
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .frame(minHeight: StedeTheme.chipHeight)
         .background(isSelected || prominent ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.16)), in: Capsule())
         .foregroundStyle(isSelected || prominent ? Color.white : color)
     }

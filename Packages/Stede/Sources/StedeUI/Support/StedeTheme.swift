@@ -14,6 +14,8 @@ public enum StedeTheme {
     static let seaTeal = Color("StedeSea", bundle: .module)
     /// Tiefwasser-Blau für Akzente auf Sandgrund — ruhiger als das reine Markenblau.
     static let deep = Color("StedeDeep", bundle: .module)
+    /// Einheitliche Höhe aller Kapsel-Buttons (Auswahl, Aktion, Zusage).
+    static let chipHeight: CGFloat = 36
     /// Dunkles Petrol-Grün aus dem Stadtlogo (#284050) — nur für die Navigationsleiste,
     /// im Dunkelmodus etwas tiefer.
     static let bar = Color("StedeBar", bundle: .module)
@@ -105,13 +107,14 @@ struct StedeSelectionRow<Content: View>: View {
 }
 
 extension View {
-    /// Kapsel einer Auswahlzeile: gefüllt, wenn gewählt.
+    /// Kapsel einer Auswahlzeile: gefüllt, wenn gewählt. Feste Höhe, damit
+    /// Text- und Symbol-Chips in einer Reihe gleich hoch sind.
     func stedeSelectionChip(isSelected: Bool) -> some View {
         font(.subheadline.weight(.semibold))
             .fontDesign(.rounded)
             .lineLimit(1)
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .frame(minHeight: StedeTheme.chipHeight)
             .background(
                 isSelected ? AnyShapeStyle(StedeTheme.deep) : AnyShapeStyle(StedeTheme.surface),
                 in: Capsule()
