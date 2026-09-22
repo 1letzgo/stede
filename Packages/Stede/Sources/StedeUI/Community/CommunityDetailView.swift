@@ -421,11 +421,13 @@ struct EventEditorView: View {
             Form {
                 Section("Foto") {
                     if let photoData, let image = EventPhotoResizer.image(from: photoData) {
-                        image.resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 160).clipShape(RoundedRectangle(cornerRadius: 12))
+                        image.resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 160)
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12))
                             .listRowInsets(EdgeInsets())
                     } else if let existingImagePath, !removePhoto {
                         EventPhoto(url: Backend.eventPhotoURL(path: existingImagePath), height: 160)
-                            .clipShape(RoundedRectangle(cornerRadius: 12)).listRowInsets(EdgeInsets())
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12))
+                            .listRowInsets(EdgeInsets())
                     }
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label(photoData == nil && (existingImagePath == nil || removePhoto) ? "Foto auswählen" : "Anderes Foto", systemImage: "photo")
