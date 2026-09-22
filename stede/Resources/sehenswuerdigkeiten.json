@@ -1,0 +1,250 @@
+{
+  "source": "Orte: OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Beschreibungen: eigene Kurztexte · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "places": [
+    {
+      "id": "wittenheimer-burgplatz",
+      "name": "Wittenheimer Burgplatz",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.273038,
+      "longitude": 7.943033,
+      "teaser": "Park in Westerstede.",
+      "street": "Burgstraße"
+    },
+    {
+      "id": "landschaftsfenster-rhododendron",
+      "name": "Landschaftsfenster Rhododendron",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.246102,
+      "longitude": 7.947614,
+      "teaser": "Aussichtspunkt mit Blick in die Rhododendronlandschaft.",
+      "street": "Gießelhorster Kirchweg"
+    },
+    {
+      "id": "burg-mansingen-hammjeborg",
+      "name": "Burg Mansingen / Hammjeborg",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.240756,
+      "longitude": 7.909721,
+      "teaser": "Reste einer mittelalterlichen Burganlage bei Mansie.",
+      "street": "Westersteder Straße"
+    },
+    {
+      "id": "draisinen-bahnhof-westerstede",
+      "name": "Draisinen-Bahnhof Westerstede",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.248994,
+      "longitude": 7.930097,
+      "teaser": "Start der Ammerland-Draisine auf der alten Bahnstrecke nach Ocholt.",
+      "street": "Ammerlandallee"
+    },
+    {
+      "id": "schloss-fikensolt",
+      "name": "Schloss Fikensolt",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.241318,
+      "longitude": 7.92353,
+      "teaser": "Herrenhaus von 1740 in Fikensolt, heute in Privatbesitz – Außenansicht vom Weg.",
+      "street": "Schloßweg"
+    },
+    {
+      "id": "friesendenkmal",
+      "name": "Friesendenkmal",
+      "category": "Sehenswürdigkeiten",
+      "website": "http://www.denkmalprojekt.org/2021/fikensolterfeld-friesendenkmal_gde-westerstede_lk-ammerland_ns.html",
+      "latitude": 53.231523,
+      "longitude": 7.929539,
+      "teaser": "Denkmal in Westerstede.",
+      "street": "Seghorner Weg"
+    },
+    {
+      "id": "marktfrau-oma-apen",
+      "name": "Marktfrau (Oma Apen)",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.25752,
+      "longitude": 7.927564,
+      "teaser": "Bronzefigur der Marktfrau am Marktplatz.",
+      "street": "Am Markt 3"
+    },
+    {
+      "id": "ammerlander-flora-brunnenskulptur",
+      "name": "Ammerländer Flora (Brunnenskulptur)",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.254503,
+      "longitude": 7.929456,
+      "teaser": "Brunnenskulptur im Zentrum.",
+      "street": "Schillerstraße"
+    },
+    {
+      "id": "geburtsort-astronom-friedrich-tietjen",
+      "name": "Geburtsort Astronom Friedrich Tietjen",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.257835,
+      "longitude": 8.0182,
+      "teaser": "Denkmal in Westerstede.",
+      "street": "Garnholter Straße"
+    },
+    {
+      "id": "stadtpark-thalenweide",
+      "name": "Stadtpark Thalenweide",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.25659,
+      "longitude": 7.924852,
+      "teaser": "Grüne Mitte der Stadt zwischen Rathaus und Peterstraße.",
+      "street": "Poststraße"
+    },
+    {
+      "id": "rathaus-zum-stadtpark",
+      "name": "Rathaus Zum Stadtpark",
+      "category": "Sehenswürdigkeiten",
+      "street": "Zum Stadtpark 2",
+      "phone": "+49 4488 55 0",
+      "email": "info@westerstede.de",
+      "website": "https://www.westerstede.de/",
+      "hours": "Mo-Fr 8:30–12 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.256499,
+      "longitude": 7.926104,
+      "teaser": "Verwaltungssitz der Stadt Westerstede am Stadtpark."
+    },
+    {
+      "id": "st-petri-kirche",
+      "name": "St.-Petri-Kirche",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.257535,
+      "longitude": 7.928143,
+      "teaser": "Evangelische Hauptkirche am Markt, Wahrzeichen der Stadt mit Ursprüngen im 12. Jahrhundert.",
+      "street": "Kirchenstraße"
+    },
+    {
+      "id": "park-beim-dorfplatz-ocholt",
+      "name": "Park beim Dorfplatz Ocholt",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.203658,
+      "longitude": 7.885745,
+      "teaser": "Park in Westerstede.",
+      "street": "Am Brunneneck"
+    },
+    {
+      "id": "christus-kirche-halsbek",
+      "name": "Christus-Kirche",
+      "category": "Sehenswürdigkeiten",
+      "street": "Mittelstraße",
+      "latitude": 53.315561,
+      "longitude": 7.922334,
+      "teaser": "Kirche (evangelisch-lutherisch) in Westerstede-Halsbek."
+    },
+    {
+      "id": "rhododendronpark-hobbie",
+      "name": "Rhododendronpark Hobbie",
+      "category": "Sehenswürdigkeiten",
+      "website": "https://hobbie-rhodo.de/Park/Rhododendronpark_Hobbie",
+      "hours": "Mo-So 9:30–19 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.282332,
+      "longitude": 8.00936,
+      "teaser": "Rhododendronpark in Linswege/Petersfeld – über 70 Hektar, Hauptblüte im Mai und Juni.",
+      "street": "Waldlehrpfad"
+    },
+    {
+      "id": "garten-der-jahreszeiten",
+      "name": "Garten der Jahreszeiten",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.239427,
+      "longitude": 7.933554,
+      "teaser": "Schaugarten in Westerstede.",
+      "street": "Schloßweg"
+    },
+    {
+      "id": "bambusgarten",
+      "name": "Bambusgarten",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.316103,
+      "longitude": 7.935434,
+      "teaser": "Schaugarten in Westerstede.",
+      "street": "Osterende 15"
+    },
+    {
+      "id": "ammerlander-landschaftspark",
+      "name": "Ammerländer Landschaftspark",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.231489,
+      "longitude": 7.937956,
+      "teaser": "Landschaftspark mit Rhododendren und typischen Ammerländer Gehölzen.",
+      "street": "Seghorner Weg 6"
+    },
+    {
+      "id": "landhausgarten-schultze-heubach",
+      "name": "Landhausgarten Schultze-Heubach",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.241906,
+      "longitude": 7.921698,
+      "teaser": "Schaugarten in Westerstede.",
+      "street": "Schloßweg 8"
+    },
+    {
+      "id": "pauluskirche-ocholt",
+      "name": "Pauluskirche",
+      "category": "Sehenswürdigkeiten",
+      "street": "Godensholter Straße 7",
+      "latitude": 53.201459,
+      "longitude": 7.883701,
+      "teaser": "Kirche (evangelisch) in Westerstede-Ocholt."
+    },
+    {
+      "id": "rathaus-am-markt",
+      "name": "Rathaus Am Markt",
+      "category": "Sehenswürdigkeiten",
+      "street": "Am Markt 2",
+      "phone": "+49 4488 55 0",
+      "email": "info@westerstede.de",
+      "website": "https://www.westerstede.de/",
+      "latitude": 53.25768,
+      "longitude": 7.927121,
+      "teaser": "Altes Rathaus am Marktplatz – Sitzungssaal der Stadt."
+    },
+    {
+      "id": "kuchengarten-jaspershof-e-v",
+      "name": "Küchengarten Jaspershof e.V.",
+      "category": "Sehenswürdigkeiten",
+      "latitude": 53.247545,
+      "longitude": 7.910784,
+      "teaser": "Schaugarten in Westerstede.",
+      "street": "Seggeriedenweg 2"
+    },
+    {
+      "id": "auferstehungskirche-ihausen-ihausen",
+      "name": "Auferstehungskirche Ihausen",
+      "category": "Sehenswürdigkeiten",
+      "street": "Ihauser Damm 1",
+      "phone": "+49 4488 4915",
+      "email": "D.Koeppler@t-online.de",
+      "website": "http://www.kirchenkreis-ammerland.de/kirchenkreis/qr-code-kirchen/auferstehungskirche-ihausen.html",
+      "latitude": 53.272379,
+      "longitude": 7.826118,
+      "teaser": "Kirche (evangelisch-lutherisch) in Westerstede-Ihausen."
+    },
+    {
+      "id": "herz-jesu-kirche-westerstede",
+      "name": "Herz-Jesu-Kirche Westerstede",
+      "category": "Sehenswürdigkeiten",
+      "street": "Gartenstraße 1",
+      "website": "http://www.herz-jesu-wst.de/",
+      "latitude": 53.25544,
+      "longitude": 7.924555,
+      "teaser": "Katholische Pfarrkirche in der Gartenstraße."
+    },
+    {
+      "id": "park-der-raritaten",
+      "name": "Park der Raritäten",
+      "category": "Sehenswürdigkeiten",
+      "street": "Am Nesterhorn 21",
+      "website": "https://www.park-der-raritaeten.de",
+      "hours": "Rund um die Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.260367,
+      "longitude": 7.970796,
+      "teaser": "Schaugarten mit seltenen Gehölzen und Stauden in Ocholt."
+    }
+  ]
+}

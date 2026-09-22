@@ -1,0 +1,346 @@
+{
+  "source": "Stadt Westerstede · westerstede.de/leben/kinder/kinder-spielplaetze (Bewertung Kinderrat) · Koordinaten: OpenStreetMap Nominatim · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "places": [
+    {
+      "id": "hossen-skaterplatz",
+      "name": "Hössen Skaterplatz",
+      "category": "Skaterplatz",
+      "teaser": "Der Skateboardplatz in Westerstede ist mit zwei Funbox Pyramiden, einer Quarterpipe, einer Miniramp, einem Snakerun, einer Treppe und jeweils zwei Handrails und Gaps ausgestattet. Besonderheit: Anbindung zum Sportplatz. Sauberkeit: Gut.",
+      "street": "An der Hössen 12",
+      "latitude": 53.255302,
+      "longitude": 7.915158,
+      "seasonNote": "Kinderrat-Note 3-4"
+    },
+    {
+      "id": "spielplatz-albertskamp-vogelkamp",
+      "name": "Albertskamp / Vogelkamp",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Sehr gut.",
+      "street": "Albertskamp 1",
+      "latitude": 53.290796,
+      "longitude": 7.896416,
+      "seasonNote": "Kinderrat-Note 1"
+    },
+    {
+      "id": "spielplatz-am-achterkamp-huls",
+      "name": "Am Achterkamp / Hüls",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Sehr gut.",
+      "street": "Hüls 43",
+      "latitude": 53.262468,
+      "longitude": 7.943678,
+      "seasonNote": "Kinderrat-Note 1"
+    },
+    {
+      "id": "spielplatz-am-flutter",
+      "name": "Am Flutter",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Riesengroßer Sandkasten. Sauberkeit: Gut.",
+      "street": "Am Flutter 15",
+      "latitude": 53.25343,
+      "longitude": 7.906447,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-am-stummel",
+      "name": "Am Stümmel",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Federwippe. Sauberkeit: Gut.",
+      "street": "Am Stümmel 23",
+      "latitude": 53.207751,
+      "longitude": 7.878792,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-auf-dem-hochkamp",
+      "name": "Auf dem Hochkamp",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Sehr gut.",
+      "street": "Auf dem Hochkamp 10",
+      "latitude": 53.249858,
+      "longitude": 7.914512,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-beethovenstrae-goethestrae",
+      "name": "Beethovenstraße / Goethestraße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Große Wiese. Sauberkeit: Gut - befriedigend.",
+      "street": "Gutenbergstraße 13",
+      "latitude": 53.252986,
+      "longitude": 7.939646,
+      "seasonNote": "Kinderrat-Note 2-3"
+    },
+    {
+      "id": "spielplatz-brakenhoffschule",
+      "name": "Brakenhoffschule",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Großes Fußballfeld & cooler Wall (Platz unter den Bäumen). Sauberkeit: Gut - befriedigend.",
+      "street": "Von-Weber-Straße 8",
+      "latitude": 53.253925,
+      "longitude": 7.935907,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-dorfgemeinschaftshaus-eggeloge",
+      "name": "Dorfgemeinschaftshaus Eggeloge",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Riesengroßer Fußballplatz, eine große Hütte zum Sitzen. Sauberkeit: Gut.",
+      "street": "Eggeloger Straße 14",
+      "latitude": 53.303201,
+      "longitude": 7.951706,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-dorfplatz-burgforde",
+      "name": "Dorfplatz Burgforde",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Riesen Fußballplatz. Sauberkeit: Sehr gut.",
+      "street": "Kleinburgforder Straße 16",
+      "latitude": 53.269445,
+      "longitude": 7.95384,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-dorfplatz-ihausen",
+      "name": "Dorfplatz Ihausen",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Seilbahn. Sauberkeit: Sehr gut.",
+      "street": "Ihauser Damm 4",
+      "latitude": 53.27249,
+      "longitude": 7.825057,
+      "seasonNote": "Kinderrat-Note 3-4"
+    },
+    {
+      "id": "spielplatz-dorfplatz-tarbarg",
+      "name": "Dorfplatz Tarbarg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: sehr gepflegt, hohe Wippe, große Rasenfläche. Sauberkeit: Sehr gut - Gut.",
+      "street": "Birkhahnstraße 2",
+      "latitude": 53.335319,
+      "longitude": 7.885928,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-eberhard-ries-strae",
+      "name": "Eberhard-Ries-Straße",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Gut.",
+      "street": "Eberhard-Ries-Straße 17",
+      "latitude": 53.261178,
+      "longitude": 7.920054,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-fliederstrae",
+      "name": "Fliederstraße",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Sehr gut.",
+      "street": "Fliederstraße 18",
+      "latitude": 53.263633,
+      "longitude": 7.915414,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-fritz-busing-strae",
+      "name": "Fritz-Büsing-Straße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Ordentlich. Sauberkeit: Sehr gut - gut.",
+      "street": "Fritz-Büsing-Straße 22",
+      "latitude": 53.249866,
+      "longitude": 7.924442,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-gymnasium",
+      "name": "Gymnasium",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Soccerplatz. Sauberkeit: Gut.",
+      "street": "Gartenstraße 16",
+      "latitude": 53.253443,
+      "longitude": 7.926508,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-hainbuchenweg",
+      "name": "Hainbuchenweg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: befindet sich in einer Spielstraße. Sauberkeit: Sehr gut.",
+      "street": "Hainbuchenweg 8",
+      "latitude": 53.318591,
+      "longitude": 7.924189,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-hans-oetken-padd",
+      "name": "Hans-Oetken-Padd",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Gut.",
+      "street": "Hans-Oetken-Padd 16",
+      "latitude": 53.251484,
+      "longitude": 7.928903,
+      "seasonNote": "Kinderrat-Note 3"
+    },
+    {
+      "id": "spielplatz-heidkampsweg",
+      "name": "Heidkampsweg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Große Wiese und Hügel. Sauberkeit: Sehr gut.",
+      "street": "Heidkampsweg 4",
+      "latitude": 53.248479,
+      "longitude": 7.94646,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-hossensportanlage",
+      "name": "Hössensportanlage",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Große Wiese zum Spielen; Piratenschiff. Sauberkeit: Gut - befriedigend.",
+      "street": "Jahnallee 1",
+      "latitude": 53.254406,
+      "longitude": 7.911873,
+      "seasonNote": "Kinderrat-Note 3"
+    },
+    {
+      "id": "spielplatz-igelstrae-moosbroksweg",
+      "name": "Igelstraße / Moosbroksweg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: kleiner Sandlastenzug. Sauberkeit: Sehr gut.",
+      "street": "Igelstraße 5",
+      "latitude": 53.253262,
+      "longitude": 7.900943,
+      "seasonNote": "Kinderrat-Note 1"
+    },
+    {
+      "id": "spielplatz-johanna-kirchner-strae",
+      "name": "Johanna-Kirchner-Straße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Befindet sich in einer Spielstraße. Sauberkeit: Sehr gut.",
+      "street": "Johanna-Kirchner-Straße 8",
+      "latitude": 53.255978,
+      "longitude": 7.901801,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-kosliner-strae",
+      "name": "Kösliner Straße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Reifenschaukel zum Stehen. Sauberkeit: Gut.",
+      "street": "Kösliner Straße 4",
+      "latitude": 53.258084,
+      "longitude": 7.933875,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-max-eyth-strae",
+      "name": "Max-Eyth-Straße",
+      "category": "Spielplatz",
+      "teaser": "Sauberkeit: Gut.",
+      "street": "Max-Eyth-Straße 22",
+      "latitude": 53.252913,
+      "longitude": 7.913417,
+      "seasonNote": "Kinderrat-Note 3-"
+    },
+    {
+      "id": "spielplatz-oberschule-westerstede",
+      "name": "Oberschule Westerstede",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Tischtennisplatten mit extra Platz. Sauberkeit: Befriedigend.",
+      "street": "Dr.-Winters-Straße 14",
+      "latitude": 53.26318,
+      "longitude": 7.928894,
+      "seasonNote": "Kinderrat-Note 3"
+    },
+    {
+      "id": "spielplatz-rosenweg",
+      "name": "Rosenweg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Seilbahn. Sauberkeit: Sehr gut.",
+      "street": "Rosenweg 32B",
+      "latitude": 53.266955,
+      "longitude": 7.921981,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-sanders-padd-city-center",
+      "name": "Sanders Padd / City-Center",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: zentrale Lage. Sauberkeit: gut.",
+      "street": "Meinardusstraße 18",
+      "latitude": 53.255282,
+      "longitude": 7.929373,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-schule-an-der-goethestrae",
+      "name": "Schule an der Goethestraße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Basketball, Tischtennisplatten, für ältere Kinder. Sauberkeit: Sehr gut bis Gut.",
+      "street": "Goethestraße 2",
+      "latitude": 53.253154,
+      "longitude": 7.936225,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-schule-halsbek",
+      "name": "Schule Halsbek",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Grünes Klassenzimmer. Sauberkeit: Sehr gut.",
+      "street": "Wittenheimstraße 79",
+      "latitude": 53.313452,
+      "longitude": 7.91993,
+      "seasonNote": "Kinderrat-Note 1-2"
+    },
+    {
+      "id": "spielplatz-suderstrae-virchowstrae",
+      "name": "Süderstraße / Virchowstraße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Gut zum Verstecken spielen. Sauberkeit: Gut - Befriedigend.",
+      "street": "Süderstraße 34A",
+      "latitude": 53.254208,
+      "longitude": 7.948625,
+      "seasonNote": "Kinderrat-Note 3"
+    },
+    {
+      "id": "spielplatz-sudring",
+      "name": "Südring",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Der Spielplatz ist alt - nicht mehr ansprechend. Sauberkeit: Gut - befriedigend.",
+      "street": "Südring 4",
+      "latitude": 53.291884,
+      "longitude": 7.862376,
+      "seasonNote": "Kinderrat-Note 4-5"
+    },
+    {
+      "id": "spielplatz-tannenloge",
+      "name": "Tannenloge",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Große Rasenfläche mit Toren. Sauberkeit: Gut.",
+      "street": "Tannenloge 29",
+      "latitude": 53.249404,
+      "longitude": 7.949552,
+      "seasonNote": "Kinderrat-Note 2"
+    },
+    {
+      "id": "spielplatz-uhlandstrae",
+      "name": "Uhlandstraße",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Fahrradstellplatz, ruhig und gepflegt. Sauberkeit: Sehr gut.",
+      "street": "Uhlandstraße 11",
+      "latitude": 53.256359,
+      "longitude": 7.939636,
+      "seasonNote": "Kinderrat-Note 1"
+    },
+    {
+      "id": "spielplatz-zum-stiftungspark-seggeriedenweg",
+      "name": "Zum Stiftungspark / Seggeriedenweg",
+      "category": "Spielplatz",
+      "teaser": "Besonderheit: Federwippe. Sauberkeit: Sehr gut.",
+      "street": "Zum Stiftungspark 21",
+      "latitude": 53.247928,
+      "longitude": 7.908984,
+      "seasonNote": "Kinderrat-Note 1"
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "source": "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Zeiten laut OSM, nicht bestätigt · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "places": [
+    {
+      "id": "dr-matthias-kreft",
+      "name": "Dr. Matthias Kreft",
+      "category": "Allgemeinmedizin",
+      "latitude": 53.254712,
+      "longitude": 7.930253,
+      "teaser": "Hausarztpraxis in Westerstede.",
+      "street": "Schillerstraße 6"
+    },
+    {
+      "id": "hausarztpraxis-peitzmeier-remmert",
+      "name": "Hausarztpraxis Peitzmeier & Remmert",
+      "category": "Allgemeinmedizin",
+      "street": "Godensholter Straße 2",
+      "website": "https://www.peitzmeier-remmert.de/",
+      "latitude": 53.201981,
+      "longitude": 7.885339,
+      "teaser": "Hausarztpraxis in Westerstede."
+    },
+    {
+      "id": "lubbehusen-strangmann",
+      "name": "Lübbehusen & Strangmann",
+      "category": "Allgemeinmedizin",
+      "latitude": 53.25755,
+      "longitude": 7.923654,
+      "teaser": "Hausarztpraxis in Westerstede.",
+      "street": "Lange Straße 23,23A"
+    },
+    {
+      "id": "praxis-lars-oldsen",
+      "name": "Praxis Lars Oldsen",
+      "category": "Allgemeinmedizin",
+      "street": "Kirchenstraße 20",
+      "website": "https://www.praxis-oldsen.de/",
+      "latitude": 53.258945,
+      "longitude": 7.930685,
+      "teaser": "Hausarztpraxis in Westerstede."
+    },
+    {
+      "id": "schmidt-scheepker-fortmann",
+      "name": "Schmidt / Scheepker / Fortmann",
+      "category": "Allgemeinmedizin",
+      "street": "Lange Straße 23",
+      "phone": "+49 4488 2474",
+      "hours": "Mo 8–13 Uhr, 15:30–18 Uhr · Di 8–13 Uhr, 15:30–18 Uhr · Mi 8–13 Uhr · Do 8–13 Uhr, 15:30–19 Uhr · Fr 8–13 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.257592,
+      "longitude": 7.923717,
+      "teaser": "Hausarztpraxis in Westerstede."
+    },
+    {
+      "id": "arztehaus-am-rechter",
+      "name": "Ärztehaus Am Rechter",
+      "category": "Allgemeinmedizin",
+      "latitude": 53.258945,
+      "longitude": 7.928018,
+      "teaser": "Hausarztpraxis in Westerstede.",
+      "street": "Am Rechter"
+    },
+    {
+      "id": "gemeinschaftspraxis-nierenzentrum-ammerland",
+      "name": "Gemeinschaftspraxis Nierenzentrum Ammerland",
+      "category": "Facharzt",
+      "phone": "+49 4488 8441-0",
+      "email": "info@nierenzentrum-ammerland.de",
+      "website": "https://www.dialysewesterstede.info",
+      "hours": "Mo, Mi, Fr 6:30–16 Uhr · Do, Di, Sa 6:30–13:30 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.257303,
+      "longitude": 7.916734,
+      "teaser": "Dialysezentrum in Westerstede.",
+      "street": "An der Hössen 34"
+    },
+    {
+      "id": "onkologie-westerstede",
+      "name": "Onkologie Westerstede",
+      "category": "Facharzt",
+      "street": "Kuhlenstraße 53d",
+      "phone": "+49 4488 5218880",
+      "latitude": 53.25357,
+      "longitude": 7.917332,
+      "teaser": "Facharztpraxis – Onkologie in Westerstede."
+    },
+    {
+      "id": "radiologie-westerstede",
+      "name": "Radiologie Westerstede",
+      "category": "Facharzt",
+      "street": "Kuhlenstraße 53b",
+      "latitude": 53.253646,
+      "longitude": 7.917473,
+      "teaser": "Facharztpraxis – Radiologie in Westerstede."
+    },
+    {
+      "id": "zentrum-fur-strahlentherapie-und-radioonkologie",
+      "name": "Zentrum für Strahlentherapie und Radioonkologie",
+      "category": "Facharzt",
+      "street": "An der Hössen 34",
+      "phone": "+49 4488 8423266",
+      "email": "info@strahlentherapie-nord.com",
+      "website": "https://strahlentherapie-nord.com/",
+      "hours": "Mo-Do 7:30–16 Uhr, Fr 7:30–14 Uhr, Feiertag geschlossen",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.257415,
+      "longitude": 7.917009,
+      "teaser": "Facharztpraxis – Onkologie, Strahlentherapie, Radioonkologie in Westerstede."
+    },
+    {
+      "id": "dr-niels-gotzke",
+      "name": "Dr. Niels Götzke",
+      "category": "Zahnarzt",
+      "street": "Lange Straße 31",
+      "latitude": 53.257984,
+      "longitude": 7.922254,
+      "teaser": "Zahnarztpraxis in Westerstede."
+    },
+    {
+      "id": "dr-schutz",
+      "name": "Dr. Schütz",
+      "category": "Zahnarzt",
+      "latitude": 53.251164,
+      "longitude": 7.929366,
+      "teaser": "Zahnarztpraxis in Westerstede.",
+      "street": "Hans-Oetken-Padd 27"
+    },
+    {
+      "id": "dr-uwe-hollinderbaumer",
+      "name": "Dr. Uwe Hollinderbäumer",
+      "category": "Zahnarzt",
+      "latitude": 53.254353,
+      "longitude": 7.928056,
+      "teaser": "Zahnarztpraxis in Westerstede.",
+      "street": "Peterstraße 30"
+    },
+    {
+      "id": "feldmann-rainer",
+      "name": "Feldmann, Rainer",
+      "category": "Zahnarzt",
+      "street": "Goethestraße 15",
+      "phone": "+49 4488 73377",
+      "latitude": 53.252061,
+      "longitude": 7.938665,
+      "teaser": "Zahnarztpraxis in Westerstede."
+    },
+    {
+      "id": "gemeinschaftspraxis-meiner-feth-efkes",
+      "name": "Gemeinschaftspraxis Meißner, Feth & Efkes",
+      "category": "Zahnarzt",
+      "website": "https://www.zahnaerzte-westerstede.de/",
+      "latitude": 53.256825,
+      "longitude": 7.923415,
+      "teaser": "Zahnarztpraxis in Westerstede.",
+      "street": "Kuhlenstraße"
+    },
+    {
+      "id": "ammerland-apotheke",
+      "name": "Ammerland-Apotheke",
+      "category": "Apotheke",
+      "street": "Lange Straße 25",
+      "latitude": 53.257599,
+      "longitude": 7.923447,
+      "teaser": "Apotheke in Westerstede."
+    },
+    {
+      "id": "apotheke-westerstede",
+      "name": "Apotheke Westerstede",
+      "category": "Apotheke",
+      "street": "Albert-Post-Platz 21A",
+      "phone": "+49 4488 9839830",
+      "email": "info-apo-aapp@t-online.de",
+      "hours": "Mo-Fr 8–18:30 Uhr · Sa 9–13 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.258025,
+      "longitude": 7.928038,
+      "teaser": "Apotheke in Westerstede."
+    },
+    {
+      "id": "kopernikus-apotheke",
+      "name": "Kopernikus Apotheke",
+      "category": "Apotheke",
+      "street": "Am Esch 7",
+      "phone": "+49 4488 71401",
+      "email": "kopernikus.apotheke@t-online.de",
+      "hours": "Mo-Sa 8–20 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.259913,
+      "longitude": 7.932399,
+      "teaser": "Apotheke in Westerstede."
+    },
+    {
+      "id": "muhlen-apotheke",
+      "name": "Mühlen-Apotheke",
+      "category": "Apotheke",
+      "street": "Godensholter Straße 5",
+      "phone": "+49 4409 232",
+      "latitude": 53.201466,
+      "longitude": 7.884218,
+      "teaser": "Apotheke in Westerstede."
+    },
+    {
+      "id": "peter-apotheke",
+      "name": "Peter-Apotheke",
+      "category": "Apotheke",
+      "street": "Peterstraße 29",
+      "phone": "+49 4488 1854",
+      "website": "http://www.peter-apotheke.de/",
+      "hours": "Mo-Do 8–13 Uhr, 14:30–19 Uhr · Mi 8–13 Uhr, 14:30–18 Uhr · Fr 8–19 Uhr · Sa 9–13 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.254137,
+      "longitude": 7.927783,
+      "teaser": "Apotheke in Westerstede."
+    },
+    {
+      "id": "ammerland-klinik",
+      "name": "Ammerland-Klinik",
+      "category": "Klinik",
+      "phone": "+49 4488 50-0",
+      "email": "info@ammerland-klinik.de",
+      "website": "https://www.ammerland-klinik.de/",
+      "latitude": 53.258415,
+      "longitude": 7.917489,
+      "teaser": "Klinik in Westerstede.",
+      "street": "Lange Straße 38"
+    },
+    {
+      "id": "bundeswehrkrankenhaus-westerstede",
+      "name": "Bundeswehrkrankenhaus Westerstede",
+      "category": "Klinik",
+      "email": "BwKrhsWesterstede@bundeswehr.org",
+      "website": "https://www.bwkrankenhaus.de/de/bundeswehrkrankenhaus-westerstede",
+      "latitude": 53.257682,
+      "longitude": 7.918369,
+      "teaser": "Klinik in Westerstede.",
+      "street": "Lange Straße"
+    },
+    {
+      "id": "klinik-fur-psychosomatische-medizin-und-psychotherapie",
+      "name": "Klinik für Psychosomatische Medizin und Psychotherapie",
+      "category": "Klinik",
+      "street": "An der Hössen 23",
+      "phone": "+49 441 9615-1611",
+      "email": "psm@kjk.de",
+      "website": "https://www.karl-jaspers-klinik.de/Behandlung/Kliniken/Klinik_fuer_Psychosomatische_Medizin_und_Psychotherapie/index.php",
+      "latitude": 53.256724,
+      "longitude": 7.915971,
+      "teaser": "Klinik in Westerstede."
+    },
+    {
+      "id": "ammerland-hospiz",
+      "name": "Ammerland Hospiz",
+      "category": "Therapie & Pflege",
+      "street": "Lange Straße 40",
+      "phone": "+49 4488 50 6850",
+      "website": "https://www.ammerland-hospiz.de/",
+      "latitude": 53.2596,
+      "longitude": 7.916999,
+      "teaser": "Hospiz in Westerstede."
+    },
+    {
+      "id": "das-fustubchen",
+      "name": "Das Fußstübchen",
+      "category": "Therapie & Pflege",
+      "latitude": 53.25734,
+      "longitude": 7.924833,
+      "teaser": "Podologie in Westerstede.",
+      "street": "Lange Straße"
+    },
+    {
+      "id": "ergotherapie-maren-hedemann",
+      "name": "Ergotherapie Maren Hedemann",
+      "category": "Therapie & Pflege",
+      "latitude": 53.258805,
+      "longitude": 7.928184,
+      "teaser": "Ergotherapie in Westerstede.",
+      "street": "Bankstraße"
+    },
+    {
+      "id": "naturheilpraxis-hildegard-janke-mansie",
+      "name": "Naturheilpraxis Hildegard Janke",
+      "category": "Therapie & Pflege",
+      "street": "Bußweg 8",
+      "phone": "+49 4488 1562",
+      "latitude": 53.228046,
+      "longitude": 7.898143,
+      "teaser": "Naturheilpraxis in Westerstede-Mansie."
+    },
+    {
+      "id": "physikalische-therapie-jens-machens",
+      "name": "Physikalische Therapie Jens Machens",
+      "category": "Therapie & Pflege",
+      "latitude": 53.257165,
+      "longitude": 7.926594,
+      "teaser": "Physiotherapie in Westerstede.",
+      "street": "Lange Straße 2a"
+    },
+    {
+      "id": "dr-wesselmann-halstrup",
+      "name": "Dr. Wesselmann",
+      "category": "Tierarzt",
+      "street": "Am Paradies 4",
+      "latitude": 53.261937,
+      "longitude": 7.912118,
+      "teaser": "Tierarztpraxis in Westerstede-Halstrup."
+    }
+  ]
+}

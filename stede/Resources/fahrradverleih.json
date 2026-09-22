@@ -1,0 +1,75 @@
+{
+  "source": "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "providers": [
+    {
+      "id": "zweirad-meyer",
+      "name": "Zweirad Meyer",
+      "teaser": "Fahrradfachgeschäft mit Werkstatt in der Peterstraße.",
+      "phone": "+49 4488 2371",
+      "website": "https://zweiradmeyer.de/",
+      "features": [
+        "Fahrradladen"
+      ],
+      "stations": [
+        {
+          "label": "Westerstede",
+          "street": "Peterstraße 25",
+          "latitude": 53.253982,
+          "longitude": 7.928409
+        }
+      ]
+    },
+    {
+      "id": "lastenrad-ammerland",
+      "name": "Lastenrad Ammerland",
+      "teaser": "Kostenloser Verleih von Lastenrädern im Ammerland – Buchung online.",
+      "website": "https://lastenrad-ammerland.de/",
+      "features": [
+        "Verleih"
+      ],
+      "stations": [
+        {
+          "label": "Westerstede",
+          "street": "An der Wiek",
+          "latitude": 53.2558,
+          "longitude": 7.921696
+        }
+      ]
+    },
+    {
+      "id": "henco",
+      "name": "Henco",
+      "teaser": "Fahrradgeschäft in der Innenstadt.",
+      "phone": "+49 4488 5204690",
+      "features": [
+        "Fahrradladen"
+      ],
+      "stations": [
+        {
+          "label": "Westerstede",
+          "street": "Kuhlenstraße 27",
+          "latitude": 53.255464,
+          "longitude": 7.921331
+        }
+      ]
+    },
+    {
+      "id": "fahrradscheune-halstrup",
+      "name": "Fahrradscheune Halstrup",
+      "teaser": "Fahrradladen mit Werkstatt und Verkauf in Halstrup.",
+      "features": [
+        "Werkstatt",
+        "Verkauf"
+      ],
+      "stations": [
+        {
+          "label": "Halstrup",
+          "street": "Alte Straße 14a",
+          "latitude": 53.261919,
+          "longitude": 7.915051
+        }
+      ]
+    }
+  ]
+}

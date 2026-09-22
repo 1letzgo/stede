@@ -1,0 +1,66 @@
+{
+  "source": "Eigene Zusammenstellung · Websites der Anbieter · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "places": [
+    {
+      "id": "rhododendronpark-hobbie",
+      "name": "Rhododendronpark Hobbie",
+      "category": "Park",
+      "teaser": "Einer der größten Rhododendronparks Europas in Linswege/Petersfeld. Hauptblüte Mai bis Juni, dazu Parkcafé und Baumschule.",
+      "street": "Alpenrosenstraße 7",
+      "hours": "Täglich 9:30–19 Uhr (Saison)",
+      "seasonNote": "Eintritt in der Blütezeit, Angaben ohne Gewähr",
+      "website": "https://www.hobbie-rhodo.de",
+      "latitude": 53.28707,
+      "longitude": 8.00735
+    },
+    {
+      "id": "ammerland-draisine",
+      "name": "Ammerland-Draisine",
+      "category": "Draisine",
+      "teaser": "Mit der Fahrraddraisine auf der stillgelegten Bahnstrecke zwischen Westerstede und Ocholt – rund 8 km durch Wiesen und Wallhecken.",
+      "street": "Draisinenbahnhof Westerstede",
+      "hours": "Saison Mai bis Oktober, Abfahrten nach Buchung",
+      "seasonNote": "Nur mit Reservierung, Angaben ohne Gewähr",
+      "website": "https://www.ammerland-draisine.de",
+      "latitude": 53.248994,
+      "longitude": 7.930097
+    },
+    {
+      "id": "park-der-gaerten",
+      "name": "Park der Gärten",
+      "category": "Park",
+      "teaser": "Niedersachsens größte Gartenschau in Bad Zwischenahn mit über 40 Mustergärten, Rhododendronwald und Veranstaltungen – rund 12 km von Westerstede.",
+      "street": "Elmendorfer Straße 40, 26160 Bad Zwischenahn",
+      "hours": "Saison April bis Oktober, täglich ab 9:30 Uhr",
+      "seasonNote": "Eintritt, Angaben ohne Gewähr",
+      "website": "https://www.park-der-gaerten.de",
+      "latitude": 53.1832,
+      "longitude": 8.0426
+    },
+    {
+      "id": "zwischenahner-meer",
+      "name": "Zwischenahner Meer",
+      "category": "Schifffahrt",
+      "teaser": "Drittgrößter Binnensee Niedersachsens: Rundweg (etwa 20 km), Fahrgastschiffe ab Bad Zwischenahn und Dreibergen, Strandbäder.",
+      "street": "Bad Zwischenahn",
+      "hours": "Schifffahrt saisonal, Fahrplan beim Anbieter",
+      "seasonNote": "Angaben ohne Gewähr",
+      "website": "https://www.bad-zwischenahn-touristik.de",
+      "latitude": 53.199,
+      "longitude": 7.996
+    },
+    {
+      "id": "rhododendronroute",
+      "name": "Ammerländer Rhododendronroute",
+      "category": "Radtour",
+      "teaser": "Ausgeschilderte Radroute durch die Rhododendron- und Baumschulregion rund um Westerstede, Bad Zwischenahn und Rastede – Etappen frei wählbar.",
+      "street": "Start z. B. am Marktplatz Westerstede",
+      "hours": "Ganzjährig, schönste Zeit Mai/Juni",
+      "seasonNote": "Angaben ohne Gewähr",
+      "website": "https://www.ammerland-touristik.de",
+      "latitude": 53.2575,
+      "longitude": 7.9275
+    }
+  ]
+}
