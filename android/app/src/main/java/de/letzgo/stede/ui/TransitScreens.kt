@@ -103,7 +103,7 @@ fun BusScreen(onBack: () -> Unit) {
             DayBar(day, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { day = it }
         }
     }
-    if (showsStops) ModalBottomSheet(onDismissRequest = { showsStops = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
+    if (showsStops) ModalBottomSheet(onDismissRequest = { showsStops = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader("Haltestelle", trailing = "Fertig" to { showsStops = false })
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(busStops) { s ->
@@ -181,10 +181,10 @@ fun WasteScreen(onBack: () -> Unit) {
             }
         }
     }
-    if (showsStreets) ModalBottomSheet(onDismissRequest = { showsStreets = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
+    if (showsStreets) ModalBottomSheet(onDismissRequest = { showsStreets = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         var query by remember { mutableStateOf("") }
         SheetHeader("Straße", trailing = "Fertig" to { showsStreets = false })
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp), placeholder = { Text("Straße in Westerstede") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) })
+        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp), placeholder = { Text("Straße in Westerstede") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) })
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(Waste.streets.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }, key = { it.id }) { s ->
                 Row(Modifier.fillMaxWidth().clickable {

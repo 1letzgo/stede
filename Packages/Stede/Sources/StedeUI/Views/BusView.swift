@@ -119,9 +119,7 @@ private struct BusStopSheet: View {
                 .accessibilityAddTraits(stop.id == selection ? .isSelected : [])
             }
             .navigationTitle("Haltestelle")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }

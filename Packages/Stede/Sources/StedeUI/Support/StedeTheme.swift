@@ -33,6 +33,10 @@ public enum StedeTheme {
 
     /// Abstand zwischen Karten — auf allen Seiten derselbe.
     static let cardSpacing: CGFloat = 12
+    /// Innenabstand großer Karten (Orte, Termine, Communities).
+    static let cardPadding: CGFloat = 16
+    /// Innenabstand einzeiliger Listenkarten (Abfahrten, Mitglieder, Abfuhr).
+    static let rowPadding = EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
 
     static let cardShape = RoundedRectangle(cornerRadius: 20, style: .continuous)
     static let chipShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -73,6 +77,54 @@ extension View {
             }
             .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
         }
+    }
+}
+
+// MARK: - Leiste und Sheets
+
+extension View {
+    /// Petrol-Leiste aus dem Stadtlogo mit weißer Schrift — auf jeder Seite und in jedem Sheet.
+    func stedeBar() -> some View {
+        #if os(macOS)
+        self
+        #else
+        self
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(StedeTheme.bar, for: .navigationBar)
+            .toolbarBackgroundVisibility(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        #endif
+    }
+
+    /// Formulare und Listen in Sheets: Sandgrund statt Systemgrau, dazu die Petrol-Leiste.
+    func stedeSheetForm() -> some View {
+        scrollContentBackground(.hidden)
+            .background(StedeTheme.sand)
+            .stedeBar()
+    }
+
+    /// Einzeilige Listenkarte (Mitglied, Zusage, Anfrage).
+    func stedeRowCard() -> some View {
+        padding(StedeTheme.rowPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .stedeCard()
+    }
+}
+
+/// Eingabefeld in Karten: sandfarbene Kapsel statt System-Rahmen.
+struct StedeTextField: View {
+    let placeholder: String
+    @Binding var text: String
+
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .autocorrectionDisabled()
+            #if !os(macOS)
+            .textInputAutocapitalization(.never)
+            #endif
+            .padding(.horizontal, 14)
+            .frame(minHeight: StedeTheme.chipHeight)
+            .background(StedeTheme.sand, in: Capsule())
     }
 }
 

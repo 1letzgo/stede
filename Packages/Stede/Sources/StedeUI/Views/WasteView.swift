@@ -173,9 +173,7 @@ private struct StreetSheet: View {
             }
             .searchable(text: $query, prompt: "Straße in Westerstede")
             .navigationTitle("Straße")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }

@@ -121,7 +121,7 @@ struct CommunityDetailView: View {
             }
             joinControls
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
     }
 
     private var pills: some View {
@@ -153,7 +153,7 @@ struct CommunityDetailView: View {
     // MARK: Termine
 
     @ViewBuilder private var eventsSection: some View {
-        if model.events.isEmpty { InfoCard { Text("Noch keine Termine.").foregroundStyle(.secondary) } }
+        if model.events.isEmpty { InfoCard { Text("Noch keine anstehenden Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in
             CommunityEventCard(
                 info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
@@ -183,7 +183,7 @@ struct CommunityDetailView: View {
             StedeSectionHeader(title: "Anfragen", symbol: "person.badge.clock")
             ForEach(model.pendingMembers) { member in
                 HStack(spacing: 12) {
-                    StedeIconChip(symbol: "person.fill.questionmark", color: StedeTheme.sunAmber, side: 30)
+                    StedeIconChip(symbol: "person.fill.questionmark", color: StedeTheme.sunAmber)
                     Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
                     Spacer()
                     Button { Task { await model.setMember(member, status: .active) } } label: {
@@ -194,10 +194,10 @@ struct CommunityDetailView: View {
                     }
                 }
                 .buttonStyle(StedeCardButtonStyle())
-                .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+                .stedeRowCard()
             }
-            StedeSectionHeader(title: "Mitglieder", symbol: "person.3.fill")
         }
+        StedeSectionHeader(title: "Mitglieder", symbol: "person.3.fill")
         ForEach(model.activeMembers) { member in memberRow(member) }
         if isAdmin, let code = model.community.inviteCode {
             HStack(spacing: 8) {
@@ -208,13 +208,13 @@ struct CommunityDetailView: View {
                 }
                 .buttonStyle(StedeCardButtonStyle())
             }
-            .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+            .stedeRowCard()
         }
     }
 
     private func memberRow(_ member: CommunityMember) -> some View {
         HStack(spacing: 12) {
-            StedeIconChip(symbol: "person.fill", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather, side: 30)
+            StedeIconChip(symbol: "person.fill", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather)
             Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
             if member.role != .member { StedeTagPill(text: member.role == .owner ? "Leitung" : "Admin", color: StedeTheme.heather) }
@@ -226,7 +226,7 @@ struct CommunityDetailView: View {
                 } label: { Image(systemName: "ellipsis.circle").foregroundStyle(StedeTheme.ink) }
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .stedeRowCard()
     }
 
     // MARK: Einstellungen
@@ -256,7 +256,7 @@ struct CommunityDetailView: View {
                 .buttonStyle(StedeCardButtonStyle())
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
 
         if !isOwner {
             Button { confirmLeave = true } label: {
@@ -424,9 +424,7 @@ struct EventEditorView: View {
                 }
             }
             .navigationTitle(existing == nil ? "Neuer Termin" : "Termin bearbeiten")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

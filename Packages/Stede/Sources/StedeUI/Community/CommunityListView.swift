@@ -47,26 +47,26 @@ struct CommunityListView: View {
                         InfoCard { Text("Noch keine Community in \(auth.tenant?.municipality ?? "dieser Gemeinde"). Leg die erste an.").foregroundStyle(.secondary) }
                     }
                     if auth.isSignedIn {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Button { showsEditor = true } label: {
-                                StedeColorChip(title: "Neue Community beantragen", symbol: "plus", color: StedeTheme.ink, prominent: true)
-                            }
-                            .buttonStyle(StedeCardButtonStyle())
-                            Rectangle().fill(.separator).frame(height: 1)
-                            Text("Einladungscode erhalten?").font(.subheadline.weight(.semibold))
-                            HStack(spacing: 8) {
-                                TextField("Code", text: $inviteCode)
-                                    .textFieldStyle(.roundedBorder).autocorrectionDisabled()
-                                    #if !os(macOS)
-                                    .textInputAutocapitalization(.never)
-                                    #endif
-                                Button { Task { await openInvite() } } label: {
-                                    StedeColorChip(title: "Öffnen", color: StedeTheme.seaTeal, prominent: inviteCode.count >= 6)
+                        StedeSectionHeader(title: "Mitmachen", symbol: "plus.circle.fill")
+                        InfoCard {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Einladungscode erhalten?").font(.subheadline.weight(.semibold))
+                                HStack(spacing: 8) {
+                                    StedeTextField(placeholder: "Code", text: $inviteCode)
+                                    Button { Task { await openInvite() } } label: {
+                                        StedeColorChip(title: "Öffnen", color: StedeTheme.seaTeal, prominent: inviteCode.count >= 6)
+                                    }
+                                    .buttonStyle(StedeCardButtonStyle()).disabled(inviteCode.count < 6)
                                 }
-                                .buttonStyle(StedeCardButtonStyle()).disabled(inviteCode.count < 6)
+                                Rectangle().fill(.separator).frame(height: 1)
+                                Text("Verein, Nachbarschaft oder Chor ohne eigene Community? Die Gemeinde gibt neue Communities frei.")
+                                    .font(.subheadline).foregroundStyle(.secondary)
+                                Button { showsEditor = true } label: {
+                                    StedeColorChip(title: "Neue Community beantragen", symbol: "plus", color: StedeTheme.ink, prominent: true)
+                                }
+                                .buttonStyle(StedeCardButtonStyle())
                             }
                         }
-                        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
                     }
                     if case .failed(let message) = model.state { Text(message).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
                 }
@@ -149,7 +149,7 @@ struct CommunityCard: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
     }
 }
 
@@ -211,9 +211,7 @@ struct CommunityEditorView: View {
                 if let error { Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) } }
             }
             .navigationTitle(existing == nil ? "Neue Community" : "Einstellungen")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

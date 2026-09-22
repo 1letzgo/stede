@@ -35,6 +35,7 @@ fun CalendarScreen() {
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var error by remember { mutableStateOf<String?>(null) }
     var open by remember { mutableStateOf<EventInfo?>(null) }
+    var showAccount by remember { mutableStateOf(false) }
     val openUrl = rememberOpenUrl()
     val userId = Session.userId
     val memberIds = Session.activeCommunityIds
@@ -76,46 +77,48 @@ fun CalendarScreen() {
                 error?.let { item { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard(it) } } }
                 (0L..6L).map { week.plusDays(it) }.forEach { day ->
                     val list = entries[day].orEmpty()
-                    if (list.isEmpty() && day != Town.today()) return@forEach
                     item(key = "h$day") {
-                        Row(Modifier.padding(horizontal = 16.dp).padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(if (day == Town.today()) "Heute" else day.format(Town.dayLong), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = if (day == Town.today()) C.teal else C.text)
-                            if (day == Town.today() && list.isNotEmpty()) Text(day.format(Town.dayLong), color = C.secondary, fontSize = 14.sp)
+                        Box(Modifier.padding(horizontal = 16.dp)) {
+                            SectionHeader((if (day == Town.today()) "Heute, " else "") + day.format(Town.fmt("EEEE, d. MMM")), if (day == Town.today()) Icons.Default.WbSunny else null)
                         }
                     }
-                    if (list.isEmpty()) item(key = "e$day") { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard("Heute keine Termine.") } }
+                    if (list.isEmpty()) item(key = "e$day") { Text("Keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 20.dp)) }
                     items(list, key = { when (it) { is CalendarEntry.City -> "c${it.e.externalId}${it.e.day}"; is CalendarEntry.Community -> "m${it.e.id}" } }) { entry ->
                         Box(Modifier.padding(horizontal = 16.dp)) {
                             when (entry) {
                                 is CalendarEntry.City -> CityEventRow(entry.e) { entry.e.detailUrl?.let(openUrl) }
-                                is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id]) { open = entry.e }
+                                is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true }) { open = entry.e }
                             }
                         }
                     }
                 }
-                if (entries.isEmpty() && city != null) item { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard("Keine Termine in dieser Woche.") } }
                 item { SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Communities") }
             }
             }
             DayBar(week, week = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { week = Town.weekStart(it) }
         }
     }
-    open?.let { e -> EventDetailSheet(e, helpers[e.id]) { open = null } }
+    open?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { open = null; showAccount = true }) { open = null } }
+    if (showAccount) AccountSheet { showAccount = false }
 }
 
+/** Kompakte Karte für Stadt-Termine: Zeit-Pille, Titel, Ort; Tipp öffnet die Seite der Stadt. */
 @Composable
 private fun CityEventRow(e: CityEvent, onClick: () -> Unit) {
     val start = Town.parse(e.startsAt); val end = Town.parse(e.endsAt)
-    val time = start?.let { s -> s.format(Town.hm) + (end?.let { "–${it.format(Town.hm)}" } ?: "") } ?: "Ganztägig"
-    StedeCard(onClick = onClick) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
-            IconChip(Icons.Default.Event, C.red)
+    val time = start?.let { st -> st.format(Town.hm) + (end?.let { "–${it.format(Town.hm)}" } ?: "") } ?: "ganztägig"
+    StedeCard(onClick = if (e.detailUrl != null) onClick else null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            IconChip(Icons.Default.AccountBalance, C.mudflat)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(time, C.teal); e.category?.let { Pill(it, C.mudflat) } }
-                e.location?.let { Text(it, color = C.secondary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                if (e.summary.isNotBlank()) Text(e.summary, color = C.text, fontSize = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                e.seriesNote?.let { Text(it, color = C.secondary, fontSize = 12.sp) }
+                Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(time, C.mudflat); e.category?.let { Pill(it, C.ink) } }
+                e.location?.let {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
+                        Text(it, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
         }
     }

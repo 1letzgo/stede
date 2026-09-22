@@ -32,19 +32,44 @@ val CardShape = RoundedCornerShape(20.dp)
 val ChipShape = RoundedCornerShape(12.dp)
 val ChipHeight = 36.dp
 val Spacing = 12.dp
+val CardPadding = 16.dp
 
 /** Weiße Karte wie `.stedeCard`; hervorgehoben in blassem Türkis. */
 @Composable
-fun StedeCard(modifier: Modifier = Modifier, highlighted: Boolean = false, padding: Dp = 14.dp, onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
-    var m = modifier.fillMaxWidth().clip(CardShape).background(if (highlighted) C.teal.copy(alpha = 0.18f) else C.surface)
+fun StedeCard(modifier: Modifier = Modifier, highlighted: Boolean = false, padding: Dp = CardPadding, onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.cardSurface(highlighted, onClick).padding(padding), content = content)
+}
+
+/** Kartenfläche wie `.stedeCard`: weiß mit feiner Kontur, hervorgehoben blass türkis ohne Kontur. */
+@Composable
+fun Modifier.cardSurface(highlighted: Boolean = false, onClick: (() -> Unit)? = null): Modifier {
+    var m = fillMaxWidth().clip(CardShape).background(if (highlighted) C.teal.copy(alpha = 0.16f) else C.surface)
+    if (!highlighted) m = m.border(1.dp, C.text.copy(alpha = 0.06f), CardShape)
     if (onClick != null) m = m.clickable { onClick() }
-    Column(m.padding(padding), content = content)
+    return m
+}
+
+/** Einzeilige Listenkarte (Mitglied, Zusage, Anfrage) — wie `.stedeRowCard()`. */
+@Composable
+fun RowCard(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    Row(modifier.cardSurface().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp), content = content)
+}
+
+/** Eingabefeld in Karten: sandfarbene Kapsel statt Material-Rahmen (StedeTextField). */
+@Composable
+fun StedeTextField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.text.BasicTextField(value, onChange, singleLine = true,
+        textStyle = androidx.compose.ui.text.TextStyle(color = C.text, fontSize = 16.sp),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(C.teal),
+        modifier = modifier.heightIn(min = ChipHeight).background(C.sand, RoundedCornerShape(50)).padding(horizontal = 14.dp),
+        decorationBox = { inner -> Box(Modifier.heightIn(min = ChipHeight), contentAlignment = Alignment.CenterStart) { if (value.isEmpty()) Text(placeholder, color = C.tertiary); inner() } })
 }
 
 @Composable
 fun Pill(text: String, color: Color) {
-    Text(text, color = color, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.background(color.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp))
+    Text(text, color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.background(color.copy(alpha = 0.14f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 4.dp))
 }
 
 @Composable
@@ -135,13 +160,13 @@ fun StedeTopBar(title: String, onBack: (() -> Unit)? = null, actions: @Composabl
     )
 }
 
-/** Kopf eines Sheets: links optional eine Aktion, rechts „Fertig“. */
+/** Kopf eines Sheets in der Petrol-Leiste wie die Seiten: links optional eine Aktion, rechts „Fertig“. */
 @Composable
 fun SheetHeader(title: String, leading: Pair<String, () -> Unit>? = null, trailing: Pair<String, () -> Unit>?) {
-    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-        leading?.let { TextButton(onClick = it.second, modifier = Modifier.align(Alignment.CenterStart)) { Text(it.first, color = C.ink, fontWeight = FontWeight.SemiBold) } }
-        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, modifier = Modifier.align(Alignment.Center), color = C.text)
-        trailing?.let { TextButton(onClick = it.second, modifier = Modifier.align(Alignment.CenterEnd)) { Text(it.first, color = C.ink, fontWeight = FontWeight.SemiBold) } }
+    Box(Modifier.fillMaxWidth().background(C.bar).padding(horizontal = 8.dp, vertical = 6.dp)) {
+        leading?.let { TextButton(onClick = it.second, modifier = Modifier.align(Alignment.CenterStart)) { Text(it.first, color = Color.White) } }
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, modifier = Modifier.align(Alignment.Center), color = Color.White)
+        trailing?.let { TextButton(onClick = it.second, modifier = Modifier.align(Alignment.CenterEnd)) { Text(it.first, color = Color.White, fontWeight = FontWeight.SemiBold) } }
     }
 }
 

@@ -72,7 +72,7 @@ struct CommunityEventCard: View {
             if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
             EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                       onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate)
-                .padding(14)
+                .padding(StedeTheme.cardPadding)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .stedeCard(highlighted: participation?.status == .going)
@@ -176,7 +176,7 @@ struct CommunityEventDetailView: View {
                         if let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
                         EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                                   onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: false)
-                            .padding(14)
+                            .padding(StedeTheme.cardPadding)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .stedeCard(highlighted: participation?.status == .going)
@@ -189,9 +189,7 @@ struct CommunityEventDetailView: View {
             }
             .background(StedeTheme.sand)
             .navigationTitle("Termin")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeBar()
             .toolbar {
                 if let onEdit {
                     ToolbarItem(placement: .cancellationAction) { Button("Bearbeiten") { onEdit() } }
@@ -229,13 +227,13 @@ struct CommunityEventDetailView: View {
 
     private func personRow(_ row: EventParticipation, color: Color) -> some View {
         HStack(spacing: 12) {
-            StedeIconChip(symbol: "person.fill", color: color, side: 30)
+            StedeIconChip(symbol: "person.fill", color: color)
             Text(row.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
             if row.helping { StedeTagPill(text: "Helfer", color: StedeTheme.heather) }
             if row.status == .maybe { StedeTagPill(text: "vielleicht", color: StedeTheme.sunAmber) }
         }
-        .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .stedeRowCard()
     }
 }
 

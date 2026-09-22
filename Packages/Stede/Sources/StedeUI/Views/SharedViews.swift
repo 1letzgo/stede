@@ -18,14 +18,10 @@ private struct DatePickerSheet: View {
             )
             .datePickerStyle(.graphical)
             .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(StedeTheme.sand)
             .navigationTitle("Tag wählen")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            // Tiefwasserblaue Leiste; Schrift und Symbole darin weiß.
-            .toolbarBackground(StedeTheme.bar, for: .navigationBar)
-            .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            #endif
+            .stedeBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Heute") {
@@ -86,13 +82,7 @@ struct TabScreen<Content: View>: View {
             StedeTheme.sand.ignoresSafeArea()
         }
         .navigationTitle(title)
-        #if !os(macOS)
-        .navigationBarTitleDisplayMode(.inline)
-        // Tiefwasserblaue Leiste; Schrift und Symbole darin weiß.
-        .toolbarBackground(StedeTheme.bar, for: .navigationBar)
-        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        #endif
+        .stedeBar()
         // Nur anhängen, wenn es den Tageswechsel gibt: zwei `.sheet` an
         // derselben View schließen einander aus, und Gastro bringt ein eigenes mit.
         .modifier(DatePickerSheetModifier(isPresented: $showPicker, isEnabled: showsDateNavigator, colorScheme: colorScheme))
@@ -206,7 +196,7 @@ struct InfoCard<Content: View>: View {
 
     var body: some View {
         content()
-            .padding(16)
+            .padding(StedeTheme.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .stedeCard(highlighted: isHighlighted, fill: fill)
     }

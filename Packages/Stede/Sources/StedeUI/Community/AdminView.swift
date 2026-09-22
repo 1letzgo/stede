@@ -84,9 +84,7 @@ struct AdminView: View {
                 }
             }
             .navigationTitle("Admin")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
             .refreshable { await load() }
             .task(id: "\(auth.isTenantAdmin)|\(auth.adminCommunityIDs.map(\.uuidString).joined())") { await load() }

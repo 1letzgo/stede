@@ -272,7 +272,7 @@ private struct CityEventRow: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(14)
+            .padding(StedeTheme.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .stedeCard()
         }

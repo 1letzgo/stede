@@ -27,9 +27,7 @@ struct AccountView: View {
                 }
             }
             .navigationTitle(auth.isSignedIn ? "Konto" : "Anmelden")
-            #if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }

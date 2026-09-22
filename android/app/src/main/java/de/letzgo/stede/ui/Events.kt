@@ -58,101 +58,130 @@ fun timeLabel(e: EventInfo): String {
         else -> "${start.format(Town.hm)} – ${end.format(Town.dayShort)} ${end.format(Town.hm)}"
     }
 }
+fun longTimeLabel(e: EventInfo): String {
+    val start = e.starts.withZoneSameInstant(Town.zone)
+    val end = e.ends?.withZoneSameInstant(Town.zone)
+    return start.format(Town.fmt("EEEE, d. MMMM yyyy, HH:mm")) + (end?.let { " bis ${it.format(Town.hm)} Uhr" } ?: " Uhr")
+}
 fun canEdit(e: EventInfo) = Session.userId != null && (e.createdBy == Session.userId || (e.communityId != null && e.communityId in Session.adminCommunityIds))
 
-/** Termin-Karte wie EventCard in iOS: Foto oben, Logo, Zeit- und Helfer-Pill, Schloss wenn intern, Teilnahmezeile. */
+/** Die eine Terminkarte für Community-Termine — in Community und Kalender identisch (CommunityEventCard). */
 @Composable
-fun EventCard(e: EventInfo, helpers: Int?, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(CardShape).background(C.surface).clickable { onOpen() }) {
-        e.imageUrl?.let { EventPhoto(it, 150.dp) }
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
-                CommunityAvatar(e.logoUrl, e.community)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = if (e.isCancelled) C.secondary else C.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Pill(if (e.isCancelled) "Abgesagt" else timeLabel(e), if (e.isCancelled) C.red else C.teal)
-                        if (e.helpersNeeded > 0 && !e.isCancelled) Pill("Helfer ${helpers ?: 0}/${e.helpersNeeded}", C.amber)
-                    }
-                    e.location?.takeIf { it.isNotBlank() }?.let { Text(it, color = C.secondary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: () -> Unit) {
+    val going = MyParticipation.byEvent[e.id]?.status == "going"
+    Column(Modifier.cardSurface(highlighted = going, onClick = onOpen)) {
+        e.imageUrl?.let { EventPhoto(it, 170.dp) }
+        EventBody(e, helpers, compact = true, onSignIn = onSignIn)
+    }
+}
+
+/** Inhalt unter dem Foto — in Karte (gekürzt) und Detail (voll) gleich aufgebaut. */
+@Composable
+private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit) {
+    val tint = if (e.isCancelled) C.red else C.teal
+    val count = helpers ?: 0
+    Column(Modifier.padding(CardPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            CommunityAvatar(e.logoUrl, e.community)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text,
+                    textDecoration = if (e.isCancelled) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Pill(timeLabel(e), tint)
+                    if (e.isCancelled) Pill("abgesagt", C.red)
+                    if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
-                if (!e.isPublic) Icon(Icons.Default.Lock, "Intern", tint = C.secondary, modifier = Modifier.size(16.dp))
             }
-            if (!e.isCancelled && Session.signedIn) ParticipationRow(e, helpers)
+            if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary, modifier = Modifier.size(14.dp))
+        }
+        if (e.description.isNotBlank()) Text(e.description, color = C.secondary, fontSize = 15.sp, maxLines = if (compact) 4 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+        if (!compact) {
+            SmallLabel(Icons.Default.Schedule, longTimeLabel(e), tint)
+            SmallLabel(Icons.Default.Groups, e.community, tint)
+        }
+        e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
+        if (!e.isCancelled) {
+            if (Session.signedIn) ParticipationRow(e, helpers)
+            else ColorChip("Anmelden, um zuzusagen", C.ink, icon = Icons.Default.AccountCircle) { onSignIn() }
         }
     }
 }
 
-/** Ich komme / Vielleicht / Absagen (+ Helfen) — nur Symbole, gleich breit, gleich hoch. */
+@Composable
+fun SmallLabel(icon: ImageVector, text: String, tint: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = tint, modifier = Modifier.size(14.dp))
+        Text(text, fontSize = 13.sp, color = C.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Ich komme / Vielleicht / Absage (+ Mithelfen) — nur Symbole, gleich breit, gleich hoch. */
 @Composable
 fun ParticipationRow(e: EventInfo, helpers: Int?, onChange: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val mine = MyParticipation.byEvent[e.id]
+    val status = mine?.status
     val helping = mine?.helping == true
     val showHelp = e.helpersNeeded > 0 && (helping || (helpers ?: 0) < e.helpersNeeded)
-    fun set(status: String?, help: Boolean) = scope.launch { runCatching { MyParticipation.set(e.id, status, help) }; Changes.bump(); onChange() }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        data class Opt(val status: String, val icon: ImageVector, val label: String, val color: Color)
-        listOf(Opt("going", Icons.Default.Check, "Ich komme", C.green), Opt("maybe", Icons.Default.QuestionMark, "Vielleicht", C.amber), Opt("declined", Icons.Default.Close, "Absagen", C.red)).forEach { o ->
-            ColorChip(null, o.color, Modifier.weight(1f), icon = o.icon, selected = mine?.status == o.status) {
-                if (mine?.status == o.status) set(null, false) else set(o.status, helping && o.status != "declined")
-            }
-        }
-        if (showHelp) ColorChip(null, C.teal, Modifier.weight(1f), icon = Icons.Default.VolunteerActivism, selected = helping) {
-            set(if (mine == null || mine.status == "declined") "going" else mine.status, !helping)
+    fun set(s: String?, help: Boolean) = scope.launch { runCatching { MyParticipation.set(e.id, s, help) }; Changes.bump(); onChange() }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        ColorChip(null, C.green, Modifier.weight(1f), icon = Icons.Default.Check, selected = status == "going") { set(if (status == "going") null else "going", helping && status != "going") }
+        ColorChip(null, C.amber, Modifier.weight(1f), icon = Icons.Default.QuestionMark, selected = status == "maybe") { set(if (status == "maybe") null else "maybe", helping && status != "maybe") }
+        ColorChip(null, C.red, Modifier.weight(1f), icon = Icons.Default.Close, selected = status == "declined") { set(if (status == "declined") null else "declined", false) }
+        if (showHelp) ColorChip(null, C.heather, Modifier.weight(1f), icon = Icons.Default.VolunteerActivism, selected = helping) {
+            if (helping) set(status ?: "going", false) else set(if (status == null || status == "declined") "going" else status, true)
         }
     }
 }
 
-/** Detail eines Community-Termins: Bearbeiten links (wenn erlaubt), Fertig rechts; Ersteller sieht Teilnehmer und Helfer. */
+/** Detail als Sheet: voller Text, Foto, Zusagen — Ersteller und Admins sehen Helfer und Zusagen mit Namen. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventDetailSheet(e: EventInfo, helpers: Int?, onDismiss: () -> Unit) {
+fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onDismiss: () -> Unit) {
     var editing by remember { mutableStateOf(false) }
     var people by remember { mutableStateOf<List<Participation>?>(null) }
     val showsPeople = canEdit(e)
     LaunchedEffect(e.id, Changes.version) { if (showsPeople) people = runCatching { CommunityApi.participations(e.id) }.getOrNull() }
-    if (editing) {
-        EventEditorSheet(communityId = e.communityId ?: return, existing = e, onDismiss = { editing = false; onDismiss() })
+    if (editing && e.communityId != null) {
+        EventEditorSheet(communityId = e.communityId, existing = e, onDismiss = { editing = false; onDismiss() })
         return
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
-        SheetHeader(e.title, leading = if (showsPeople && e.communityId != null) "Bearbeiten" to { editing = true } else null, trailing = "Fertig" to onDismiss)
+    val going = MyParticipation.byEvent[e.id]?.status == "going"
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
+        SheetHeader("Termin", leading = if (showsPeople && e.communityId != null) "Bearbeiten" to { editing = true } else null, trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
-                Column(Modifier.fillMaxWidth().clip(CardShape).background(C.surface)) {
-                    e.imageUrl?.let { EventPhoto(it, 200.dp) }
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            CommunityAvatar(e.logoUrl, e.community)
-                            Text(e.community, color = C.secondary, modifier = Modifier.weight(1f))
-                            if (!e.isPublic) Icon(Icons.Default.Lock, "Intern", tint = C.secondary, modifier = Modifier.size(16.dp))
-                        }
-                        Text(e.title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = C.text)
-                        InfoLine(Icons.Default.CalendarMonth, "${e.starts.withZoneSameInstant(Town.zone).format(Town.dayLong)} · ${timeLabel(e)}")
-                        e.location?.takeIf { it.isNotBlank() }?.let { InfoLine(Icons.Default.Place, it) }
-                        if (e.helpersNeeded > 0) InfoLine(Icons.Default.VolunteerActivism, "${helpers ?: 0} von ${e.helpersNeeded} Helfern")
-                        if (e.isCancelled) Pill("Abgesagt", C.red)
-                        if (e.description.isNotBlank()) Text(e.description, color = C.text)
-                        if (!e.isCancelled && Session.signedIn) ParticipationRow(e, helpers)
-                    }
+                Column(Modifier.cardSurface(highlighted = going)) {
+                    e.imageUrl?.let { EventPhoto(it, 220.dp) }
+                    EventBody(e, helpers, compact = false, onSignIn = onSignIn)
                 }
             }
             if (showsPeople) {
-                val list = people ?: emptyList()
-                listOf("going" to "Zusagen", "maybe" to "Vielleicht", "declined" to "Absagen").forEach { (status, title) ->
-                    val group = list.filter { it.status == status }
-                    if (group.isNotEmpty()) {
-                        item { SectionHeader("$title (${group.size})") }
-                        item { StedeCard { group.forEach { p -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
-                            Text(p.profile?.displayName ?: "Mitglied", color = C.text, modifier = Modifier.weight(1f))
-                            if (p.helping) Pill("hilft", C.teal)
-                        } } } }
-                    }
+                val list = people.orEmpty()
+                val loading = people == null
+                val helping = list.filter { it.helping && it.status != "declined" }
+                val yes = list.filter { it.status == "going" }; val maybe = list.filter { it.status == "maybe" }
+                if (e.helpersNeeded > 0) {
+                    item { SectionHeader("Helfer ${helping.size}/${e.helpersNeeded}", Icons.Default.VolunteerActivism) }
+                    if (helping.isEmpty()) item { InfoCard(if (loading) "Lade …" else "Noch niemand eingetragen.") }
+                    items(helping.size) { i -> PersonRow(helping[i], C.heather) }
                 }
-                if (people != null && list.isEmpty()) item { InfoCard("Noch keine Rückmeldungen.") }
+                item { SectionHeader("Zusagen ${yes.size}" + if (maybe.isEmpty()) "" else " · Vielleicht ${maybe.size}", Icons.Default.CheckCircle) }
+                if (yes.isEmpty() && maybe.isEmpty()) item { InfoCard(if (loading) "Lade …" else "Noch keine Zusagen.") }
+                items(yes.size) { i -> PersonRow(yes[i], C.green) }
+                items(maybe.size) { i -> PersonRow(maybe[i], C.amber) }
             }
         }
+    }
+}
+
+@Composable
+private fun PersonRow(p: Participation, color: Color) {
+    RowCard {
+        IconChip(Icons.Default.Person, color)
+        Text(p.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f))
+        if (p.helping) Pill("Helfer", C.heather)
+        if (p.status == "maybe") Pill("vielleicht", C.amber)
     }
 }
 
@@ -203,7 +232,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
         saving = false
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader(if (existing == null) "Neuer Termin" else "Termin bearbeiten", leading = "Abbrechen" to onDismiss,
             trailing = (if (saving) "…" else "Sichern") to { if (title.isNotBlank() && !saving) save() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {

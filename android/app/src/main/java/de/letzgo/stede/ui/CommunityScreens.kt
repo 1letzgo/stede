@@ -10,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +33,7 @@ import kotlinx.coroutines.launch
 fun roleLabel(role: String) = when (role) { "owner" -> "Leitung"; "admin" -> "Admin"; else -> "Mitglied" }
 fun statusLabel(status: String) = when (status) { "pending" -> "Wartet auf Freigabe"; "approved" -> "Freigegeben"; "rejected" -> "Abgelehnt"; "archived" -> "Archiviert"; else -> status }
 
-/** Community-Tab wie CommunityListView: eigene, weitere, Einladungscode, Vorschlag. Profil und Admin oben rechts als Sheet. */
+/** Community-Tab wie CommunityListView: eigene zuerst, weitere, Mitmachen. Profil und Admin oben rechts als Sheet. */
 @Composable
 fun CommunityScreen(open: (Screen) -> Unit) {
     val scope = rememberCoroutineScope()
@@ -45,18 +47,18 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
         runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Communities konnten nicht geladen werden." }
     }
+    val town = Session.tenant?.municipality ?: "Westerstede"
     Scaffold(topBar = {
         StedeTopBar("Community", actions = {
-            if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.VerifiedUser, "Admin") }
-            IconButton(onClick = { showAccount = true }) { Icon(Icons.Default.AccountCircle, "Profil") }
+            if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
+            IconButton(onClick = { showAccount = true }) { Icon(if (Session.signedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle, if (Session.signedIn) "Konto" else "Anmelden") }
         })
     }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             if (!Session.signedIn) item {
-                StedeCard(highlighted = true) {
-                    Text("Mach mit", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = C.text)
-                    Text("Melde dich an, um Communities beizutreten, Termine zu sehen und zuzusagen.", color = C.secondary, modifier = Modifier.padding(vertical = 6.dp))
-                    ColorChip("Anmelden", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.Login, prominent = true) { showAccount = true }
+                StedeCard {
+                    Text("Communities sind Gruppen aus $town mit eigenem Kalender – Verein, Nachbarschaft, Chor.", color = C.secondary)
+                    ColorChip("Anmelden", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.AccountCircle, prominent = true) { showAccount = true }
                 }
             }
             val all = list.orEmpty()
@@ -64,27 +66,36 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             val mine = all.filter { it.id in mineIds || it.createdBy == Session.userId }
             val others = all.filter { it !in mine && it.status == "approved" && it.visibility == "listed" }
             if (list == null && error == null) item { Loading() }
-            error?.let { item { InfoCard(it) } }
             if (mine.isNotEmpty()) {
                 item { SectionHeader("Meine Communities", Icons.Default.Groups) }
-                items(mine, key = { "m${it.id}" }) { c -> CommunityRow(c) { open(Screen.CommunityDetail(c.id)) } }
+                items(mine, key = { "m${it.id}" }) { c -> CommunityRow(c, Session.membership(c.id)) { open(Screen.CommunityDetail(c.id)) } }
             }
-            item { SectionHeader(if (mine.isEmpty()) "Communities in Westerstede" else "Weitere Communities", Icons.Default.Explore) }
-            if (others.isEmpty() && list != null) item { InfoCard(if (all.isEmpty()) "Noch keine Community in Westerstede." else "Keine weiteren Communities.") }
-            items(others, key = { "o${it.id}" }) { c -> CommunityRow(c) { open(Screen.CommunityDetail(c.id)) } }
+            if (others.isNotEmpty()) {
+                item { SectionHeader(if (mine.isEmpty()) "Communities" else "Weitere", Icons.Default.People) }
+                items(others, key = { "o${it.id}" }) { c -> CommunityRow(c, null) { open(Screen.CommunityDetail(c.id)) } }
+            } else if (mine.isEmpty() && list != null) {
+                item { SectionHeader("Communities", Icons.Default.People) }
+                item { InfoCard("Noch keine Community in $town. Leg die erste an.") }
+            }
             if (Session.signedIn) {
-                item { SectionHeader("Einladung", Icons.Default.Key) }
+                item { SectionHeader("Mitmachen", Icons.Default.AddCircle) }
                 item {
                     StedeCard {
-                        OutlinedTextField(code, { code = it.trim(); codeError = null }, label = { Text("Einladungscode") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                        codeError?.let { Text(it, color = C.red, fontSize = 13.sp) }
-                        ColorChip("Öffnen", C.teal, Modifier.fillMaxWidth().padding(top = 8.dp), enabled = code.isNotBlank()) {
-                            scope.launch { runCatching { CommunityApi.byInvite(code) }.getOrNull()?.let { open(Screen.CommunityDetail(it.id)) } ?: run { codeError = "Kein Treffer für diesen Code." } }
+                        Text("Einladungscode erhalten?", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = C.text)
+                        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            StedeTextField(code, { code = it.trim(); codeError = null }, "Code", Modifier.weight(1f))
+                            ColorChip("Öffnen", C.teal, prominent = code.length >= 6, enabled = code.length >= 6) {
+                                scope.launch { runCatching { CommunityApi.byInvite(code) }.getOrNull()?.let { code = ""; open(Screen.CommunityDetail(it.id)) } ?: run { codeError = "Kein Treffer für diesen Code." } }
+                            }
                         }
+                        codeError?.let { Text(it, color = C.red, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp)) }
+                        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
+                        Text("Verein, Nachbarschaft oder Chor ohne eigene Community? Die Gemeinde gibt neue Communities frei.", color = C.secondary, fontSize = 15.sp)
+                        ColorChip("Neue Community beantragen", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Add, prominent = true) { showNew = true }
                     }
                 }
-                item { ColorChip("Community vorschlagen", C.green, Modifier.fillMaxWidth(), icon = Icons.Default.AddCircle) { showNew = true } }
             }
+            error?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
         }
     }
     if (showAccount) AccountSheet { showAccount = false }
@@ -93,30 +104,36 @@ fun CommunityScreen(open: (Screen) -> Unit) {
 }
 
 @Composable
-private fun CommunityRow(c: Community, onClick: () -> Unit) {
-    val m = Session.membership(c.id)
+private fun CommunityRow(c: Community, m: Member?, onClick: () -> Unit) {
     StedeCard(onClick = onClick) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            CommunityAvatar(c.logoUrl, c.name, 48.dp)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            CommunityAvatar(c.logoUrl, c.name)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(c.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (c.description.isNotBlank()) Text(c.description, color = C.secondary, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    c.memberCount?.let { Pill(if (it == 1) "1 Mitglied" else "$it Mitglieder", C.teal) }
-                    when {
-                        c.status != "approved" -> Pill(statusLabel(c.status), C.amber)
-                        m?.status == "pending" -> Pill("Anfrage offen", C.amber)
-                        m?.isActive == true -> Pill(roleLabel(m.role), C.green)
-                    }
-                }
+                if (c.description.isNotBlank()) Text(c.description, color = C.secondary, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                CommunityPills(c, m, showsPolicy = m == null)
             }
         }
     }
 }
 
+@Composable
+private fun CommunityPills(c: Community, m: Member?, showsPolicy: Boolean) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        c.memberCount?.let { Pill(if (it == 1) "1 Mitglied" else "$it Mitglieder", C.teal) }
+        if (c.status == "pending") Pill("wartet auf Freigabe", C.amber)
+        when {
+            m?.status == "pending" -> Pill("Anfrage offen", C.amber)
+            m?.isActive == true -> Pill(roleLabel(m.role), C.green)
+        }
+        if (showsPolicy) Pill(if (c.joinPolicy == "open") "offen" else "auf Anfrage", C.mudflat)
+    }
+}
+
 enum class CommunityTab(val title: String) { Events("Termine"), Members("Mitglieder"), Settings("Einstellungen") }
 
-/** Community-Detail: Kopf, Beitreten/Verlassen, Umschalter Termine/Mitglieder/Einstellungen, Plus oben rechts. */
+/** Eine Community wie CommunityDetailView: Umschalter Termine · Mitglieder · Einstellungen wie bei der Bahn;
+ *  wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
 @Composable
 fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
@@ -129,6 +146,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var newEvent by remember { mutableStateOf(false) }
     var editCommunity by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
+    var showAccount by remember { mutableStateOf(false) }
     val membership = Session.membership(id)
     val isMember = membership?.isActive == true
     val isAdmin = membership?.isAdmin == true
@@ -145,106 +163,113 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val community = c
     Scaffold(topBar = {
         StedeTopBar(community?.name ?: "Community", onBack, actions = {
-            if (isMember && community?.status == "approved") IconButton(onClick = { newEvent = true }) { Icon(Icons.Default.Add, "Termin anlegen") }
+            if (isMember && tab == CommunityTab.Events) IconButton(onClick = { newEvent = true }) { Icon(Icons.Default.Add, "Termin anlegen") }
         })
     }, containerColor = C.sand) { pad ->
         if (community == null) { Box(Modifier.padding(pad)) { Loading() }; return@Scaffold }
-        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            item {
-                Box(Modifier.padding(horizontal = 16.dp)) {
-                    StedeCard {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            CommunityAvatar(community.logoUrl, community.name, 64.dp)
-                            Column(Modifier.weight(1f)) {
-                                Text(community.name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = C.text)
-                                Text(listOfNotNull(community.memberCount?.let { if (it == 1) "1 Mitglied" else "$it Mitglieder" }, if (community.joinPolicy == "open") "offen" else "mit Freigabe").joinToString(" · "), color = C.secondary, fontSize = 14.sp)
-                            }
-                        }
-                        if (community.description.isNotBlank()) Text(community.description, color = C.text, modifier = Modifier.padding(top = 8.dp))
-                        if (community.status != "approved") Box(Modifier.padding(top = 8.dp)) { Pill(statusLabel(community.status), C.amber) }
-                        if (Session.signedIn && community.status == "approved") Box(Modifier.padding(top = 10.dp)) {
-                            when {
-                                membership == null -> ColorChip(if (community.joinPolicy == "open") "Beitreten" else "Beitritt anfragen", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.PersonAdd, prominent = true) {
-                                    scope.launch { runCatching { CommunityApi.join(id, Session.userId!!) }; Session.refresh(); Changes.bump() }
-                                }
-                                membership.status == "pending" -> ColorChip("Anfrage zurückziehen", C.amber, Modifier.fillMaxWidth(), icon = Icons.Default.HourglassTop) {
-                                    scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh() }
-                                }
-                                else -> {}
-                            }
-                        }
-                    }
-                }
-            }
-            if (!isMember) {
-                item { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard(if (Session.signedIn) "Termine und Mitglieder sehen nur Mitglieder." else "Melde dich an, um beizutreten.") } }
-                return@LazyColumn
-            }
-            item { Switcher(if (isAdmin) CommunityTab.entries else listOf(CommunityTab.Events, CommunityTab.Members, CommunityTab.Settings), tab, { it.title }) { tab = it } }
-            when (tab) {
-                CommunityTab.Events -> {
-                    if (events == null) item { Loading() }
-                    else if (events!!.isEmpty()) item { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard("Keine anstehenden Termine.") } }
-                    items(events.orEmpty(), key = { it.id }) { e ->
-                        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(e.starts.withZoneSameInstant(Town.zone).format(Town.dayLong), fontWeight = FontWeight.SemiBold, color = C.secondary, fontSize = 14.sp)
-                            EventCard(e, helpers[e.id]) { openEvent = e }
-                        }
-                    }
-                }
-                CommunityTab.Members -> {
-                    val all = members.orEmpty()
-                    val pending = all.filter { it.status == "pending" }
-                    if (isAdmin && pending.isNotEmpty()) {
-                        item { Box(Modifier.padding(horizontal = 16.dp)) { SectionHeader("Anfragen (${pending.size})", Icons.Default.HourglassTop) } }
-                        items(pending, key = { it.id }) { m ->
-                            Box(Modifier.padding(horizontal = 16.dp)) {
-                                StedeCard {
-                                    Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text)
-                                    Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        ColorChip("Annehmen", C.green, Modifier.weight(1f), icon = Icons.Default.Check) { scope.launch { runCatching { CommunityApi.setMemberStatus(id, m.userId, "active") }; Changes.bump() } }
-                                        ColorChip("Ablehnen", C.red, Modifier.weight(1f), icon = Icons.Default.Close) { scope.launch { runCatching { CommunityApi.removeMember(id, m.userId) }; Changes.bump() } }
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { Switcher(CommunityTab.entries, tab, { it.title }) { tab = it } }
+            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (isMember) 0.dp else 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+                if (!isMember) {
+                    item {
+                        StedeCard {
+                            CommunityHead(community, null)
+                            Box(Modifier.padding(top = 10.dp)) {
+                                when {
+                                    !Session.signedIn -> ColorChip("Anmelden, um beizutreten", C.ink, icon = Icons.Default.AccountCircle, prominent = true) { showAccount = true }
+                                    membership?.status == "pending" -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.HourglassTop, null, tint = C.secondary, modifier = Modifier.size(14.dp))
+                                        Text("Anfrage gestellt – ein Admin bestätigt dich.", color = C.secondary, fontSize = 13.sp)
+                                    }
+                                    membership == null && community.status == "approved" -> ColorChip(if (community.joinPolicy == "open") "Beitreten" else "Beitritt anfragen", C.green, icon = Icons.Default.PersonAdd, prominent = true) {
+                                        scope.launch { runCatching { CommunityApi.join(id, Session.userId!!) }; Session.refresh(); Changes.bump() }
                                     }
                                 }
                             }
                         }
                     }
-                    item { Box(Modifier.padding(horizontal = 16.dp)) { SectionHeader("Mitglieder", Icons.Default.Groups) } }
-                    items(all.filter { it.isActive }.sortedWith(compareBy({ listOf("owner", "admin", "member").indexOf(it.role) }, { it.profile?.displayName })), key = { it.id }) { m ->
-                        Box(Modifier.padding(horizontal = 16.dp)) { MemberRow(m, isAdmin && m.role != "owner" && m.userId != Session.userId, id) }
-                    }
+                    return@LazyColumn
                 }
-                CommunityTab.Settings -> {
-                    item {
-                        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-                            if (isAdmin) {
-                                community.inviteCode?.let { code -> InviteCard(code) }
-                                ColorChip("Community bearbeiten", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.Edit) { editCommunity = true }
+                when (tab) {
+                    CommunityTab.Events -> {
+                        if (events == null) item { Loading() }
+                        else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
+                        items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                    }
+                    CommunityTab.Members -> {
+                        val all = members.orEmpty()
+                        val pending = all.filter { it.status == "pending" }
+                        if (isAdmin && pending.isNotEmpty()) {
+                            item { SectionHeader("Anfragen", Icons.Default.PersonSearch) }
+                            items(pending, key = { "p${it.id}" }) { m ->
+                                RowCard {
+                                    IconChip(Icons.Default.PersonSearch, C.amber)
+                                    Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    ColorChip(null, C.green, icon = Icons.Default.Check, prominent = true) { scope.launch { runCatching { CommunityApi.setMemberStatus(id, m.userId, "active") }; Changes.bump() } }
+                                    ColorChip(null, C.red, icon = Icons.Default.Close) { scope.launch { runCatching { CommunityApi.removeMember(id, m.userId) }; Changes.bump() } }
+                                }
                             }
-                            if (membership?.role != "owner") ColorChip("Community verlassen", C.red, Modifier.fillMaxWidth(), icon = Icons.Default.Logout) { confirmLeave = true }
-                            else if (isAdmin) Text("Als Leitung kannst du die Community nicht verlassen.", color = C.secondary, fontSize = 13.sp)
+                        }
+                        item { SectionHeader("Mitglieder", Icons.Default.Groups) }
+                        items(all.filter { it.isActive }.sortedWith(compareBy({ listOf("owner", "admin", "member").indexOf(it.role) }, { it.profile?.displayName })), key = { it.id }) { m ->
+                            MemberRow(m, isAdmin && m.role != "owner" && m.userId != Session.userId, id)
+                        }
+                        if (isAdmin) community.inviteCode?.let { code -> item { InviteRow(community.name, code) } }
+                    }
+                    CommunityTab.Settings -> {
+                        item {
+                            StedeCard {
+                                CommunityHead(community, null)
+                                Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    SmallLabel(if (community.visibility == "listed") Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        if (community.visibility == "listed") "In der Community-Liste sichtbar" else "Nur per Einladungscode", C.teal)
+                                    SmallLabel(Icons.Default.PersonAdd, if (community.joinPolicy == "open") "Beitritt sofort" else "Admins bestätigen den Beitritt", C.teal)
+                                    membership?.let { SmallLabel(Icons.Default.Badge, "Deine Rolle: ${roleLabel(it.role)}", C.teal) }
+                                }
+                                if (isAdmin) ColorChip("Bearbeiten", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Edit, prominent = true) { editCommunity = true }
+                            }
+                        }
+                        item {
+                            if (membership?.role != "owner") ColorChip("Community verlassen", C.red, icon = Icons.AutoMirrored.Filled.Logout) { confirmLeave = true }
+                            else Text("Als Leitung kannst du die Community nicht verlassen – übergib die Rolle oder archiviere sie.", color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
                         }
                     }
                 }
             }
         }
     }
-    openEvent?.let { e -> EventDetailSheet(e, helpers[e.id]) { openEvent = null } }
+    openEvent?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { openEvent = null; showAccount = true }) { openEvent = null } }
     if (newEvent) EventEditorSheet(id, null) { newEvent = false }
     if (editCommunity && community != null) CommunityEditorSheet(community) { editCommunity = false }
-    if (confirmLeave) AlertDialog(onDismissRequest = { confirmLeave = false }, title = { Text("Community verlassen?") },
-        confirmButton = { TextButton({ confirmLeave = false; scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh(); onBack() } }) { Text("Verlassen", color = C.red) } },
+    if (showAccount) AccountSheet { showAccount = false }
+    if (confirmLeave) AlertDialog(onDismissRequest = { confirmLeave = false }, title = { Text("„${community?.name}“ verlassen?") },
+        confirmButton = { TextButton({ confirmLeave = false; scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh(); tab = CommunityTab.Events; Changes.bump() } }) { Text("Verlassen", color = C.red) } },
         dismissButton = { TextButton({ confirmLeave = false }) { Text("Abbrechen") } })
 }
 
+/** Kopf einer Community: Logo, Name, Pills, Beschreibung. */
 @Composable
-private fun InviteCard(code: String) {
-    val clipboard = LocalClipboardManager.current
-    StedeCard {
-        Text("Einladungscode", color = C.secondary, fontSize = 13.sp)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(code, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = C.text, modifier = Modifier.weight(1f))
-            IconButton(onClick = { clipboard.setText(AnnotatedString(code)) }) { Icon(Icons.Default.ContentCopy, "Kopieren", tint = C.ink) }
+private fun CommunityHead(c: Community, m: Member?) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        CommunityAvatar(c.logoUrl, c.name)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(c.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+            CommunityPills(c, m, showsPolicy = true)
+        }
+    }
+    if (c.description.isNotBlank()) Text(c.description, color = C.secondary, fontSize = 15.sp, modifier = Modifier.padding(top = 10.dp))
+}
+
+@Composable
+private fun InviteRow(name: String, code: String) {
+    val context = LocalContext.current
+    RowCard {
+        Icon(Icons.Default.Key, null, tint = C.secondary, modifier = Modifier.size(14.dp))
+        Text("Einladungscode $code", color = C.secondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        ActionChip("Einladen", Icons.Default.Share) {
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(android.content.Intent.EXTRA_TEXT, "Tritt „$name“ in der stede-App bei – Einladungscode $code")
+            context.startActivity(android.content.Intent.createChooser(send, "Einladen"))
         }
     }
 }
@@ -253,19 +278,16 @@ private fun InviteCard(code: String) {
 private fun MemberRow(m: Member, manageable: Boolean, communityId: String) {
     val scope = rememberCoroutineScope()
     var menu by remember { mutableStateOf(false) }
-    StedeCard {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val name = m.profile?.displayName ?: "Mitglied"
-            CommunityAvatar(null, name, 36.dp)
-            Text(name, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Pill(roleLabel(m.role), if (m.role == "member") C.teal else C.green)
-            if (manageable) Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "Verwalten", tint = C.secondary) }
-                DropdownMenu(menu, { menu = false }) {
-                    if (m.role == "member") DropdownMenuItem({ Text("Zum Admin machen") }, { menu = false; scope.launch { runCatching { CommunityApi.setMemberRole(communityId, m.userId, "admin") }; Changes.bump() } })
-                    else DropdownMenuItem({ Text("Admin-Rechte entziehen") }, { menu = false; scope.launch { runCatching { CommunityApi.setMemberRole(communityId, m.userId, "member") }; Changes.bump() } })
-                    DropdownMenuItem({ Text("Entfernen", color = C.red) }, { menu = false; scope.launch { runCatching { CommunityApi.removeMember(communityId, m.userId) }; Changes.bump() } })
-                }
+    RowCard {
+        IconChip(Icons.Default.Person, if (m.role == "member") C.ink else C.heather)
+        Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (m.role != "member") Pill(roleLabel(m.role), C.heather)
+        if (manageable) Box {
+            IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreHoriz, "Verwalten", tint = C.ink) }
+            DropdownMenu(menu, { menu = false }) {
+                if (m.role == "member") DropdownMenuItem({ Text("Zum Admin machen") }, { menu = false; scope.launch { runCatching { CommunityApi.setMemberRole(communityId, m.userId, "admin") }; Changes.bump() } })
+                else DropdownMenuItem({ Text("Admin-Rolle entziehen") }, { menu = false; scope.launch { runCatching { CommunityApi.setMemberRole(communityId, m.userId, "member") }; Changes.bump() } })
+                DropdownMenuItem({ Text("Entfernen", color = C.red) }, { menu = false; scope.launch { runCatching { CommunityApi.removeMember(communityId, m.userId) }; Changes.bump() } })
             }
         }
     }
@@ -303,7 +325,7 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
         }.onSuccess { Changes.bump(); onDismiss() }.onFailure { error = it.message }
         saving = false
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader(if (existing == null) "Neue Community" else "Community bearbeiten", leading = "Abbrechen" to onDismiss,
             trailing = (if (saving) "…" else "Sichern") to { if (name.isNotBlank() && !saving) save() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -351,7 +373,7 @@ fun AdminSheet(onDismiss: () -> Unit) {
         val communities = runCatching { CommunityApi.communities(tenant.id) }.getOrDefault(emptyList()).associateBy { it.id }
         requests = Session.adminCommunityIds.flatMap { cid -> runCatching { CommunityApi.members(cid) }.getOrDefault(emptyList()).filter { it.status == "pending" }.mapNotNull { m -> communities[cid]?.let { it to m } } }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader("Admin", trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             if (Session.isTenantAdmin) {
@@ -401,8 +423,8 @@ fun AccountSheet(onDismiss: () -> Unit) {
     var token by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     LaunchedEffect(Session.userId) { Session.userId?.let { id -> token = runCatching { CommunityApi.calendarToken(id) }.getOrNull() } }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand) {
-        SheetHeader("Profil", trailing = "Fertig" to onDismiss)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
+        SheetHeader(if (Session.signedIn) "Konto" else "Anmelden", trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             if (!Session.signedIn) {
                 item {
