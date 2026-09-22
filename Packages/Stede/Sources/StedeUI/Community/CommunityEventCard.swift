@@ -136,22 +136,11 @@ private struct EventBody: View {
             }
             if !info.isCancelled {
                 if isSignedIn {
-                    ParticipationChips(participation: participation?.status) { status in
-                        onParticipate(status, isHelping && status != nil && status != .declined)
-                    }
-                    if info.helpersNeeded > 0, helpersOpen || isHelping {
-                        Button {
-                            if isHelping {
-                                onParticipate(participation?.status ?? .going, false)
-                            } else {
-                                onParticipate(participation?.status == .declined ? .going : (participation?.status ?? .going), true)
-                            }
-                        } label: {
-                            StedeColorChip(title: isHelping ? "Ich helfe mit" : "Mithelfen", symbol: "hands.sparkles.fill", color: StedeTheme.heather, isSelected: isHelping)
-                        }
-                        .buttonStyle(StedeCardButtonStyle())
-                        .accessibilityAddTraits(isHelping ? .isSelected : [])
-                    }
+                    ParticipationRow(
+                        participation: participation,
+                        showsHelper: info.helpersNeeded > 0 && (helpersOpen || isHelping),
+                        onParticipate: onParticipate
+                    )
                 } else {
                     Button(action: signIn) {
                         StedeColorChip(title: "Anmelden, um zuzusagen", symbol: "person.crop.circle", color: StedeTheme.ink)
@@ -267,5 +256,54 @@ struct EventPhoto: View {
         .clipped()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// Eine Zeile gleich breiter Symbol-Chips: Zusage, Vielleicht, Absage und —
+/// wenn Helfer gesucht werden — Mithelfen. Nochmal tippen hebt die Wahl auf.
+struct ParticipationRow: View {
+    let participation: MyParticipation?
+    let showsHelper: Bool
+    let onParticipate: (ParticipationStatus?, Bool) -> Void
+
+    private var status: ParticipationStatus? { participation?.status }
+    private var isHelping: Bool { participation?.helping == true }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            chip(symbol: "checkmark", label: "Ich komme", color: StedeTheme.duneGreen, selected: status == .going) {
+                onParticipate(status == .going ? nil : .going, isHelping && status != .going)
+            }
+            chip(symbol: "questionmark", label: "Vielleicht", color: StedeTheme.sunAmber, selected: status == .maybe) {
+                onParticipate(status == .maybe ? nil : .maybe, isHelping && status != .maybe)
+            }
+            chip(symbol: "xmark", label: "Absage", color: StedeTheme.harborRed, selected: status == .declined) {
+                onParticipate(status == .declined ? nil : .declined, false)
+            }
+            if showsHelper {
+                chip(symbol: "hands.sparkles.fill", label: isHelping ? "Ich helfe mit" : "Mithelfen", color: StedeTheme.heather, selected: isHelping) {
+                    if isHelping {
+                        onParticipate(status ?? .going, false)
+                    } else {
+                        onParticipate(status == .declined || status == nil ? .going : status, true)
+                    }
+                }
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+
+    private func chip(symbol: String, label: String, color: Color, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.subheadline.weight(.bold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(selected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.16)), in: Capsule())
+                .foregroundStyle(selected ? Color.white : color)
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
