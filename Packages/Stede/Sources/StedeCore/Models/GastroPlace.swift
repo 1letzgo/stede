@@ -33,6 +33,13 @@ public nonisolated struct GastroPlace: Identifiable, Hashable, Sendable, Decodab
     public let latitude: Double?
     public let longitude: Double?
 
+    public init(id: String, name: String, category: String, teaser: String?, street: String?, phone: String?, email: String?, website: String?, detailURL: String?, hours: String?, restDay: String?, seasonNote: String?, imageCredit: String?, extraLinkTitle: String?, extraLinkURL: String?, latitude: Double?, longitude: Double?) {
+        self.id = id; self.name = name; self.category = category; self.teaser = teaser; self.street = street
+        self.phone = phone; self.email = email; self.website = website; self.detailURL = detailURL
+        self.hours = hours; self.restDay = restDay; self.seasonNote = seasonNote; self.imageCredit = imageCredit
+        self.extraLinkTitle = extraLinkTitle; self.extraLinkURL = extraLinkURL; self.latitude = latitude; self.longitude = longitude
+    }
+
     public var coordinate: CLLocationCoordinate2D? {
         guard let latitude, let longitude else { return nil }
         return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -68,6 +75,10 @@ public nonisolated struct GastroDirectory: Sendable, Decodable {
     public let fetchedAt: String
     public let places: [GastroPlace]
 
+    public init(source: String, fetchedAt: String, places: [GastroPlace]) {
+        self.source = source; self.fetchedAt = fetchedAt; self.places = places
+    }
+
     /// Reihenfolge der Kategorien wie im JSON — Restaurants zuerst.
     public var categories: [String] {
         var seen = Set<String>()
@@ -80,27 +91,30 @@ public nonisolated struct GastroDirectory: Sendable, Decodable {
 }
 
 public nonisolated enum GastroStore {
-    public static let directory = load("gastronomie")
+    public static let directory = load("gastronomie", synced: "gastro")
 
     /// Sehenswürdigkeiten nutzen dasselbe Format — Name, Text, Adresse,
     /// Koordinate — und liegen in `sehenswuerdigkeiten.json`.
-    public static let sights = load("sehenswuerdigkeiten")
+    public static let sights = load("sehenswuerdigkeiten", synced: "sights")
 
     /// Ärzte, Zahnärzte, Apotheken, Kliniken — Kategorie „Gesundheit" unter „Stadt".
-    public static let health = load("gesundheit")
+    public static let health = load("gesundheit", synced: "health")
 
     /// Bad, Sport, Spiel & Familie, Kultur — Kategorie „Freizeit & Sport".
-    public static let leisure = load("freizeit")
+    public static let leisure = load("freizeit", synced: "leisure")
 
     /// Parks, Draisine, Zwischenahner Meer, Radrouten — „Ausflüge".
-    public static let trips = load("ausfluege")
+    public static let trips = load("ausfluege", synced: "trips")
 
     /// Die 34 städtischen Spielplätze samt Kinderrat-Bewertung — „Spielplätze".
-    public static let playgrounds = load("spielplaetze")
+    public static let playgrounds = load("spielplaetze", synced: "playgrounds")
 
     /// Fällt auf ein leeres Verzeichnis zurück; ohne Netzabhängigkeit kann
     /// hier nur ein Fehler beim Bundling auftreten.
-    private static func load(_ resource: String) -> GastroDirectory {
+    /// Stand aus dem Backend-Sync, sonst das Bundle. Wird beim App-Start
+    /// einmal gelesen; ein frischer Sync wirkt beim nächsten Start.
+    private static func load(_ resource: String, synced: String) -> GastroDirectory {
+        if let synced = ContentSync.directory(synced), !synced.places.isEmpty { return synced }
         guard
             let url = Bundle.module.url(forResource: resource, withExtension: "json"),
             let data = try? Data(contentsOf: url),

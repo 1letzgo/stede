@@ -11,6 +11,7 @@ struct stedeApp: App {
                 .tint(StedeTheme.iconBlue)
                 .task {
                     CacheMaintenance.purgeExpired()
+                    Task { await ContentSync.shared.syncAll() }
                     Task { await EventStore.prefetch(around: Date()) }
                     Task {
                         let today = IslandTime.startOfDay(Date())

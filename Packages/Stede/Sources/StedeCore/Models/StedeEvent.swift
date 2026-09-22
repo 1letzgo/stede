@@ -14,6 +14,11 @@ public nonisolated struct StedeEvent: Identifiable, Hashable, Sendable, Codable 
     public let seriesNote: String?
     public let detailURL: URL?
 
+    public init(id: Int, title: String, time: Date?, endTime: Date?, summary: String, location: String?, organizer: String?, category: String?, seriesNote: String?, detailURL: URL?) {
+        self.id = id; self.title = title; self.time = time; self.endTime = endTime; self.summary = summary
+        self.location = location; self.organizer = organizer; self.category = category; self.seriesNote = seriesNote; self.detailURL = detailURL
+    }
+
     public var timeLabel: String? {
         guard let time else { return nil }
         let style = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)

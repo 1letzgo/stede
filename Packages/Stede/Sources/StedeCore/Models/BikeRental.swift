@@ -13,6 +13,11 @@ public nonisolated struct BikeRentalProvider: Identifiable, Hashable, Sendable, 
     public let features: [String]
     public let stations: [BikeRentalStation]
 
+    public init(id: String, name: String, teaser: String?, phone: String?, email: String?, website: String?, features: [String], stations: [BikeRentalStation]) {
+        self.id = id; self.name = name; self.teaser = teaser; self.phone = phone; self.email = email; self.website = website
+        self.features = features; self.stations = stations
+    }
+
     public var websiteURL: URL? {
         guard let url = website.flatMap(URL.init(string:)),
               let scheme = url.scheme?.lowercased(),
@@ -37,6 +42,10 @@ public nonisolated struct BikeRentalStation: Hashable, Sendable, Decodable {
     public let latitude: Double
     public let longitude: Double
 
+    public init(label: String, street: String, latitude: Double, longitude: Double) {
+        self.label = label; self.street = street; self.latitude = latitude; self.longitude = longitude
+    }
+
     public var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
@@ -46,6 +55,10 @@ public nonisolated struct BikeRentalDirectory: Sendable, Decodable {
     public let source: String
     public let fetchedAt: String
     public let providers: [BikeRentalProvider]
+
+    public init(source: String, fetchedAt: String, providers: [BikeRentalProvider]) {
+        self.source = source; self.fetchedAt = fetchedAt; self.providers = providers
+    }
 
     /// Filterkategorien: Ausstattung, die häufigste zuerst.
     public var features: [String] {
@@ -63,6 +76,7 @@ public nonisolated struct BikeRentalDirectory: Sendable, Decodable {
 
 public nonisolated enum BikeRentalStore {
     public static let directory: BikeRentalDirectory = {
+        if let synced = ContentSync.bikeDirectory(), !synced.providers.isEmpty { return synced }
         guard
             let url = Bundle.module.url(forResource: "fahrradverleih", withExtension: "json"),
             let data = try? Data(contentsOf: url),

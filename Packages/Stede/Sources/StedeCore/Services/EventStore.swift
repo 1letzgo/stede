@@ -8,9 +8,15 @@ public nonisolated enum EventStore: Sendable {
         await cache.peek(on: day)
     }
 
+    /// Erst das Backend (`city_events`, stündlich vom Server gescrapt), bei Fehler
+    /// der eigene Scraper — so bleibt der Kalender auch ohne Backend nutzbar.
     public static func events(on day: Date, force: Bool = false) async throws -> [StedeEvent] {
         try await cache.value(on: day, force: force) {
-            try await client.events(on: day)
+            do {
+                return try await CityEventClient().events(on: day)
+            } catch {
+                return try await client.events(on: day)
+            }
         }
     }
 
