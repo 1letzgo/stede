@@ -8,6 +8,7 @@ struct CommunityListView: View {
     @State private var model = CommunityListModel()
     @State private var showsAccount = false
     @State private var showsEditor = false
+    @State private var showsAdmin = false
     @State private var inviteCode = ""
 
     var body: some View {
@@ -75,6 +76,15 @@ struct CommunityListView: View {
         .navigationDestination(for: Community.self) { CommunityDetailView(community: $0) }
         .navigationDestination(item: $invited) { CommunityDetailView(community: $0) }
         .toolbar {
+            if auth.showsAdminTab {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showsAdmin = true } label: {
+                        Image(systemName: "checkmark.seal.fill").foregroundStyle(.white)
+                    }
+                    .tint(.white)
+                    .accessibilityLabel("Admin")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button { showsAccount = true } label: {
                     Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
@@ -85,6 +95,7 @@ struct CommunityListView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(isPresented: $showsAdmin) { NavigationStack { AdminView() } }
         .sheet(isPresented: $showsEditor) {
             CommunityEditorView(existing: nil) { _ in Task { await model.load(tenantID: auth.tenant?.id); await auth.refresh() } }
         }

@@ -4,6 +4,7 @@ import SwiftUI
 /// Tab „Admin“: Freigaben für App-Admins, Mitgliedsanfragen für Community-Admins.
 struct AdminView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(\.dismiss) private var dismiss
     @State private var model = AdminModel()
 
     var body: some View {
@@ -69,6 +70,7 @@ struct AdminView: View {
                 }
             }
         }
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
         .task(id: "\(auth.isTenantAdmin)|\(auth.adminCommunityIDs.map(\.uuidString).joined())") { await load() }
     }
 
