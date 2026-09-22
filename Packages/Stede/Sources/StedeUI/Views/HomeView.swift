@@ -6,6 +6,7 @@ enum HomeDestination: Hashable {
     case weather
     case train
     case bus
+    case waste
     case island(category: String)
 }
 
@@ -18,6 +19,10 @@ struct HomeView: View {
     @State private var air = AirQualityViewModel()
     @State private var trains = TrainViewModel()
     @State private var buses = BusViewModel()
+    @State private var waste = WasteViewModel()
+    @AppStorage("waste.street") private var wasteStreetID: Int = 0
+    @AppStorage("waste.section") private var wasteSectionID: Int = 0
+    @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
 
     @ScaledMetric(relativeTo: .caption) private var gastroRowHeight = 172.0
 
@@ -62,6 +67,13 @@ struct HomeView: View {
                         .frame(maxHeight: .infinity)
                     }
 
+                    StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
+                    NavigationLink(value: HomeDestination.waste) {
+                        wasteTile
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .foregroundStyle(.primary)
+
                     // Zwei große Kacheln — Entdecken und Gastro —, darunter die
                     // übrigen Stadtkategorien als kleine Kacheln.
                     StedeSectionHeader(title: "Stadt", symbol: "map.fill")
@@ -87,6 +99,9 @@ struct HomeView: View {
         }
         .task(id: busStopID) {
             await buses.load(stop: busStop, day: IslandTime.startOfDay(Date()))
+        }
+        .task(id: wasteSettings.selection?.cacheKey ?? "") {
+            await waste.load(selection: wasteSettings.selection)
         }
     }
 
@@ -138,6 +153,39 @@ struct HomeView: View {
     }
 
     private var busStop: BusStop { BusStop.stop(id: busStopID) }
+
+    private var wasteSettings: WasteSettings { WasteSettings() }
+
+    /// Nächster Abfuhrtermin der gemerkten Straße; ohne Straße lädt die Kachel zur Wahl ein.
+    private var wasteTile: HomeTile {
+        guard let street = wasteSettings.street, wasteSettings.selection != nil else {
+            return HomeTile(
+                title: "Abfuhr",
+                symbol: "trash.fill",
+                tint: StedeTheme.duneGreen,
+                headline: "Straße wählen",
+                detail: wasteSettings.street == nil ? "Abfuhrkalender für deine Straße" : "Abschnitt von \(wasteSettings.street?.name ?? "") wählen",
+                compact: true
+            )
+        }
+        let next = waste.collections.first
+        let isLoading: Bool
+        switch waste.state {
+        case .idle, .loading: isLoading = next == nil
+        default: isLoading = false
+        }
+        let format = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+            .weekday(.abbreviated).day().month(.abbreviated)
+        return HomeTile(
+            title: "Abfuhr",
+            symbol: next?.kind.symbol ?? "trash.fill",
+            tint: next?.kind.tint ?? StedeTheme.duneGreen,
+            headline: next.map { "\($0.date.formatted(format)) · \($0.label)" } ?? (isLoading ? "–" : "Keine Termine"),
+            detail: street.name,
+            isLoading: isLoading,
+            compact: true
+        )
+    }
 
     private var busTile: HomeTile {
         let next = buses.departures
@@ -203,6 +251,7 @@ struct HomeView: View {
         if case .failed = weather.state { names.append("Wetter") }
         if case .failed = trains.state { names.append("Bahn") }
         if case .failed = buses.state { names.append("Bus") }
+        if case .failed = waste.state { names.append("Abfuhr") }
         if case .failed = air.state { names.append("Luftqualität") }
         return names
     }

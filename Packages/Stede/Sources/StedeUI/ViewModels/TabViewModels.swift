@@ -88,6 +88,49 @@ final class BusViewModel {
 }
 
 @Observable
+final class WasteViewModel {
+    var collections: [WasteCollection] = []
+    var state: LoadState = .idle
+
+    private var loadedKey: String?
+
+    func load(selection: WasteSelection?, force: Bool = false) async {
+        guard let selection else {
+            collections = []
+            state = .empty
+            loadedKey = nil
+            return
+        }
+        let key = selection.cacheKey
+        if !force, loadedKey == key, state == .loaded {
+            return
+        }
+        let year = IslandTime.calendar.component(.year, from: Date())
+        let hadCache: Bool
+        if let cached = await WasteStore.shared.cached(for: selection, year: year) {
+            let today = IslandTime.startOfDay(Date())
+            collections = cached.filter { $0.date >= today }
+            loadedKey = key
+            state = .loaded
+            hadCache = true
+        } else {
+            hadCache = false
+            if loadedKey != key { collections = [] }
+            state = .loading
+        }
+        do {
+            collections = try await WasteStore.shared.upcoming(for: selection, force: force)
+            loadedKey = key
+            state = collections.isEmpty ? .empty : .loaded
+        } catch {
+            if !hadCache {
+                state = .failed(error.localizedDescription)
+            }
+        }
+    }
+}
+
+@Observable
 final class AirQualityViewModel {
     var hours: [AirHour] = []
     var state: LoadState = .idle

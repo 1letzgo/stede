@@ -55,6 +55,7 @@ public struct ContentView: View {
                             case .weather: WeatherView()
                             case .train: TrainView(direction: $direction)
                             case .bus: BusView()
+                            case .waste: WasteView()
                             case let .island(category):
                                 IslandView(category: category)
                             }
@@ -97,6 +98,7 @@ enum LaunchOptions {
         case "weather": [.weather]
         case "train": [.train]
         case "bus": [.bus]
+        case "waste": [.waste]
         case "island", "gastro": [.island(category: IslandCatalog.gastroCategory)]
         case "bikes": [.island(category: IslandCatalog.bikeCategory)]
         case "sights", "discover": [.island(category: IslandCatalog.discoverCategory)]

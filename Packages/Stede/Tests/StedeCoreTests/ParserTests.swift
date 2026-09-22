@@ -46,3 +46,15 @@ private func fixture(_ name: String) throws -> String {
     #expect(BusBoardParser.errorText(from: xml) == nil)
     #expect(BusBoardParser.errorText(from: "<Err code=\"H730\" text=\"Your input is not valid.\" level=\"E\"/>") == "Your input is not valid.")
 }
+
+@Test func wasteCalendarParsesPDFText() throws {
+    let text = try fixture("abfuhr-albertskamp-2026.txt")
+    let items = WastePDFParser.collections(from: text, year: 2026)
+    #expect(items.count == 95)
+    let first = try #require(items.first)
+    #expect(first.kind == .residual)
+    #expect(IslandTime.isoDate(first.date) == "2026-01-02")
+    #expect(items.contains { $0.kind == .hazardous && IslandTime.isoDate($0.date) == "2026-01-31" })
+    #expect(items.contains { $0.kind == .branches && IslandTime.isoDate($0.date) == "2026-01-21" })
+    #expect(items.last.map { IslandTime.isoDate($0.date) } == "2026-12-24")
+}
