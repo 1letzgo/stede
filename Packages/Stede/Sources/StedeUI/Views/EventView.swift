@@ -33,6 +33,7 @@ struct EventView: View {
     @State private var community = CommunityCalendarModel()
     @State private var showsAccount = false
     @State private var openedEvent: CommunityEventInfo?
+    @State private var editingEvent: CommunityEvent?
 
     private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
 
@@ -87,9 +88,30 @@ struct EventView: View {
                 participation: community.myParticipations[info.id], isSignedIn: auth.isSignedIn,
                 onParticipate: { status, helping in participate(info, status, helping) },
                 signIn: { showsAccount = true },
-                showsParticipants: info.createdBy != nil && info.createdBy == auth.userID
+                onEdit: canEdit(info) ? { openedEvent = nil; editingEvent = community.memberEvents.first { $0.id == info.id } } : nil,
+                showsParticipants: canEdit(info)
             )
         }
+        .sheet(item: $editingEvent) { event in
+            EventEditorView(communityID: event.communityId, existing: event) { draft in
+                do {
+                    try await CommunityClient().updateEvent(id: event.id, draft)
+                    await loadCommunity()
+                    return true
+                } catch { return false }
+            } onCancelEvent: {
+                try? await CommunityClient().cancelEvent(id: event.id)
+                await loadCommunity()
+            }
+        }
+    }
+
+    /// Ersteller, Admin oder Owner der Community — nur für Termine eigener Communities.
+    private func canEdit(_ info: CommunityEventInfo) -> Bool {
+        guard let userID = auth.userID, let communityID = info.communityId else { return false }
+        if info.createdBy == userID { return true }
+        guard let membership = auth.membership(for: communityID), membership.status == .active else { return false }
+        return membership.role == .owner || membership.role == .admin
     }
 
     // MARK: Filter

@@ -17,19 +17,20 @@ struct CommunityEventInfo: Identifiable, Hashable {
     let isCancelled: Bool
     let helpersNeeded: Int
     let createdBy: UUID?
+    let communityId: UUID?
 
     init(_ event: CommunityEvent) {
         id = event.id; title = event.title; community = event.communityName; communityLogoURL = event.communityLogoURL
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = event.isPublic; isCancelled = event.cancelledAt != nil
-        helpersNeeded = event.helpersNeeded; createdBy = event.createdBy
+        helpersNeeded = event.helpersNeeded; createdBy = event.createdBy; communityId = event.communityId
     }
 
     init(_ event: PublicEvent) {
         id = event.id; title = event.title; community = event.communityName; communityLogoURL = event.communityLogoURL
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = true; isCancelled = false
-        helpersNeeded = event.helpersNeeded; createdBy = nil
+        helpersNeeded = event.helpersNeeded; createdBy = nil; communityId = nil
     }
 
     static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)

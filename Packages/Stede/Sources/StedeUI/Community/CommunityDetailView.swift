@@ -70,10 +70,10 @@ struct CommunityDetailView: View {
             CommunityEditorView(existing: model.community) { _ in Task { await reload() } }
         }
         .sheet(isPresented: $showsNewEvent) {
-            EventEditorView(community: model.community, existing: nil) { draft in await model.save(draft, editing: nil) }
+            EventEditorView(communityID: model.community.id, existing: nil) { draft in await model.save(draft, editing: nil) }
         }
         .sheet(item: $editingEvent) { event in
-            EventEditorView(community: model.community, existing: event) { draft in await model.save(draft, editing: event.id) } onCancelEvent: {
+            EventEditorView(communityID: model.community.id, existing: event) { draft in await model.save(draft, editing: event.id) } onCancelEvent: {
                 await model.cancel(event: event)
             }
         }
@@ -341,7 +341,7 @@ struct ParticipationChips: View {
 
 /// Termin anlegen oder bearbeiten; Veröffentlichen schaltet ihn in den Stadt-Kalender.
 struct EventEditorView: View {
-    let community: Community
+    let communityID: UUID
     let existing: CommunityEvent?
     let onSave: (CommunityEventDraft) async -> Bool
     var onCancelEvent: (() async -> Void)?
@@ -449,14 +449,14 @@ struct EventEditorView: View {
         var imagePath: String? = removePhoto ? nil : existingImagePath
         if let photoData {
             do {
-                imagePath = try await client.uploadEventPhoto(photoData, communityID: community.id)
+                imagePath = try await client.uploadEventPhoto(photoData, communityID: communityID)
             } catch {
                 self.error = "Foto konnte nicht hochgeladen werden: \(error.localizedDescription)"
                 return
             }
         }
         let draft = CommunityEventDraft(
-            communityId: community.id, title: title.trimmingCharacters(in: .whitespaces), description: description,
+            communityId: communityID, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
             imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
         )
