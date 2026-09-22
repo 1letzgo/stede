@@ -57,12 +57,14 @@ struct CommunityEventCard: View {
     /// Vorhanden, wenn der Nutzer den Termin bearbeiten darf.
     var onEdit: (() -> Void)?
     var onOpen: (() -> Void)?
+    /// In der Wochenliste bleibt das Foto weg — es steht im Detail.
+    var showsPhoto = true
 
     @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
+            if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
             EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                       onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true)
                 .padding(14)

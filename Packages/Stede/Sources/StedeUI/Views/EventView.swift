@@ -1,50 +1,82 @@
-import SwiftUI
 import StedeCore
+import SwiftUI
 
+/// Kalender als Wochenliste: Filter-Reiter oben, ein Abschnitt je Tag,
+/// Stadt-Termine und Community-Termine in einer Reihenfolge.
 struct EventView: View {
+    private enum Filter: String, CaseIterable {
+        case all, city, communities, mine
+
+        var title: String {
+            switch self {
+            case .all: "Alle"
+            case .city: "Öffentliche"
+            case .communities: "Communities"
+            case .mine: "Meine"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .all: "calendar"
+            case .city: "building.columns"
+            case .communities: "person.3.fill"
+            case .mine: "checkmark.circle"
+            }
+        }
+    }
+
     @Environment(SelectedDateStore.self) private var dateStore
     @Environment(AuthStore.self) private var auth
-    @State private var model = EventViewModel()
+    @AppStorage("calendar.filter") private var filterRaw = Filter.all.rawValue
+    @State private var model = WeekEventViewModel()
     @State private var community = CommunityCalendarModel()
+    @State private var showsAccount = false
+    @State private var openedEvent: CommunityEventInfo?
+
+    private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
 
     var body: some View {
-        TabScreen(title: "Kalender") {
-            await model.load(day: dateStore.selectedDate, force: true)
+        TabScreen(title: "Kalender", weekNavigator: true) {
+            await model.load(weekStart: dateStore.weekStart, force: true)
             await loadCommunity()
         } content: {
-            LoadStateView(state: model.state, emptyMessage: "Für diesen Tag sind keine Veranstaltungen eingetragen.") {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                            // Nach Tageszeit gegliedert, jede mit eigener Farbe.
-                            ForEach(sections, id: \.part) { section in
-                                StedeSectionHeader(title: section.part.title, symbol: section.part.symbol)
-                                ForEach(section.events) { entry in
-                                    switch entry {
-                                    case .city(let event):
-                                        EventCard(event: event, tint: section.part.tint)
-                                            .id("event-\(event.id)")
-                                    case .community(let event):
-                                        communityCard(CommunityEventInfo(event))
-                                    case .publicEvent(let event):
-                                        communityCard(CommunityEventInfo(event))
+            VStack(spacing: 0) {
+                filterRow
+                    .padding(.top)
+                    .padding(.bottom, StedeTheme.cardSpacing)
+                LoadStateView(state: listState, emptyMessage: emptyMessage) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                                ForEach(days, id: \.date) { day in
+                                    StedeSectionHeader(title: day.title, symbol: day.isToday ? "sun.max.fill" : nil)
+                                        .id("day-\(IslandTime.isoDate(day.date))")
+                                    if day.entries.isEmpty {
+                                        Text("Keine Termine").font(.subheadline).foregroundStyle(.tertiary).padding(.horizontal, 4)
+                                    }
+                                    ForEach(day.entries) { entry in
+                                        switch entry {
+                                        case .city(let event): CityEventRow(event: event)
+                                        case .community(let event): communityCard(CommunityEventInfo(event))
+                                        case .publicEvent(let event): communityCard(CommunityEventInfo(event))
+                                        }
                                     }
                                 }
+                                SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Community-Termine aus der App")
                             }
-                            SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen")
+                            .padding([.horizontal, .bottom])
                         }
-                        .padding()
+                        .onAppear { scrollToToday(proxy) }
+                        .onChange(of: dateStore.weekStart) { scrollToToday(proxy) }
                     }
-                    .id("events-\(IslandTime.isoDate(dateStore.selectedDate))")
-                    .onAppear { scrollToEight(using: proxy) }
-                    .onChange(of: model.events) { scrollToEight(using: proxy) }
                 }
             }
         }
-        .task(id: dateStore.selectedDate) {
-            await model.load(day: dateStore.selectedDate)
+        .task(id: dateStore.weekStart) {
+            await model.load(weekStart: dateStore.weekStart)
         }
-        .task(id: "\(IslandTime.isoDate(dateStore.selectedDate))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
+        .task(id: "\(IslandTime.isoDate(dateStore.weekStart))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
             await loadCommunity()
         }
         .onAppear { Task { await loadCommunity() } }
@@ -60,59 +92,107 @@ struct EventView: View {
         }
     }
 
-    @State private var showsAccount = false
-    @State private var openedEvent: CommunityEventInfo?
+    // MARK: Filter
 
-    private func loadCommunity() async {
-        await community.load(day: dateStore.selectedDate, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
+    private var filterRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: StedeTheme.SelectionRow.spacing) {
+                ForEach(Filter.allCases, id: \.self) { item in
+                    Button {
+                        filterRaw = item.rawValue
+                    } label: {
+                        Label(item.title, systemImage: item.symbol)
+                            .stedeSelectionChip(isSelected: filter == item)
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .accessibilityAddTraits(filter == item ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
+        }
+        .frame(height: StedeTheme.SelectionRow.height)
+        .scrollIndicators(.hidden)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 
-    /// Community-Termin im Kalender: Karte und Detail teilen sich die Aktionen.
-    private func communityCard(_ info: CommunityEventInfo) -> some View {
-        CommunityEventCard(
-            info: info, helperCount: community.helperCounts[info.id] ?? 0,
-            participation: community.myParticipations[info.id], isSignedIn: auth.isSignedIn,
-            onParticipate: { status, helping in participate(info, status, helping) },
-            signIn: { showsAccount = true },
-            onOpen: { openedEvent = info }
-        )
+    // MARK: Daten
+
+    private var memberCommunityIDs: [UUID] {
+        auth.memberships.filter { $0.status == .active }.map(\.communityId)
+    }
+
+    private func loadCommunity() async {
+        await community.load(from: dateStore.weekStart, to: dateStore.weekEnd, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
     }
 
     private func participate(_ info: CommunityEventInfo, _ status: ParticipationStatus?, _ helping: Bool) {
         Task { if let userID = auth.userID { await community.setParticipation(eventID: info.id, userID: userID, status: status, helping: helping) } }
     }
 
-    private var memberCommunityIDs: [UUID] {
-        auth.memberships.filter { $0.status == .active }.map(\.communityId)
-    }
-
-    /// Stadt-Termine, Termine der eigenen Communities und öffentliche Community-Termine
-    /// in einer Liste; öffentliche Termine eigener Communities erscheinen nur einmal.
+    /// Alle Einträge der Woche nach Filter.
     private var entries: [CalendarEntry] {
-        var result: [CalendarEntry] = model.events.map(CalendarEntry.city)
-        let memberIDs = Set(community.memberEvents.map(\.id))
-        result += community.memberEvents.filter { $0.cancelledAt == nil }.map(CalendarEntry.community)
-        result += community.publicEvents.filter { !memberIDs.contains($0.id) }.map(CalendarEntry.publicEvent)
+        var result: [CalendarEntry] = []
+        if filter == .all || filter == .city {
+            result += model.events.map(CalendarEntry.city)
+        }
+        if filter != .city {
+            let memberIDs = Set(community.memberEvents.map(\.id))
+            result += community.memberEvents.filter { $0.cancelledAt == nil }.map(CalendarEntry.community)
+            result += community.publicEvents.filter { !memberIDs.contains($0.id) }.map(CalendarEntry.publicEvent)
+        }
+        if filter == .mine {
+            result = result.filter { entry in
+                guard let id = entry.communityEventID, let mine = community.myParticipations[id] else { return false }
+                return mine.status != .declined
+            }
+        }
         return result.sorted { ($0.time ?? .distantPast) < ($1.time ?? .distantPast) }
     }
 
-    private var sections: [(part: EventDaypart, events: [CalendarEntry])] {
-        EventDaypart.allCases.compactMap { part in
-            let events = entries.filter { EventDaypart(time: $0.time) == part }
-            return events.isEmpty ? nil : (part, events)
+    private struct DayGroup {
+        let date: Date
+        let title: String
+        let isToday: Bool
+        let entries: [CalendarEntry]
+    }
+
+    private var days: [DayGroup] {
+        let format = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).weekday(.wide).day().month(.abbreviated)
+        let today = IslandTime.startOfDay(Date())
+        return (0 ..< 7).compactMap { offset in
+            guard let date = IslandTime.calendar.date(byAdding: .day, value: offset, to: dateStore.weekStart) else { return nil }
+            let items = entries.filter { entry in
+                guard let time = entry.time else { return false }
+                return IslandTime.isSameDay(time, date)
+            }
+            let isToday = date == today
+            return DayGroup(date: date, title: (isToday ? "Heute, " : "") + date.formatted(format), isToday: isToday, entries: items)
         }
     }
 
-    private func scrollToEight(using proxy: ScrollViewProxy) {
-        guard !dateStore.isToday else { return }
-        guard let first = model.events.first else { return }
-        let eight = IslandTime.date(bySettingHour: 8, of: dateStore.selectedDate)
-        let target = model.events.first { event in
-            guard let time = event.time else { return false }
-            return time >= eight
-        } ?? model.events.last
-        guard let target, target.id != first.id else { return }
-        scrollToCurrent("event-\(target.id)", in: proxy)
+    private var listState: LoadState {
+        if case .failed(let message) = model.state, entries.isEmpty { return .failed(message) }
+        if model.state == .loading, entries.isEmpty { return .loading }
+        return .loaded
+    }
+
+    private var emptyMessage: String { "Für diese Woche sind keine Termine eingetragen." }
+
+    private func scrollToToday(_ proxy: ScrollViewProxy) {
+        let today = IslandTime.startOfDay(Date())
+        guard today >= dateStore.weekStart, today < dateStore.weekEnd else { return }
+        scrollToCurrent("day-\(IslandTime.isoDate(today))", in: proxy)
+    }
+
+    private func communityCard(_ info: CommunityEventInfo) -> some View {
+        CommunityEventCard(
+            info: info, helperCount: community.helperCounts[info.id] ?? 0,
+            participation: community.myParticipations[info.id], isSignedIn: auth.isSignedIn,
+            onParticipate: { status, helping in participate(info, status, helping) },
+            signIn: { showsAccount = true },
+            onOpen: { openedEvent = info },
+            showsPhoto: false
+        )
     }
 }
 
@@ -137,150 +217,47 @@ private enum CalendarEntry: Identifiable {
         case .publicEvent(let e): e.startsAt
         }
     }
-}
 
-/// Tageszeit einer Veranstaltung — gliedert den Kalender und färbt die Karten.
-private enum EventDaypart: CaseIterable, Hashable {
-    case allDay, morning, afternoon, evening
-
-    init(time: Date?) {
-        guard let time else { self = .allDay; return }
-        switch IslandTime.calendar.component(.hour, from: time) {
-        case ..<12: self = .morning
-        case 12 ..< 17: self = .afternoon
-        default: self = .evening
-        }
-    }
-
-    var title: String {
+    var communityEventID: UUID? {
         switch self {
-        case .allDay: "Ganztägig"
-        case .morning: "Vormittags"
-        case .afternoon: "Nachmittags"
-        case .evening: "Abends"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .allDay: "calendar"
-        case .morning: "sunrise.fill"
-        case .afternoon: "sun.max.fill"
-        case .evening: "moon.stars.fill"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .allDay: StedeTheme.duneGreen
-        case .morning: StedeTheme.sunAmber
-        case .afternoon: StedeTheme.seaTeal
-        case .evening: StedeTheme.ink
+        case .city: nil
+        case .community(let e): e.id
+        case .publicEvent(let e): e.id
         }
     }
 }
 
-private struct EventCard: View {
+/// Kompakte Karte für Stadt-Termine: Zeit-Pille, Titel, Ort; Tipp öffnet die Seite der Stadt.
+private struct CityEventRow: View {
     let event: StedeEvent
-    let tint: Color
     @State private var page: BrowserPage?
 
     var body: some View {
         Button {
-            if let url = event.detailURL {
-                page = BrowserPage(url: url)
-            }
+            if let url = event.detailURL { page = BrowserPage(url: url) }
         } label: {
-            cardBody
+            HStack(alignment: .top, spacing: 12) {
+                StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.mudflat)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title).font(.headline).fontDesign(.rounded).multilineTextAlignment(.leading)
+                    HStack(spacing: 6) {
+                        StedeTagPill(text: event.timeLabel ?? "ganztägig", color: StedeTheme.mudflat)
+                        if let category = event.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+                    }
+                    if let location = event.location {
+                        Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .stedeCard()
         }
         .buttonStyle(StedeCardButtonStyle())
         .foregroundStyle(.primary)
         .disabled(event.detailURL == nil)
         .accessibilityHint(event.detailURL == nil ? "" : "Öffnet die Veranstaltungsseite im Browser")
-        .sheet(item: $page) { page in
-            InAppBrowser(url: page.url)
-        }
-    }
-
-    private var cardBody: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center, spacing: 8) {
-                    if let time = event.timeLabel {
-                        Label(time, systemImage: "clock")
-                            .font(.subheadline.weight(.semibold))
-                            .monospacedDigit()
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(tint.opacity(0.18), in: Capsule())
-                            .foregroundStyle(tint)
-                    }
-                    if let category = event.category {
-                        Text(category)
-                            .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(tint.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                }
-
-                Text(event.title)
-                    .font(.headline)
-
-                if !event.summary.isEmpty {
-                    Text(event.summary)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(4)
-                }
-
-                if event.location != nil || event.organizer != nil || event.seriesNote != nil {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let location = event.location {
-                            labeled("mappin.and.ellipse", location)
-                        }
-                        if let organizer = event.organizer {
-                            labeled("person.2", organizer)
-                        }
-                        if let series = event.seriesNote {
-                            labeled("repeat", series)
-                        }
-                    }
-                    .font(.caption)
-                    .padding(.top, 2)
-                }
-            }
-            .padding(14)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // Weiße Karte wie die Orte in Gastro und Stadt; die Tageszeit zeigt
-        // sich nur in Uhrzeit-Pille und Symbolen.
-        .stedeCard()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
-    }
-
-    private var accessibilityText: String {
-        var parts: [String] = []
-        if let time = event.timeLabel { parts.append("\(time) Uhr") }
-        parts.append(event.title)
-        if let category = event.category { parts.append(category) }
-        if !event.summary.isEmpty { parts.append(event.summary) }
-        if let location = event.location { parts.append("Ort \(location)") }
-        if let organizer = event.organizer { parts.append("Veranstalter \(organizer)") }
-        if let series = event.seriesNote { parts.append(series) }
-        return parts.joined(separator: ", ")
-    }
-
-    private func labeled(_ symbol: String, _ value: String) -> some View {
-        Label {
-            Text(value)
-        } icon: {
-            Image(systemName: symbol)
-                .foregroundStyle(tint)
-        }
+        .sheet(item: $page) { page in InAppBrowser(url: page.url) }
     }
 }

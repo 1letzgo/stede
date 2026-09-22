@@ -137,10 +137,8 @@ final class CommunityCalendarModel {
     private let client = CommunityClient()
 
     /// Lädt bei jedem Aufruf neu — Termine entstehen auch in anderen Tabs.
-    func load(day: Date, tenantID: UUID?, memberCommunityIDs: [UUID], userID: UUID?) async {
+    func load(from start: Date, to end: Date, tenantID: UUID?, memberCommunityIDs: [UUID], userID: UUID?) async {
         guard let tenantID else { return }
-        let start = IslandTime.startOfDay(day)
-        let end = IslandTime.endOfDay(day)
         do {
             async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end)
             async let memberTask = client.events(communityIDs: memberCommunityIDs, from: start, to: end)

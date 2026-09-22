@@ -31,6 +31,30 @@ final class SelectedDateStore {
         shift(by: 1)
     }
 
+    /// Montag der Woche, in der der gewählte Tag liegt.
+    var weekStart: Date {
+        var calendar = IslandTime.calendar
+        calendar.firstWeekday = 2
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate)
+        return calendar.date(from: components).map(IslandTime.startOfDay) ?? IslandTime.startOfDay(selectedDate)
+    }
+
+    var weekEnd: Date {
+        IslandTime.calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+    }
+
+    var canGoForwardWeek: Bool {
+        guard let latestDate else { return true }
+        return weekEnd <= IslandTime.startOfDay(latestDate).addingTimeInterval(86_400)
+    }
+
+    func goBackWeek() { shift(by: -7) }
+
+    func goForwardWeek() {
+        guard canGoForwardWeek else { return }
+        shift(by: 7)
+    }
+
     func goToToday() {
         selectedDate = IslandTime.startOfDay(Date())
     }

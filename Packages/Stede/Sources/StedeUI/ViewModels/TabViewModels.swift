@@ -214,6 +214,43 @@ final class WeatherViewModel {
     }
 }
 
+/// Stadt-Termine einer ganzen Woche, tageweise aus dem Cache.
+@Observable
+final class WeekEventViewModel {
+    var events: [StedeEvent] = []
+    var state: LoadState = .idle
+    private var loadedWeek: Date?
+
+    func load(weekStart: Date, force: Bool = false) async {
+        if !force, loadedWeek == weekStart, state == .loaded || state == .empty { return }
+        let days = (0 ..< 7).compactMap { IslandTime.calendar.date(byAdding: .day, value: $0, to: weekStart) }
+        var cached: [StedeEvent] = []
+        var complete = true
+        for day in days {
+            if let hit = await EventStore.cached(on: day) { cached += hit } else { complete = false }
+        }
+        if !cached.isEmpty || complete {
+            events = cached
+            loadedWeek = weekStart
+            state = cached.isEmpty ? .empty : .loaded
+        } else if state != .loaded {
+            state = .loading
+        }
+        do {
+            var fresh: [StedeEvent] = []
+            try await withThrowingTaskGroup(of: [StedeEvent].self) { group in
+                for day in days { group.addTask { try await EventStore.events(on: day, force: force) } }
+                for try await part in group { fresh += part }
+            }
+            events = fresh.sorted { ($0.time ?? .distantFuture) < ($1.time ?? .distantFuture) }
+            loadedWeek = weekStart
+            state = events.isEmpty ? .empty : .loaded
+        } catch {
+            if cached.isEmpty && !complete { state = .failed(error.localizedDescription) }
+        }
+    }
+}
+
 @Observable
 final class EventViewModel {
     var events: [StedeEvent] = []

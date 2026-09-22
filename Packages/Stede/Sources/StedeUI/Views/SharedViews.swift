@@ -49,6 +49,8 @@ private struct DatePickerSheet: View {
 struct TabScreen<Content: View>: View {
     var title: String = ""
     var showsDateNavigator = true
+    /// Kalender blättert wochenweise; die Kapsel zeigt dann die Woche.
+    var weekNavigator = false
     /// Ohne Closure bekommt der Screen kein Pull-to-Refresh — sinnvoll für
     /// Inhalte aus dem Bundle, die sich nicht neu laden lassen.
     var refresh: (() async -> Void)?
@@ -74,7 +76,7 @@ struct TabScreen<Content: View>: View {
         .safeAreaPadding(.bottom, StedeTheme.SelectionRow.height)
         .overlay(alignment: .bottom) {
             if showsDateNavigator {
-                DayNavigator(showPicker: $showPicker)
+                DayNavigator(showPicker: $showPicker, weekMode: weekNavigator)
             }
         }
         // Auf großen Displays bleibt der Inhalt lesbar schmal und zentriert.
@@ -118,14 +120,15 @@ private struct DatePickerSheetModifier: ViewModifier {
 /// Hafenwahl und Gastro-Filter.
 struct DayNavigator: View {
     @Binding var showPicker: Bool
+    var weekMode = false
     @Environment(SelectedDateStore.self) private var store
 
     var body: some View {
         // Schwebende Glasleiste über dem Inhalt statt einer festen Zeile.
         GlassEffectContainer(spacing: 6) {
             HStack(spacing: 4) {
-                stepButton(systemImage: "chevron.left", enabled: store.canGoBack, label: "Vorheriger Tag") {
-                    store.goBack()
+                stepButton(systemImage: "chevron.left", enabled: store.canGoBack, label: weekMode ? "Vorherige Woche" : "Vorheriger Tag") {
+                    if weekMode { store.goBackWeek() } else { store.goBack() }
                 }
 
                 Button {
@@ -148,8 +151,8 @@ struct DayNavigator: View {
                     }
                 }
 
-                stepButton(systemImage: "chevron.right", enabled: store.canGoForward, label: "Nächster Tag") {
-                    store.goForward()
+                stepButton(systemImage: "chevron.right", enabled: weekMode ? store.canGoForwardWeek : store.canGoForward, label: weekMode ? "Nächste Woche" : "Nächster Tag") {
+                    if weekMode { store.goForwardWeek() } else { store.goForward() }
                 }
             }
             .foregroundStyle(StedeTheme.ink)
@@ -180,6 +183,14 @@ struct DayNavigator: View {
 
     /// Kurzform — der volle Wochentag sprengt die Kapsel.
     private var dayLabel: String {
+        if weekMode {
+            let today = IslandTime.startOfDay(Date())
+            if today >= store.weekStart && today < store.weekEnd { return "Diese Woche" }
+            let day = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).day()
+            let dayMonth = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).day().month(.abbreviated)
+            let last = store.weekEnd.addingTimeInterval(-1)
+            return "\(store.weekStart.formatted(day)).–\(last.formatted(dayMonth))"
+        }
         if store.isToday { return "Heute" }
         return store.selectedDate.formatted(
             Date.FormatStyle(date: .abbreviated, time: .omitted)
