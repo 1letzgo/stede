@@ -1,20 +1,17 @@
 import StedeCore
 import SwiftUI
 
-/// Gemerkte Straße für den Abfuhrkalender — liegt in den UserDefaults, damit
-/// Start und Abfuhr-Ansicht denselben Stand sehen.
-struct WasteSettings {
-    @AppStorage("waste.street") var streetID: Int = 0
-    @AppStorage("waste.section") var sectionID: Int = 0
-    @AppStorage("waste.branchSection") var branchSectionID: Int = 0
-
-    var street: WasteStreet? {
-        streetID == 0 ? nil : WasteStreetStore.directory.street(id: streetID)
+/// Leitet aus den gemerkten IDs (UserDefaults `waste.*`) Straße und vollständige
+/// Auswahl ab. Reine Funktionen — die Views halten die `@AppStorage`-Werte selbst,
+/// nur so bekommen sie Änderungen sofort mit.
+enum WasteSettings {
+    static func street(id: Int) -> WasteStreet? {
+        id == 0 ? nil : WasteStreetStore.directory.street(id: id)
     }
 
     /// Erst vollständig, wenn alle nötigen Abschnitte gewählt sind.
-    var selection: WasteSelection? {
-        guard let street else { return nil }
+    static func selection(streetID: Int, sectionID: Int, branchSectionID: Int) -> WasteSelection? {
+        guard let street = street(id: streetID) else { return nil }
         if street.needsSection, sectionID == 0 { return nil }
         if street.needsBranchSection, branchSectionID == 0 { return nil }
         return WasteSelection(

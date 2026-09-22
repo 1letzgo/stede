@@ -10,30 +10,33 @@ struct WasteView: View {
     @State private var model = WasteViewModel()
     @State private var showsStreets = false
 
-    private var settings: WasteSettings { WasteSettings() }
+    private var street: WasteStreet? { WasteSettings.street(id: streetID) }
+    private var selection: WasteSelection? {
+        WasteSettings.selection(streetID: streetID, sectionID: sectionID, branchSectionID: branchSectionID)
+    }
 
     var body: some View {
         TabScreen(title: "Abfuhr", showsDateNavigator: false) {
-            await model.load(selection: settings.selection, force: true)
+            await model.load(selection: selection, force: true)
         } content: {
             VStack(spacing: 0) {
-                StreetChip(title: settings.street?.name ?? "Straße wählen", symbol: "house.fill") {
+                StreetChip(title: street?.name ?? "Straße wählen", symbol: "house.fill") {
                     showsStreets = true
                 }
                 .padding(.top)
                 .padding(.bottom, StedeTheme.cardSpacing)
 
-                if let street = settings.street, street.needsSection {
+                if let street, street.needsSection {
                     sectionRow(title: "Abschnitt", sections: street.sections ?? [], selection: $sectionID)
                 }
-                if let street = settings.street, street.needsBranchSection {
+                if let street, street.needsBranchSection {
                     sectionRow(title: "Ast- und Strauchwerk", sections: street.branchSections ?? [], selection: $branchSectionID)
                 }
 
-                if settings.selection == nil {
+                if selection == nil {
                     ScrollView {
                         InfoCard {
-                            Text(settings.street == nil
+                            Text(street == nil
                                  ? "Wähle deine Straße, dann erscheinen hier die Abfuhrtermine."
                                  : "Wähle den Abschnitt deiner Straße.")
                                 .foregroundStyle(.secondary)
@@ -58,8 +61,8 @@ struct WasteView: View {
                 }
             }
         }
-        .task(id: settings.selection?.cacheKey ?? "") {
-            await model.load(selection: settings.selection)
+        .task(id: selection?.cacheKey ?? "") {
+            await model.load(selection: selection)
         }
         .sheet(isPresented: $showsStreets) {
             StreetSheet(selection: $streetID) {

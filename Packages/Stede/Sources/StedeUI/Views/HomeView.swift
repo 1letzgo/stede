@@ -100,8 +100,8 @@ struct HomeView: View {
         .task(id: busStopID) {
             await buses.load(stop: busStop, day: IslandTime.startOfDay(Date()))
         }
-        .task(id: wasteSettings.selection?.cacheKey ?? "") {
-            await waste.load(selection: wasteSettings.selection)
+        .task(id: wasteSelection?.cacheKey ?? "") {
+            await waste.load(selection: wasteSelection)
         }
     }
 
@@ -154,17 +154,20 @@ struct HomeView: View {
 
     private var busStop: BusStop { BusStop.stop(id: busStopID) }
 
-    private var wasteSettings: WasteSettings { WasteSettings() }
+    private var wasteStreet: WasteStreet? { WasteSettings.street(id: wasteStreetID) }
+    private var wasteSelection: WasteSelection? {
+        WasteSettings.selection(streetID: wasteStreetID, sectionID: wasteSectionID, branchSectionID: wasteBranchID)
+    }
 
     /// Nächster Abfuhrtermin der gemerkten Straße; ohne Straße lädt die Kachel zur Wahl ein.
     private var wasteTile: HomeTile {
-        guard let street = wasteSettings.street, wasteSettings.selection != nil else {
+        guard let street = wasteStreet, wasteSelection != nil else {
             return HomeTile(
                 title: "Abfuhr",
                 symbol: "trash.fill",
                 tint: StedeTheme.duneGreen,
                 headline: "Straße wählen",
-                detail: wasteSettings.street == nil ? "Abfuhrkalender für deine Straße" : "Abschnitt von \(wasteSettings.street?.name ?? "") wählen",
+                detail: wasteStreet == nil ? "Abfuhrkalender für deine Straße" : "Abschnitt von \(wasteStreet?.name ?? "") wählen",
                 compact: true
             )
         }
