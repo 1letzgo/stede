@@ -22,6 +22,7 @@ struct CommunityDetailView: View {
     @State private var section: Section = .events
     @State private var showsEditor = false
     @State private var editingEvent: CommunityEvent?
+    @State private var openedEvent: CommunityEvent?
     @State private var showsNewEvent = false
     @State private var showsAccount = false
     @State private var busy = false
@@ -77,6 +78,18 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(item: $openedEvent) { event in
+            CommunityEventDetailView(
+                info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
+                participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
+                onParticipate: { status, helping in
+                    Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
+                },
+                signIn: { showsAccount = true },
+                onEdit: canEdit(event) ? { openedEvent = nil; editingEvent = event } : nil,
+                showsParticipants: canEdit(event)
+            )
+        }
     }
 
     private func reload() async {
@@ -134,22 +147,29 @@ struct CommunityDetailView: View {
         if model.events.isEmpty { InfoCard { Text("Noch keine Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in
             CommunityEventCard(
-                title: event.title, community: model.community.name, communityLogoURL: model.community.logoURL, starts: event.startsAt, ends: event.endsAt,
-                location: event.location, description: event.description, imageURL: event.imageURL,
-                isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
-                helpersNeeded: event.helpersNeeded, helperCount: model.helperCounts[event.id] ?? 0,
+                info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
                 participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
                 onParticipate: { status, helping in
                     Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
                 },
                 signIn: { showsAccount = true },
-                onEdit: (isAdmin || event.createdBy == auth.userID) ? { editingEvent = event } : nil
+                onEdit: canEdit(event) ? { editingEvent = event } : nil,
+                onOpen: { openedEvent = event }
             )
         }
         Button { showsNewEvent = true } label: {
             StedeColorChip(title: "Termin anlegen", symbol: "plus", color: StedeTheme.ink, prominent: true)
         }
         .buttonStyle(StedeCardButtonStyle())
+    }
+
+    private func canEdit(_ event: CommunityEvent) -> Bool { isAdmin || event.createdBy == auth.userID }
+
+    /// Innerhalb der Community fehlt dem Termin der Join auf die Community — Name und Logo kommen von hier.
+    private func eventInfo(_ event: CommunityEvent) -> CommunityEventInfo {
+        var copy = event
+        copy.community = CommunityEvent.CommunityName(name: model.community.name, logoPath: model.community.logoPath)
+        return CommunityEventInfo(copy)
     }
 
     // MARK: Mitglieder

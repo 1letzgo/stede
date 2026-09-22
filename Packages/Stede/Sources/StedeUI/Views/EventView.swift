@@ -25,29 +25,9 @@ struct EventView: View {
                                         EventCard(event: event, tint: section.part.tint)
                                             .id("event-\(event.id)")
                                     case .community(let event):
-                                        CommunityEventCard(
-                                            title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
-                                            location: event.location, description: event.description, imageURL: event.imageURL,
-                                            isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
-                                            helpersNeeded: event.helpersNeeded, helperCount: community.helperCounts[event.id] ?? 0,
-                                            participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                                            onParticipate: { status, helping in
-                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status, helping: helping) } }
-                                            },
-                                            signIn: { showsAccount = true }
-                                        )
+                                        communityCard(CommunityEventInfo(event))
                                     case .publicEvent(let event):
-                                        CommunityEventCard(
-                                            title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
-                                            location: event.location, description: event.description, imageURL: event.imageURL,
-                                            isPublic: true, isCancelled: false,
-                                            helpersNeeded: event.helpersNeeded, helperCount: community.helperCounts[event.id] ?? 0,
-                                            participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                                            onParticipate: { status, helping in
-                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status, helping: helping) } }
-                                            },
-                                            signIn: { showsAccount = true }
-                                        )
+                                        communityCard(CommunityEventInfo(event))
                                     }
                                 }
                             }
@@ -69,12 +49,37 @@ struct EventView: View {
         }
         .onAppear { Task { await loadCommunity() } }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(item: $openedEvent) { info in
+            CommunityEventDetailView(
+                info: info, helperCount: community.helperCounts[info.id] ?? 0,
+                participation: community.myParticipations[info.id], isSignedIn: auth.isSignedIn,
+                onParticipate: { status, helping in participate(info, status, helping) },
+                signIn: { showsAccount = true },
+                showsParticipants: info.createdBy != nil && info.createdBy == auth.userID
+            )
+        }
     }
 
     @State private var showsAccount = false
+    @State private var openedEvent: CommunityEventInfo?
 
     private func loadCommunity() async {
         await community.load(day: dateStore.selectedDate, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
+    }
+
+    /// Community-Termin im Kalender: Karte und Detail teilen sich die Aktionen.
+    private func communityCard(_ info: CommunityEventInfo) -> some View {
+        CommunityEventCard(
+            info: info, helperCount: community.helperCounts[info.id] ?? 0,
+            participation: community.myParticipations[info.id], isSignedIn: auth.isSignedIn,
+            onParticipate: { status, helping in participate(info, status, helping) },
+            signIn: { showsAccount = true },
+            onOpen: { openedEvent = info }
+        )
+    }
+
+    private func participate(_ info: CommunityEventInfo, _ status: ParticipationStatus?, _ helping: Bool) {
+        Task { if let userID = auth.userID { await community.setParticipation(eventID: info.id, userID: userID, status: status, helping: helping) } }
     }
 
     private var memberCommunityIDs: [UUID] {

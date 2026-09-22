@@ -101,6 +101,11 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         public let name: String
         public let logoPath: String?
 
+        public init(name: String, logoPath: String?) {
+            self.name = name
+            self.logoPath = logoPath
+        }
+
         enum CodingKeys: String, CodingKey {
             case name
             case logoPath = "logo_path"
