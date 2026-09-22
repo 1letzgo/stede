@@ -65,6 +65,15 @@ struct CommunityDetailView: View {
                 }
             }
         }
+        .toolbar {
+            if isActiveMember, section == .events {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showsNewEvent = true } label: { Image(systemName: "plus").foregroundStyle(.white) }
+                        .tint(.white)
+                        .accessibilityLabel("Termin anlegen")
+                }
+            }
+        }
         .task(id: "\(auth.userID?.uuidString ?? "")|\(isActiveMember)") { await reload() }
         .sheet(isPresented: $showsEditor) {
             CommunityEditorView(existing: model.community) { _ in Task { await reload() } }
@@ -156,10 +165,6 @@ struct CommunityDetailView: View {
                 onOpen: { openedEvent = event }
             )
         }
-        Button { showsNewEvent = true } label: {
-            StedeColorChip(title: "Termin anlegen", symbol: "plus", color: StedeTheme.ink, prominent: true)
-        }
-        .buttonStyle(StedeCardButtonStyle())
     }
 
     private func canEdit(_ event: CommunityEvent) -> Bool { isAdmin || event.createdBy == auth.userID }
