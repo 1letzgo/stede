@@ -40,6 +40,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
         .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
 
     var timeLabel: String { starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "") }
+    /// Nur die Uhrzeit — für Listen, die schon nach Tag gegliedert sind.
+    var clockLabel: String { starts.formatted(Self.timeFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "") }
     var longTimeLabel: String { starts.formatted(Self.longDateFormat) + (ends.map { " bis \($0.formatted(Self.timeFormat)) Uhr" } ?? " Uhr") }
 }
 
@@ -59,6 +61,8 @@ struct CommunityEventCard: View {
     var onOpen: (() -> Void)?
     /// In der Wochenliste bleibt das Foto weg — es steht im Detail.
     var showsPhoto = true
+    /// In tagesweise gegliederten Listen reicht die Uhrzeit.
+    var showsDate = true
 
     @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
 
@@ -66,7 +70,7 @@ struct CommunityEventCard: View {
         VStack(alignment: .leading, spacing: 0) {
             if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
             EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
-                      onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true)
+                      onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate)
                 .padding(14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,6 +92,7 @@ private struct EventBody: View {
     let signIn: () -> Void
     var onEdit: (() -> Void)?
     let compact: Bool
+    var showsDate = true
 
     private var tint: Color { info.isCancelled ? StedeTheme.harborRed : StedeTheme.seaTeal }
     private var isHelping: Bool { participation?.helping == true }
@@ -101,7 +106,7 @@ private struct EventBody: View {
                     Text(info.title).font(.headline).fontDesign(.rounded).strikethrough(info.isCancelled)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
-                            StedeTagPill(text: info.timeLabel, color: tint)
+                            StedeTagPill(text: showsDate ? info.timeLabel : info.clockLabel, color: tint)
                             if info.isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
                             if info.helpersNeeded > 0 {
                                 StedeTagPill(text: helperCount >= info.helpersNeeded ? "Helfer komplett" : "Helfer \(helperCount)/\(info.helpersNeeded)", color: helperCount >= info.helpersNeeded ? StedeTheme.duneGreen : StedeTheme.heather)

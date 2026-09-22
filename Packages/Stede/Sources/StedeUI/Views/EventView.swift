@@ -191,7 +191,8 @@ struct EventView: View {
             onParticipate: { status, helping in participate(info, status, helping) },
             signIn: { showsAccount = true },
             onOpen: { openedEvent = info },
-            showsPhoto: false
+            showsPhoto: false,
+            showsDate: false
         )
     }
 }

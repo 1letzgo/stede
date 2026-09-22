@@ -16,7 +16,7 @@ public nonisolated struct StedeEvent: Identifiable, Hashable, Sendable, Codable 
 
     public var timeLabel: String? {
         guard let time else { return nil }
-        let style = Date.FormatStyle(date: .omitted, time: .shortened).locale(IslandTime.germanLocale)
+        let style = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
         guard let endTime else { return time.formatted(style) }
         return "\(time.formatted(style))–\(endTime.formatted(style))"
     }
