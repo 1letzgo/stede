@@ -50,8 +50,6 @@ struct CommunityEventCard: View {
                             StedeTagPill(text: starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? ""), color: tint)
                             if let community { StedeTagPill(text: community, color: StedeTheme.heather) }
                             if isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
-                            else if isPublic { StedeTagPill(text: "öffentlich", color: StedeTheme.duneGreen) }
-                            else { StedeTagPill(text: "intern", color: StedeTheme.mudflat) }
                         }
                     }
                 }
@@ -59,6 +57,13 @@ struct CommunityEventCard: View {
                 if let onEdit {
                     Button(action: onEdit) { StedeActionChip(title: "Bearbeiten", symbol: "pencil") }
                         .buttonStyle(StedeCardButtonStyle())
+                }
+                // Intern: kleines Schloss oben rechts statt einer Pille.
+                if !isPublic {
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Nur für Mitglieder")
                 }
             }
             if !description.isEmpty { Text(description).font(.subheadline).foregroundStyle(.secondary).lineLimit(4) }
