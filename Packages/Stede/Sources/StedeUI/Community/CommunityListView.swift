@@ -136,7 +136,6 @@ struct CommunityCard: View {
                 }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").foregroundStyle(.tertiary)
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
     }
