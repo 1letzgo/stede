@@ -20,8 +20,10 @@ struct CommunityListView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Communities sind Gruppen aus \(auth.tenant?.municipality ?? "deiner Gemeinde") mit eigenem Kalender – Verein, Nachbarschaft, Chor.")
                                     .foregroundStyle(.secondary)
-                                Button("Anmelden, um beizutreten") { showsAccount = true }
-                                    .buttonStyle(.borderedProminent)
+                                Button { showsAccount = true } label: {
+                                    StedeColorChip(title: "Anmelden", symbol: "person.crop.circle", color: StedeTheme.ink, prominent: true)
+                                }
+                                .buttonStyle(StedeCardButtonStyle())
                             }
                         }
                     }
@@ -43,15 +45,26 @@ struct CommunityListView: View {
                         InfoCard { Text("Noch keine Community in \(auth.tenant?.municipality ?? "dieser Gemeinde"). Leg die erste an.").foregroundStyle(.secondary) }
                     }
                     if auth.isSignedIn {
-                        Button { showsEditor = true } label: {
-                            Label("Neue Community beantragen", systemImage: "plus.circle.fill")
-                                .frame(maxWidth: .infinity).padding(.vertical, 12).stedeCard()
+                        VStack(alignment: .leading, spacing: 10) {
+                            Button { showsEditor = true } label: {
+                                StedeColorChip(title: "Neue Community beantragen", symbol: "plus", color: StedeTheme.ink, prominent: true)
+                            }
+                            .buttonStyle(StedeCardButtonStyle())
+                            Rectangle().fill(.separator).frame(height: 1)
+                            Text("Einladungscode erhalten?").font(.subheadline.weight(.semibold))
+                            HStack(spacing: 8) {
+                                TextField("Code", text: $inviteCode)
+                                    .textFieldStyle(.roundedBorder).autocorrectionDisabled()
+                                    #if !os(macOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                Button { Task { await openInvite() } } label: {
+                                    StedeColorChip(title: "Öffnen", color: StedeTheme.seaTeal, prominent: inviteCode.count >= 6)
+                                }
+                                .buttonStyle(StedeCardButtonStyle()).disabled(inviteCode.count < 6)
+                            }
                         }
-                        .buttonStyle(StedeCardButtonStyle()).foregroundStyle(StedeTheme.ink)
-                        HStack {
-                            TextField("Einladungscode", text: $inviteCode).textFieldStyle(.roundedBorder).autocorrectionDisabled()
-                            Button("Öffnen") { Task { await openInvite() } }.disabled(inviteCode.count < 6)
-                        }
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
                     }
                     if case .failed(let message) = model.state { Text(message).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
                 }
@@ -59,6 +72,7 @@ struct CommunityListView: View {
             }
         }
         .navigationDestination(for: Community.self) { CommunityDetailView(community: $0) }
+        .navigationDestination(item: $invited) { CommunityDetailView(community: $0) }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showsAccount = true } label: { Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle") }
@@ -85,8 +99,9 @@ struct CommunityListView: View {
     @State private var invited: Community?
     private func openInvite() async {
         if let community = try? await CommunityClient().communityByInvite(code: inviteCode.trimmingCharacters(in: .whitespaces)) {
-            model.communities.append(community)
+            if !model.communities.contains(where: { $0.id == community.id }) { model.communities.append(community) }
             inviteCode = ""
+            invited = community
         }
     }
 }
@@ -96,7 +111,7 @@ struct CommunityCard: View {
     let membership: CommunityMember?
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
             VStack(alignment: .leading, spacing: 4) {
                 Text(community.name).font(.headline).fontDesign(.rounded)
@@ -104,12 +119,12 @@ struct CommunityCard: View {
                     Text(community.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                 }
                 HStack(spacing: 6) {
-                    if let count = community.memberCount { StedeTagPill(text: "\(count) Mitglieder", color: StedeTheme.ink) }
+                    if let count = community.memberCount { StedeTagPill(text: count == 1 ? "1 Mitglied" : "\(count) Mitglieder", color: StedeTheme.seaTeal) }
                     if community.status == .pending { StedeTagPill(text: "wartet auf Freigabe", color: StedeTheme.sunAmber) }
                     if let membership {
                         switch membership.status {
                         case .pending: StedeTagPill(text: "Anfrage offen", color: StedeTheme.sunAmber)
-                        case .active: StedeTagPill(text: membership.role == .member ? "Mitglied" : membership.role.rawValue.capitalized, color: StedeTheme.duneGreen)
+                        case .active: StedeTagPill(text: membership.role == .member ? "Mitglied" : (membership.role == .owner ? "Owner" : "Admin"), color: StedeTheme.duneGreen)
                         case .banned: EmptyView()
                         }
                     }

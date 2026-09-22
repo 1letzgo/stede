@@ -16,13 +16,24 @@ struct AdminView: View {
                         if !model.pendingCommunities.isEmpty {
                             StedeSectionHeader(title: "Community-Anträge", symbol: "checkmark.seal")
                             ForEach(model.pendingCommunities) { community in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(community.name).font(.headline).fontDesign(.rounded)
-                                    if !community.description.isEmpty { Text(community.description).font(.subheadline).foregroundStyle(.secondary) }
-                                    HStack {
-                                        Button("Freigeben") { Task { await model.decide(community: community, approve: true) } }.buttonStyle(.borderedProminent)
-                                        Button("Ablehnen", role: .destructive) { Task { await model.decide(community: community, approve: false) } }.buttonStyle(.bordered)
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack(alignment: .top, spacing: 12) {
+                                        StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(community.name).font(.headline).fontDesign(.rounded)
+                                            StedeTagPill(text: community.joinPolicy == .open ? "offen" : "auf Anfrage", color: StedeTheme.mudflat)
+                                        }
                                     }
+                                    if !community.description.isEmpty { Text(community.description).font(.subheadline).foregroundStyle(.secondary) }
+                                    HStack(spacing: 8) {
+                                        Button { Task { await model.decide(community: community, approve: true) } } label: {
+                                            StedeColorChip(title: "Freigeben", symbol: "checkmark", color: StedeTheme.duneGreen, prominent: true)
+                                        }
+                                        Button { Task { await model.decide(community: community, approve: false) } } label: {
+                                            StedeColorChip(title: "Ablehnen", symbol: "xmark", color: StedeTheme.harborRed)
+                                        }
+                                    }
+                                    .buttonStyle(StedeCardButtonStyle())
                                 }
                                 .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
                             }
@@ -30,13 +41,23 @@ struct AdminView: View {
                         if !model.requests.isEmpty {
                             StedeSectionHeader(title: "Mitgliedsanfragen", symbol: "person.badge.clock")
                             ForEach(model.requests, id: \.member.id) { request in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(request.member.profile?.displayName ?? "Mitglied").font(.headline).fontDesign(.rounded)
-                                    Text("möchte „\(request.community.name)“ beitreten").font(.subheadline).foregroundStyle(.secondary)
-                                    HStack {
-                                        Button("Bestätigen") { Task { await model.decide(request: request, accept: true) } }.buttonStyle(.borderedProminent)
-                                        Button("Ablehnen", role: .destructive) { Task { await model.decide(request: request, accept: false) } }.buttonStyle(.bordered)
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack(alignment: .top, spacing: 12) {
+                                        StedeIconChip(symbol: "person.fill.questionmark", color: StedeTheme.sunAmber)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(request.member.profile?.displayName ?? "Mitglied").font(.headline).fontDesign(.rounded)
+                                            StedeTagPill(text: request.community.name, color: StedeTheme.seaTeal)
+                                        }
                                     }
+                                    HStack(spacing: 8) {
+                                        Button { Task { await model.decide(request: request, accept: true) } } label: {
+                                            StedeColorChip(title: "Bestätigen", symbol: "checkmark", color: StedeTheme.duneGreen, prominent: true)
+                                        }
+                                        Button { Task { await model.decide(request: request, accept: false) } } label: {
+                                            StedeColorChip(title: "Ablehnen", symbol: "xmark", color: StedeTheme.harborRed)
+                                        }
+                                    }
+                                    .buttonStyle(StedeCardButtonStyle())
                                 }
                                 .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
                             }

@@ -231,6 +231,30 @@ struct StedeActionChip: View {
     }
 }
 
+/// Farbige Kapsel zum Antippen: gefüllt, wenn gewählt, sonst blass in der Farbe —
+/// für Zusagen, Freigaben und Beitritt in den Community-Ansichten.
+struct StedeColorChip: View {
+    let title: String
+    var symbol: String?
+    let color: Color
+    var isSelected = false
+    var prominent = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let symbol { Image(systemName: symbol).font(.caption.weight(.bold)) }
+            Text(title)
+        }
+        .font(.subheadline.weight(.semibold))
+        .fontDesign(.rounded)
+        .lineLimit(1)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(isSelected || prominent ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.16)), in: Capsule())
+        .foregroundStyle(isSelected || prominent ? Color.white : color)
+    }
+}
+
 struct SourceFooter: View {
     let text: String
 

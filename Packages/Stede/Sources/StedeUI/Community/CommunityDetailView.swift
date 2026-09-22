@@ -39,9 +39,9 @@ struct CommunityDetailView: View {
                             }
                         }
                         Button { showsNewEvent = true } label: {
-                            Label("Termin anlegen", systemImage: "plus.circle.fill").frame(maxWidth: .infinity).padding(.vertical, 12).stedeCard()
+                            StedeColorChip(title: "Termin anlegen", symbol: "plus", color: StedeTheme.ink, prominent: true)
                         }
-                        .buttonStyle(StedeCardButtonStyle()).foregroundStyle(StedeTheme.ink)
+                        .buttonStyle(StedeCardButtonStyle())
 
                         StedeSectionHeader(title: "Mitglieder", symbol: "person.3.fill")
                         ForEach(model.activeMembers) { member in memberRow(member) }
@@ -79,16 +79,27 @@ struct CommunityDetailView: View {
 
     @ViewBuilder private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !model.community.description.isEmpty { Text(model.community.description) }
-            HStack(spacing: 6) {
-                if let count = model.community.memberCount { StedeTagPill(text: "\(count) Mitglieder", color: StedeTheme.ink) }
-                StedeTagPill(text: model.community.joinPolicy == .open ? "offen" : "auf Anfrage", color: StedeTheme.mudflat)
-                if model.community.status == .pending { StedeTagPill(text: "wartet auf Freigabe", color: StedeTheme.sunAmber) }
+            HStack(alignment: .top, spacing: 12) {
+                StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.community.name).font(.headline).fontDesign(.rounded)
+                    HStack(spacing: 6) {
+                        if let count = model.community.memberCount { StedeTagPill(text: count == 1 ? "1 Mitglied" : "\(count) Mitglieder", color: StedeTheme.seaTeal) }
+                        StedeTagPill(text: model.community.joinPolicy == .open ? "offen" : "auf Anfrage", color: StedeTheme.mudflat)
+                        if model.community.status == .pending { StedeTagPill(text: "wartet auf Freigabe", color: StedeTheme.sunAmber) }
+                    }
+                }
+            }
+            if !model.community.description.isEmpty {
+                Text(model.community.description).font(.subheadline).foregroundStyle(.secondary)
             }
             if isAdmin, let code = model.community.inviteCode {
-                HStack {
-                    Text("Einladungscode: \(code)").font(.footnote).foregroundStyle(.secondary)
-                    ShareLink(item: "Tritt „\(model.community.name)“ in der \(auth.tenant?.name ?? "stede")-App bei – Einladungscode \(code)") { Image(systemName: "square.and.arrow.up") }
+                HStack(spacing: 8) {
+                    Label("Code \(code)", systemImage: "key.fill").font(.caption).foregroundStyle(.secondary)
+                    ShareLink(item: "Tritt „\(model.community.name)“ in der \(auth.tenant?.name ?? "stede")-App bei – Einladungscode \(code)") {
+                        StedeActionChip(title: "Einladen", symbol: "square.and.arrow.up")
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
                 }
             }
             joinControls
@@ -98,28 +109,36 @@ struct CommunityDetailView: View {
 
     @ViewBuilder private var joinControls: some View {
         if !auth.isSignedIn {
-            Button("Anmelden, um beizutreten") { showsAccount = true }.buttonStyle(.borderedProminent)
+            Button { showsAccount = true } label: {
+                StedeColorChip(title: "Anmelden, um beizutreten", symbol: "person.crop.circle", color: StedeTheme.ink, prominent: true)
+            }
+            .buttonStyle(StedeCardButtonStyle())
         } else if let membership {
             switch membership.status {
             case .pending: Label("Anfrage gestellt – ein Admin bestätigt dich.", systemImage: "hourglass").font(.footnote).foregroundStyle(.secondary)
             case .active:
                 if membership.role != .owner {
-                    Button("Community verlassen", role: .destructive) { Task { try? await model.leave(userID: auth.userID!); await auth.refresh(); await reload() } }.disabled(busy)
+                    Button { Task { try? await model.leave(userID: auth.userID!); await auth.refresh(); await reload() } } label: {
+                        StedeColorChip(title: "Verlassen", symbol: "rectangle.portrait.and.arrow.right", color: StedeTheme.harborRed)
+                    }
+                    .buttonStyle(StedeCardButtonStyle()).disabled(busy)
                 }
             case .banned: EmptyView()
             }
         } else if model.community.status == .approved {
-            Button(model.community.joinPolicy == .open ? "Beitreten" : "Beitritt anfragen") {
+            Button {
                 Task { busy = true; try? await model.join(userID: auth.userID!); await auth.refresh(); await reload(); busy = false }
+            } label: {
+                StedeColorChip(title: model.community.joinPolicy == .open ? "Beitreten" : "Beitritt anfragen", symbol: "person.badge.plus", color: StedeTheme.duneGreen, prominent: true)
             }
-            .buttonStyle(.borderedProminent).disabled(busy)
+            .buttonStyle(StedeCardButtonStyle()).disabled(busy)
         }
     }
 
     private func memberRow(_ member: CommunityMember) -> some View {
-        HStack {
-            Image(systemName: "person.crop.circle").foregroundStyle(StedeTheme.ink)
-            Text(member.profile?.displayName ?? "Mitglied")
+        HStack(spacing: 12) {
+            StedeIconChip(symbol: "person.fill", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather, side: 30)
+            Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
             if member.role != .member { StedeTagPill(text: member.role == .owner ? "Owner" : "Admin", color: StedeTheme.heather) }
             if isAdmin, member.role != .owner, member.userId != auth.userID {
@@ -144,29 +163,46 @@ struct CommunityEventCard: View {
     private static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
         .weekday(.abbreviated).day().month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
 
+    private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+        .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
+
+    private var tint: Color { event.cancelledAt != nil ? StedeTheme.harborRed : StedeTheme.seaTeal }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(event.startsAt.formatted(Self.dateFormat)).font(.subheadline.weight(.semibold)).monospacedDigit()
-                Spacer()
-                if event.cancelledAt != nil { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
-                else if event.isPublic { StedeTagPill(text: "öffentlich", color: StedeTheme.duneGreen) }
-                if canEdit() { Button { onEdit() } label: { Image(systemName: "pencil.circle") }.buttonStyle(.plain).foregroundStyle(StedeTheme.ink) }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                StedeIconChip(symbol: event.cancelledAt != nil ? "calendar.badge.exclamationmark" : "calendar", color: tint)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.title).font(.headline).fontDesign(.rounded).strikethrough(event.cancelledAt != nil)
+                    HStack(spacing: 6) {
+                        StedeTagPill(text: event.startsAt.formatted(Self.dateFormat) + (event.endsAt.map { "–\($0.formatted(Self.timeFormat))" } ?? ""), color: tint)
+                        if event.cancelledAt != nil { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
+                        else if event.isPublic { StedeTagPill(text: "öffentlich", color: StedeTheme.duneGreen) }
+                    }
+                }
+                Spacer(minLength: 8)
+                if canEdit() {
+                    Button { onEdit() } label: { StedeActionChip(title: "Bearbeiten", symbol: "pencil") }
+                        .buttonStyle(StedeCardButtonStyle())
+                }
             }
-            Text(event.title).font(.headline).fontDesign(.rounded).strikethrough(event.cancelledAt != nil)
-            if let location = event.location, !location.isEmpty { Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary) }
             if !event.description.isEmpty { Text(event.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(4) }
+            if let location = event.location, !location.isEmpty {
+                Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
+            }
             if event.cancelledAt == nil {
                 HStack(spacing: 6) {
                     ForEach([ParticipationStatus.going, .maybe, .declined], id: \.self) { status in
                         Button {
                             onParticipate(participation == status ? nil : status)
                         } label: {
-                            Text(label(for: status)).stedeSelectionChip(isSelected: participation == status)
+                            StedeColorChip(title: label(for: status), symbol: symbol(for: status), color: color(for: status), isSelected: participation == status)
                         }
                         .buttonStyle(StedeCardButtonStyle())
+                        .accessibilityAddTraits(participation == status ? .isSelected : [])
                     }
                 }
+                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard(highlighted: participation == .going)
@@ -177,6 +213,22 @@ struct CommunityEventCard: View {
         case .going: "Ich komme"
         case .maybe: "Vielleicht"
         case .declined: "Absage"
+        }
+    }
+
+    private func symbol(for status: ParticipationStatus) -> String {
+        switch status {
+        case .going: "checkmark"
+        case .maybe: "questionmark"
+        case .declined: "xmark"
+        }
+    }
+
+    private func color(for status: ParticipationStatus) -> Color {
+        switch status {
+        case .going: StedeTheme.duneGreen
+        case .maybe: StedeTheme.sunAmber
+        case .declined: StedeTheme.harborRed
         }
     }
 }
@@ -204,7 +256,8 @@ struct EventEditorView: View {
                 Section("Termin") {
                     TextField("Titel", text: $title)
                     DatePicker("Beginn", selection: $startsAt)
-                    Toggle("Ende angeben", isOn: $hasEnd)
+                        .onChange(of: startsAt) { if endsAt < startsAt { endsAt = startsAt.addingTimeInterval(3600) } }
+                    Toggle("Ende (optional)", isOn: $hasEnd.animation())
                     if hasEnd { DatePicker("Ende", selection: $endsAt, in: startsAt...) }
                     TextField("Ort", text: $location)
                     TextField("Beschreibung", text: $description, axis: .vertical).lineLimit(3 ... 8)
