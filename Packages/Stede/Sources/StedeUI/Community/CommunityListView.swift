@@ -87,8 +87,12 @@ struct CommunityListView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { showsAccount = true } label: {
-                    Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
-                        .foregroundStyle(.white)
+                    if let url = auth.profile?.avatarURL {
+                        PersonAvatar(url: url, name: auth.profile?.displayName ?? "", side: 28)
+                    } else {
+                        Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+                            .foregroundStyle(.white)
+                    }
                 }
                 .tint(.white)
                 .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")

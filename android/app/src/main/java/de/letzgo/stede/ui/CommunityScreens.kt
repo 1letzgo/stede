@@ -51,7 +51,11 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     Scaffold(topBar = {
         StedeTopBar("Community", actions = {
             if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
-            IconButton(onClick = { showAccount = true }) { Icon(if (Session.signedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle, if (Session.signedIn) "Konto" else "Anmelden") }
+            IconButton(onClick = { showAccount = true }) {
+                val avatar = Session.profile?.avatar
+                if (avatar != null) PersonAvatar(avatar, Session.profile?.displayName ?: "", size = 30.dp)
+                else Icon(if (Session.signedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle, if (Session.signedIn) "Konto" else "Anmelden")
+            }
         })
     }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -203,7 +207,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                             item { SectionHeader("Anfragen", Icons.Default.PersonSearch) }
                             items(pending, key = { "p${it.id}" }) { m ->
                                 RowCard {
-                                    IconChip(Icons.Default.PersonSearch, C.amber)
+                                    PersonAvatar(m.profile?.avatar, m.profile?.displayName ?: "Mitglied", C.amber)
                                     Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     ColorChip(null, C.green, icon = Icons.Default.Check, prominent = true) { scope.launch { runCatching { CommunityApi.setMemberStatus(id, m.userId, "active") }; Changes.bump() } }
                                     ColorChip(null, C.red, icon = Icons.Default.Close) { scope.launch { runCatching { CommunityApi.removeMember(id, m.userId) }; Changes.bump() } }
@@ -279,7 +283,7 @@ private fun MemberRow(m: Member, manageable: Boolean, communityId: String) {
     val scope = rememberCoroutineScope()
     var menu by remember { mutableStateOf(false) }
     RowCard {
-        IconChip(Icons.Default.Person, if (m.role == "member") C.ink else C.heather)
+        PersonAvatar(m.profile?.avatar, m.profile?.displayName ?: "Mitglied", if (m.role == "member") C.ink else C.heather)
         Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (m.role != "member") Pill(roleLabel(m.role), C.heather)
         if (manageable) Box {
@@ -397,8 +401,13 @@ fun AdminSheet(onDismiss: () -> Unit) {
                 if (requests.isEmpty()) item { InfoCard("Keine offenen Anfragen.") }
                 items(requests, key = { it.second.id }) { (c, m) ->
                     StedeCard {
-                        Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text)
-                        Text(c.name, color = C.secondary, fontSize = 14.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            PersonAvatar(m.profile?.avatar, m.profile?.displayName ?: "Mitglied", C.amber)
+                            Column {
+                                Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text)
+                                Pill(c.name, C.teal)
+                            }
+                        }
                         Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ColorChip("Annehmen", C.green, Modifier.weight(1f), icon = Icons.Default.Check) { scope.launch { runCatching { CommunityApi.setMemberStatus(c.id, m.userId, "active") }; version++; Changes.bump() } }
                             ColorChip("Ablehnen", C.red, Modifier.weight(1f), icon = Icons.Default.Close) { scope.launch { runCatching { CommunityApi.removeMember(c.id, m.userId) }; version++; Changes.bump() } }
@@ -422,6 +431,11 @@ fun AccountSheet(onDismiss: () -> Unit) {
     var name by remember(Session.profile) { mutableStateOf(Session.profile?.displayName ?: "") }
     var token by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var uploading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { u -> jpeg(context, u, 512)?.let { bytes -> scope.launch { uploading = true; Session.updateAvatar(bytes); uploading = false } } }
+    }
     LaunchedEffect(Session.userId) { Session.userId?.let { id -> token = runCatching { CommunityApi.calendarToken(id) }.getOrNull() } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader(if (Session.signedIn) "Konto" else "Anmelden", trailing = "Fertig" to onDismiss)
@@ -442,6 +456,20 @@ fun AccountSheet(onDismiss: () -> Unit) {
             }
             item {
                 StedeCard {
+                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            PersonAvatar(Session.profile?.avatar, name.ifBlank { "?" }, size = 72.dp)
+                            if (uploading) CircularProgressIndicator(Modifier.size(28.dp), color = C.teal)
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ColorChip(if (Session.profile?.avatar == null) "Profilbild auswählen" else "Anderes Profilbild", C.teal, icon = Icons.Default.Photo, enabled = !uploading) {
+                                pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }
+                            if (Session.profile?.avatar != null) ColorChip("Entfernen", C.red, icon = Icons.Default.Delete, enabled = !uploading) {
+                                scope.launch { uploading = true; Session.updateAvatar(null); uploading = false }
+                            }
+                        }
+                    }
                     Text("Anzeigename", color = C.secondary, fontSize = 13.sp)
                     OutlinedTextField(name, { name = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     ColorChip("Sichern", C.teal, Modifier.fillMaxWidth().padding(top = 8.dp), enabled = name.isNotBlank() && name != Session.profile?.displayName) { scope.launch { Session.setName(name.trim()) } }

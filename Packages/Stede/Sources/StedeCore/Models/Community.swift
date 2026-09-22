@@ -13,7 +13,14 @@ public nonisolated struct Profile: Codable, Hashable, Sendable, Identifiable {
     public var id: UUID { userId }
     public let userId: UUID
     public var displayName: String
+    /// Pfad im Bucket `avatars` (`<user_id>/<uuid>.jpg`) oder eine volle URL.
     public var avatarUrl: String?
+
+    /// Profilbild zum Anzeigen, nil ohne Bild.
+    public var avatarURL: URL? {
+        guard let avatarUrl, !avatarUrl.isEmpty else { return nil }
+        return avatarUrl.hasPrefix("http") ? URL(string: avatarUrl) : Backend.avatarURL(path: avatarUrl)
+    }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"

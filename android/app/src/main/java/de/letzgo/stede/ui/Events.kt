@@ -178,7 +178,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
 @Composable
 private fun PersonRow(p: Participation, color: Color) {
     RowCard {
-        IconChip(Icons.Default.Person, color)
+        PersonAvatar(p.profile?.avatar, p.profile?.displayName ?: "Mitglied", color)
         Text(p.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f))
         if (p.helping) Pill("Helfer", C.heather)
         if (p.status == "maybe") Pill("vielleicht", C.amber)

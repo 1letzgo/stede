@@ -33,6 +33,21 @@ public nonisolated struct CommunityClient: Sendable {
         try await client.from("profiles").update(["display_name": name]).eq("user_id", value: userID).execute()
     }
 
+    /// Profilbild hochladen; der Ordner ist die eigene User-ID (RLS).
+    public func uploadAvatar(_ data: Data, userID: UUID) async throws -> String {
+        let path = "\(userID.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        try await client.storage.from("avatars").upload(path, data: data, options: FileOptions(contentType: "image/jpeg"))
+        return path
+    }
+
+    public func setAvatar(userID: UUID, path: String?) async throws {
+        try await client.from("profiles").update(["avatar_url": path]).eq("user_id", value: userID).execute()
+    }
+
+    public func deleteAvatar(path: String) async throws {
+        _ = try await client.storage.from("avatars").remove(paths: [path])
+    }
+
     // MARK: Communities
 
     private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count"

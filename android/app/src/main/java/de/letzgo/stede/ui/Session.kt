@@ -61,6 +61,17 @@ object Session {
     }.onFailure { error = it.message }.isSuccess
 
     suspend fun setName(name: String) { val id = userId ?: return; runCatching { CommunityApi.setDisplayName(id, name); profile = CommunityApi.profile(id) }.onFailure { error = it.message } }
+    /** Neues Profilbild (JPEG) setzen oder mit null entfernen; das alte Bild wird gelöscht. */
+    suspend fun updateAvatar(jpeg: ByteArray?) {
+        val id = userId ?: return
+        val old = profile?.avatarUrl
+        runCatching {
+            val path = jpeg?.let { CommunityApi.uploadAvatar(id, it) }
+            CommunityApi.setAvatar(id, path)
+            if (old != null && !old.startsWith("http") && old != path) CommunityApi.deletePhoto("avatars", old)
+            profile = CommunityApi.profile(id)
+        }.onFailure { error = it.message }
+    }
     suspend fun signOut() { runCatching { Backend.supabase.auth.signOut() } }
     suspend fun deleteAccount(): Boolean = runCatching { CommunityApi.deleteAccount() }.onFailure { error = it.message }.isSuccess
 }

@@ -227,7 +227,7 @@ struct CommunityEventDetailView: View {
 
     private func personRow(_ row: EventParticipation, color: Color) -> some View {
         HStack(spacing: 12) {
-            StedeIconChip(symbol: "person.fill", color: color)
+            PersonAvatar(url: row.profile?.avatarURL, name: row.profile?.displayName ?? "Mitglied", color: color)
             Text(row.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
             if row.helping { StedeTagPill(text: "Helfer", color: StedeTheme.heather) }

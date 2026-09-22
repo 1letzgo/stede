@@ -138,6 +138,15 @@ fun CommunityAvatar(logoUrl: String?, name: String, size: Dp = 38.dp) {
     }
 }
 
+/** Profilbild als Kreis, ohne Bild die Initialen in der Rollenfarbe (PersonAvatar). */
+@Composable
+fun PersonAvatar(url: String?, name: String, color: Color = C.ink, size: Dp = 38.dp) {
+    Box(Modifier.size(size).clip(androidx.compose.foundation.shape.CircleShape).background(color.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+        Text(initials(name), color = color, fontWeight = FontWeight.Bold, fontSize = if (size > 50.dp) 22.sp else 15.sp)
+        if (url != null) AsyncImage(url, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+    }
+}
+
 fun initials(name: String): String {
     val words = name.split(' ', '-').filter { it.isNotBlank() && it.first().isLetterOrDigit() }
     return if (words.size >= 2) words.take(2).joinToString("") { it.first().uppercase() } else name.trim().take(2).uppercase()

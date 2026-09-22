@@ -183,7 +183,7 @@ struct CommunityDetailView: View {
             StedeSectionHeader(title: "Anfragen", symbol: "person.badge.clock")
             ForEach(model.pendingMembers) { member in
                 HStack(spacing: 12) {
-                    StedeIconChip(symbol: "person.fill.questionmark", color: StedeTheme.sunAmber)
+                    PersonAvatar(url: member.profile?.avatarURL, name: member.profile?.displayName ?? "Mitglied", color: StedeTheme.sunAmber)
                     Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
                     Spacer()
                     Button { Task { await model.setMember(member, status: .active) } } label: {
@@ -214,7 +214,7 @@ struct CommunityDetailView: View {
 
     private func memberRow(_ member: CommunityMember) -> some View {
         HStack(spacing: 12) {
-            StedeIconChip(symbol: "person.fill", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather)
+            PersonAvatar(url: member.profile?.avatarURL, name: member.profile?.displayName ?? "Mitglied", color: member.role == .member ? StedeTheme.ink : StedeTheme.heather)
             Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
             Spacer()
             if member.role != .member { StedeTagPill(text: member.role == .owner ? "Leitung" : "Admin", color: StedeTheme.heather) }

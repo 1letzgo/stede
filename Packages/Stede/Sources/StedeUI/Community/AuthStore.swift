@@ -146,6 +146,19 @@ final class AuthStore {
         } catch { lastError = error.localizedDescription }
     }
 
+    /// Neues Profilbild (JPEG) setzen oder mit nil entfernen; das alte Bild wird gelöscht.
+    func updateAvatar(_ data: Data?) async {
+        guard let userID else { return }
+        let old = profile?.avatarUrl
+        do {
+            var path: String?
+            if let data { path = try await client.uploadAvatar(data, userID: userID) }
+            try await client.setAvatar(userID: userID, path: path)
+            if let old, !old.hasPrefix("http"), old != path { try? await client.deleteAvatar(path: old) }
+            profile = try await client.myProfile(userID: userID)
+        } catch { lastError = error.localizedDescription }
+    }
+
     func signOut() async {
         do { try await Backend.client.auth.signOut() } catch { lastError = error.localizedDescription }
     }

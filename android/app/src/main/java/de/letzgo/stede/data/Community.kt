@@ -26,7 +26,10 @@ object Tenants {
     }.decodeSingle<Tenant>().also { cached = it }
 }
 
-@Serializable data class Profile(@SerialName("user_id") val userId: String, @SerialName("display_name") val displayName: String = "Mitglied", @SerialName("avatar_url") val avatarUrl: String? = null)
+@Serializable data class Profile(@SerialName("user_id") val userId: String, @SerialName("display_name") val displayName: String = "Mitglied", @SerialName("avatar_url") val avatarUrl: String? = null) {
+    /** Profilbild zum Anzeigen (Bucket `avatars`), null ohne Bild. */
+    val avatar get() = Backend.avatarUrl(avatarUrl)
+}
 
 @Serializable data class Community(
     val id: String, @SerialName("tenant_id") val tenantId: String, val name: String, val description: String = "",
@@ -149,6 +152,15 @@ object CommunityApi {
         val path = "${communityId.lowercase()}/${UUID.randomUUID().toString().lowercase()}.jpg"
         db.storage.from(bucket).upload(path, jpeg) { upsert = false; contentType = ContentType.Image.JPEG }
         return path
+    }
+    /** Profilbild hochladen; der Ordner ist die eigene User-ID (RLS). */
+    suspend fun uploadAvatar(userId: String, jpeg: ByteArray): String {
+        val path = "${userId.lowercase()}/${UUID.randomUUID().toString().lowercase()}.jpg"
+        db.storage.from("avatars").upload(path, jpeg) { upsert = false; contentType = ContentType.Image.JPEG }
+        return path
+    }
+    suspend fun setAvatar(userId: String, path: String?) {
+        db.from("profiles").update(buildJsonObject { put("avatar_url", path) }) { filter { eq("user_id", userId) } }
     }
     suspend fun deletePhoto(bucket: String, path: String) { runCatching { db.storage.from(bucket).delete(path) } }
 

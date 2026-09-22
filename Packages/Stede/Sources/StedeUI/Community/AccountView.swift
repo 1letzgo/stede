@@ -1,4 +1,5 @@
 import AuthenticationServices
+import PhotosUI
 import StedeCore
 import SwiftUI
 
@@ -10,6 +11,8 @@ struct AccountView: View {
     @State private var magicLinkSent = false
     @State private var name = ""
     @State private var calendarToken: String?
+    @State private var photoItem: PhotosPickerItem?
+    @State private var uploadingPhoto = false
     @State private var confirmDelete = false
     @State private var page: BrowserPage?
     private let client = CommunityClient()
@@ -73,6 +76,34 @@ struct AccountView: View {
 
     @ViewBuilder private var signedInSections: some View {
         Section("Profil") {
+            HStack(spacing: 14) {
+                ZStack {
+                    PersonAvatar(url: auth.profile?.avatarURL, name: name.isEmpty ? "?" : name, side: 72)
+                    if uploadingPhoto { ProgressView() }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label(auth.profile?.avatarURL == nil ? "Profilbild auswählen" : "Anderes Profilbild", systemImage: "photo")
+                    }
+                    if auth.profile?.avatarURL != nil {
+                        Button("Profilbild entfernen", role: .destructive) {
+                            Task { uploadingPhoto = true; await auth.updateAvatar(nil); uploadingPhoto = false }
+                        }
+                    }
+                }
+            }
+            .disabled(uploadingPhoto)
+            .onChange(of: photoItem) {
+                guard let item = photoItem else { return }
+                Task {
+                    uploadingPhoto = true
+                    if let data = try? await item.loadTransferable(type: Data.self), let jpeg = EventPhotoResizer.jpeg(from: data, maxSide: 512) {
+                        await auth.updateAvatar(jpeg)
+                    }
+                    photoItem = nil
+                    uploadingPhoto = false
+                }
+            }
             TextField("Anzeigename", text: $name)
                 .onSubmit { Task { await auth.updateDisplayName(name) } }
             Text("Name und Bild sehen nur Mitglieder deiner Communities.")

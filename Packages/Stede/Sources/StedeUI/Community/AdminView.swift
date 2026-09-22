@@ -50,7 +50,7 @@ struct AdminView: View {
                         ForEach(model.requests, id: \.member.id) { request in
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(alignment: .top, spacing: 12) {
-                                    StedeIconChip(symbol: "person.fill.questionmark", color: StedeTheme.sunAmber)
+                                    PersonAvatar(url: request.member.profile?.avatarURL, name: request.member.profile?.displayName ?? "Mitglied", color: StedeTheme.sunAmber)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(request.member.profile?.displayName ?? "Mitglied").font(.headline).fontDesign(.rounded)
                                         StedeTagPill(text: request.community.name, color: StedeTheme.seaTeal)
