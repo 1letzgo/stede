@@ -1,3 +1,4 @@
+import PhotosUI
 import StedeCore
 import SwiftUI
 
@@ -283,8 +284,20 @@ struct CommunityEventCard: View {
         .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
 
     private var tint: Color { event.cancelledAt != nil ? StedeTheme.harborRed : StedeTheme.seaTeal }
+    @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let url = event.imageURL {
+                EventPhoto(url: url, height: imageHeight)
+            }
+            details
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .stedeCard(highlighted: participation == .going)
+    }
+
+    private var details: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 StedeIconChip(symbol: event.cancelledAt != nil ? "calendar.badge.exclamationmark" : "calendar", color: tint)
@@ -310,7 +323,29 @@ struct CommunityEventCard: View {
                 ParticipationChips(participation: participation, onParticipate: onParticipate)
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard(highlighted: participation == .going)
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Foto oben in der Terminkarte, formatfüllend und an der Kartenkante beschnitten.
+struct EventPhoto: View {
+    let url: URL
+    let height: CGFloat
+
+    var body: some View {
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFill()
+            default:
+                Rectangle().fill(StedeTheme.seaTeal.opacity(0.12))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .clipped()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
@@ -375,10 +410,30 @@ struct EventEditorView: View {
     @State private var endsAt = Date().addingTimeInterval(7200)
     @State private var isPublic = false
     @State private var saving = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoData: Data?
+    @State private var existingImagePath: String?
+    @State private var removePhoto = false
+    @State private var error: String?
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Foto") {
+                    if let photoData, let image = EventPhotoResizer.image(from: photoData) {
+                        image.resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 160).clipShape(RoundedRectangle(cornerRadius: 12))
+                            .listRowInsets(EdgeInsets())
+                    } else if let existingImagePath, !removePhoto {
+                        EventPhoto(url: Backend.eventPhotoURL(path: existingImagePath), height: 160)
+                            .clipShape(RoundedRectangle(cornerRadius: 12)).listRowInsets(EdgeInsets())
+                    }
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label(photoData == nil && (existingImagePath == nil || removePhoto) ? "Foto auswählen" : "Anderes Foto", systemImage: "photo")
+                    }
+                    if photoData != nil || (existingImagePath != nil && !removePhoto) {
+                        Button("Foto entfernen", role: .destructive) { photoData = nil; photoItem = nil; removePhoto = true }
+                    }
+                }
                 Section("Termin") {
                     TextField("Titel", text: $title)
                     DatePicker("Beginn", selection: $startsAt)
@@ -396,6 +451,15 @@ struct EventEditorView: View {
                 if existing != nil, existing?.cancelledAt == nil, let onCancelEvent {
                     Section { Button("Termin absagen", role: .destructive) { Task { await onCancelEvent(); dismiss() } } }
                 }
+                if let error { Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) } }
+            }
+            .onChange(of: photoItem) {
+                Task {
+                    if let item = photoItem, let data = try? await item.loadTransferable(type: Data.self) {
+                        photoData = EventPhotoResizer.jpeg(from: data)
+                        removePhoto = false
+                    }
+                }
             }
             .navigationTitle(existing == nil ? "Neuer Termin" : "Termin bearbeiten")
             #if !os(macOS)
@@ -412,6 +476,7 @@ struct EventEditorView: View {
                     title = existing.title; description = existing.description; location = existing.location ?? ""
                     startsAt = existing.startsAt; hasEnd = existing.endsAt != nil; endsAt = existing.endsAt ?? existing.startsAt.addingTimeInterval(3600)
                     isPublic = existing.visibility == .public
+                    existingImagePath = existing.imagePath
                 }
             }
         }
@@ -420,12 +485,26 @@ struct EventEditorView: View {
     private func save() async {
         guard let userID = auth.userID else { return }
         saving = true
+        defer { saving = false }
+        let client = CommunityClient()
+        var imagePath: String? = removePhoto ? nil : existingImagePath
+        if let photoData {
+            do {
+                imagePath = try await client.uploadEventPhoto(photoData, communityID: community.id)
+            } catch {
+                self.error = "Foto konnte nicht hochgeladen werden: \(error.localizedDescription)"
+                return
+            }
+        }
         let draft = CommunityEventDraft(
             communityId: community.id, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
+            imagePath: imagePath, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
         )
-        if await onSave(draft) { dismiss() }
-        saving = false
+        if await onSave(draft) {
+            // Altes Foto räumen, wenn ersetzt oder entfernt.
+            if let old = existingImagePath, old != imagePath { try? await client.deleteEventPhoto(path: old) }
+            dismiss()
+        }
     }
 }

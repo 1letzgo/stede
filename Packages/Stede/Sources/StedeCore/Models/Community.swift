@@ -81,6 +81,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var startsAt: Date
     public var endsAt: Date?
     public var location: String?
+    public var imagePath: String?
     public var visibility: EventVisibility
     public var publishedAt: Date?
     public var cancelledAt: Date?
@@ -97,6 +98,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     enum CodingKeys: String, CodingKey {
         case id, title, description, location, visibility, version
         case communityId = "community_id"
+        case imagePath = "image_path"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case publishedAt = "published_at"
@@ -108,6 +110,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
 
     public var communityName: String { community?.name ?? "" }
     public var isPublic: Bool { visibility == .public && publishedAt != nil }
+    public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
 }
 
 /// Öffentlicher Termin aus `v_public_events` — ohne Community-Interna.
@@ -120,9 +123,13 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let startsAt: Date
     public let endsAt: Date?
     public let location: String?
+    public let imagePath: String?
+
+    public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, location
+        case imagePath = "image_path"
         case tenantId = "tenant_id"
         case communityName = "community_name"
         case startsAt = "starts_at"
@@ -152,16 +159,18 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     public var startsAt: Date
     public var endsAt: Date?
     public var location: String?
+    public var imagePath: String?
     public var visibility: EventVisibility
     public var createdBy: UUID
 
-    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, visibility: EventVisibility, createdBy: UUID) {
+    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, visibility: EventVisibility, createdBy: UUID) {
         self.communityId = communityId
         self.title = title
         self.description = description
         self.startsAt = startsAt
         self.endsAt = endsAt
         self.location = location
+        self.imagePath = imagePath
         self.visibility = visibility
         self.createdBy = createdBy
     }
@@ -169,6 +178,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     enum CodingKeys: String, CodingKey {
         case title, description, location, visibility
         case communityId = "community_id"
+        case imagePath = "image_path"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case createdBy = "created_by"

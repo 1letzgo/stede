@@ -25,11 +25,11 @@ struct EventView: View {
                                         EventCard(event: event, tint: section.part.tint)
                                             .id("event-\(event.id)")
                                     case .community(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: event.isPublic, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, imageURL: event.imageURL, isPublic: event.isPublic, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
                                             Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
                                         } signIn: { showsAccount = true }
                                     case .publicEvent(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: true, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, imageURL: event.imageURL, isPublic: true, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
                                             Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
                                         } signIn: { showsAccount = true }
                                     }
@@ -126,6 +126,7 @@ private struct CalendarCommunityCard: View {
     let end: Date?
     let location: String?
     let description: String
+    let imageURL: URL?
     let isPublic: Bool
     let tint: Color
     let participation: ParticipationStatus?
@@ -136,7 +137,18 @@ private struct CalendarCommunityCard: View {
     private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
         .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
 
+    @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
+
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let imageURL { EventPhoto(url: imageURL, height: imageHeight) }
+            details
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .stedeCard(highlighted: participation == .going)
+    }
+
+    private var details: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Label(end.map { "\(time.formatted(Self.timeFormat))–\($0.formatted(Self.timeFormat))" } ?? time.formatted(Self.timeFormat), systemImage: "clock")
@@ -161,7 +173,7 @@ private struct CalendarCommunityCard: View {
                 .buttonStyle(StedeCardButtonStyle())
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard(highlighted: participation == .going)
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

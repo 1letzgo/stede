@@ -118,7 +118,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, visibility, published_at, cancelled_at, version, created_by, updated_at, communities(name)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, communities(name)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -152,6 +152,17 @@ public nonisolated struct CommunityClient: Sendable {
 
     public func cancelEvent(id: UUID) async throws {
         try await client.from("community_events").update(["cancelled_at": Date().ISO8601Format()]).eq("id", value: id).execute()
+    }
+
+    /// Lädt ein JPEG in den öffentlichen Bucket und liefert den Pfad für `image_path`.
+    public func uploadEventPhoto(_ data: Data, communityID: UUID) async throws -> String {
+        let path = "\(communityID.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        try await client.storage.from("event-photos").upload(path, data: data, options: FileOptions(contentType: "image/jpeg"))
+        return path
+    }
+
+    public func deleteEventPhoto(path: String) async throws {
+        _ = try await client.storage.from("event-photos").remove(paths: [path])
     }
 
     // MARK: Teilnahme

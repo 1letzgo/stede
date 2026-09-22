@@ -20,6 +20,11 @@ public nonisolated enum Backend {
         )
     )
 
+    /// Öffentlicher Bucket `event-photos`; Pfad `<community_id>/<uuid>.jpg`.
+    public static func eventPhotoURL(path: String) -> URL {
+        url.appending(path: "storage/v1/object/public/event-photos/\(path)")
+    }
+
     public static func feedURL(token: String, scope: String = "mine") -> URL {
         URL(string: "\(url.absoluteString)/functions/v1/calendar-feed/\(token).ics?scope=\(scope)")!
     }
