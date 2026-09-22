@@ -123,7 +123,7 @@ private struct BusStopSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
                 }
             }

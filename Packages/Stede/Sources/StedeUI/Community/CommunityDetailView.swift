@@ -153,7 +153,6 @@ struct CommunityDetailView: View {
                     Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
                 },
                 signIn: { showsAccount = true },
-                onEdit: canEdit(event) ? { editingEvent = event } : nil,
                 onOpen: { openedEvent = event }
             )
         }

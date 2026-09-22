@@ -115,10 +115,6 @@ private struct EventBody: View {
                     }
                 }
                 Spacer(minLength: 8)
-                if let onEdit {
-                    Button(action: onEdit) { StedeActionChip(title: "Bearbeiten", symbol: "pencil") }
-                        .buttonStyle(StedeCardButtonStyle())
-                }
                 if !info.isPublic {
                     Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
                         .accessibilityLabel("Nur für Mitglieder")
@@ -195,7 +191,12 @@ struct CommunityEventDetailView: View {
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fertig") { dismiss() } } }
+            .toolbar {
+                if let onEdit {
+                    ToolbarItem(placement: .cancellationAction) { Button("Bearbeiten") { onEdit() } }
+                }
+                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
+            }
             .task(id: "\(info.id)|\(participation?.status.rawValue ?? "")|\(participation?.helping ?? false)") {
                 guard showsParticipants else { return }
                 loadingParticipants = true

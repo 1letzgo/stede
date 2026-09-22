@@ -31,7 +31,7 @@ struct AccountView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Fertig") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }
             .task(id: auth.userID) {
                 name = auth.profile?.displayName ?? ""
