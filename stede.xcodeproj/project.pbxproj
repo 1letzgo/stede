@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5A7E0001000000000000C0DE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5A7E0002000000000000C0DE /* StedeUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		37BF9B7E30376E7B005C411F /* stede.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = stede.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A7E0001000000000000C0DE /* StedeUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = stede;
 			packageProductDependencies = (
+				5A7E0002000000000000C0DE /* StedeUI */,
 			);
 			productName = stede;
 			productReference = 37BF9B7E30376E7B005C411F /* stede.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 37BF9B7530376E7B005C411F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5A7E0003000000000000C0DE /* XCLocalSwiftPackageReference "Packages/Stede" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 37BF9B7F30376E7B005C411F /* Products */;
 			projectDirPath = "";
@@ -372,6 +381,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5A7E0003000000000000C0DE /* XCLocalSwiftPackageReference "Packages/Stede" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Stede;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A7E0002000000000000C0DE /* StedeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StedeUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 37BF9B7630376E7B005C411F /* Project object */;
 }

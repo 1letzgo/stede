@@ -1,0 +1,8 @@
+Target dependency graph (4 targets)
+Target 'StedeCoreTests-product' in project 'Stede'
+➜ Explicit dependency on target 'Stede_StedeCoreTests' in project 'Stede'
+➜ Explicit dependency on target 'StedeCore' in project 'Stede'
+Target 'StedeCore' in project 'Stede'
+➜ Explicit dependency on target 'Stede_StedeCore' in project 'Stede'
+Target 'Stede_StedeCore' in project 'Stede' (no dependencies)
+Target 'Stede_StedeCoreTests' in project 'Stede' (no dependencies)

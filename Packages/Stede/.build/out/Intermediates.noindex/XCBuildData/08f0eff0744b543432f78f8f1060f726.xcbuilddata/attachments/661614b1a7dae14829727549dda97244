@@ -1,0 +1,39 @@
+{
+  "" : {
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/StedeCoreTests-primary.dia",
+    "emit-module-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/StedeCoreTests-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/StedeCoreTests-primary-emit-module.dia",
+    "pch" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/StedeCoreTests-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/StedeCoreTests-primary.swiftdeps"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/resource_bundle_accessor~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/DerivedSources/test_entry_point.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/test_entry_point~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Tests/StedeCoreTests/ParserTests.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeCoreTests-p.build/Objects-normal/arm64/ParserTests~partial.swiftmodule"
+  }
+}

@@ -1,0 +1,4 @@
+module StedeCore {
+header "StedeCore-Swift.h"
+export *
+}

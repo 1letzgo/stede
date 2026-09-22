@@ -1,3 +1,5 @@
+import StedeCore
+import StedeUI
 import SwiftUI
 
 @main

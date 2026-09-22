@@ -1,0 +1,169 @@
+{
+  "" : {
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeUI-primary.dia",
+    "emit-module-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeUI-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeUI-primary-emit-module.dia",
+    "pch" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeUI-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeUI-primary.swiftdeps"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/resource_bundle_accessor~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Support/InAppBrowser.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/InAppBrowser~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Support/StedeTheme.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/StedeTheme~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/ViewModels/SelectedDateStore.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SelectedDateStore~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/ViewModels/TabViewModels.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TabViewModels~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/BusView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/BusView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/ContentView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/EventView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/EventView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/HomeView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/HomeView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/IslandView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/IslandView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/OfflineIslandMap.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/OfflineIslandMap~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/PlaceBrowsing.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/PlaceBrowsing~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/SharedViews.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/SharedViews~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/TrainView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/TrainView~partial.swiftmodule"
+  },
+  "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/Sources/StedeUI/Views/WeatherView.swift" : {
+    "const-values" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.swiftconstvalues",
+    "dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.d",
+    "diagnostics" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.dia",
+    "index-unit-output-path" : "/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.o",
+    "llvm-bc" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.bc",
+    "object" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.o",
+    "swift-dependencies" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView.swiftdeps",
+    "swiftmodule" : "/Users/letzgo/Library/Mobile Documents/com~apple~CloudDocs/Code/stede/Packages/Stede/.build/out/Intermediates.noindex/Stede.build/Debug/StedeUI-t.build/Objects-normal/arm64/WeatherView~partial.swiftmodule"
+  }
+}
