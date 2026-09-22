@@ -26,7 +26,7 @@ struct EventView: View {
                                             .id("event-\(event.id)")
                                     case .community(let event):
                                         CommunityEventCard(
-                                            title: event.title, community: event.communityName, starts: event.startsAt, ends: event.endsAt,
+                                            title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
                                             location: event.location, description: event.description, imageURL: event.imageURL,
                                             isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
                                             participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
@@ -37,7 +37,7 @@ struct EventView: View {
                                         )
                                     case .publicEvent(let event):
                                         CommunityEventCard(
-                                            title: event.title, community: event.communityName, starts: event.startsAt, ends: event.endsAt,
+                                            title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
                                             location: event.location, description: event.description, imageURL: event.imageURL,
                                             isPublic: true, isCancelled: false,
                                             participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,

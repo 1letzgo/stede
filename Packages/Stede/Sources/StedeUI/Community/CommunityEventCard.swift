@@ -6,8 +6,9 @@ import SwiftUI
 /// Community-Pille (nur im Kalender), Text, Ort, Zusage-Pillen.
 struct CommunityEventCard: View {
     let title: String
-    /// Name der Community; nil innerhalb der Community selbst.
-    let community: String?
+    /// Name der Community (für Initialen, wenn kein Logo).
+    let community: String
+    let communityLogoURL: URL?
     let starts: Date
     let ends: Date?
     let location: String?
@@ -42,13 +43,12 @@ struct CommunityEventCard: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: isCancelled ? "calendar.badge.exclamationmark" : "calendar", color: tint)
+                CommunityAvatar(logoURL: communityLogoURL, name: community)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(.headline).fontDesign(.rounded).strikethrough(isCancelled)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
                             StedeTagPill(text: starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? ""), color: tint)
-                            if let community { StedeTagPill(text: community, color: StedeTheme.heather) }
                             if isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
                         }
                     }

@@ -97,6 +97,12 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
 
     public nonisolated struct CommunityName: Codable, Hashable, Sendable {
         public let name: String
+        public let logoPath: String?
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case logoPath = "logo_path"
+        }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -113,6 +119,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     }
 
     public var communityName: String { community?.name ?? "" }
+    public var communityLogoURL: URL? { community?.logoPath.map(Backend.communityLogoURL) }
     public var isPublic: Bool { visibility == .public && publishedAt != nil }
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
 }
@@ -122,6 +129,7 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let id: UUID
     public let tenantId: UUID
     public let communityName: String
+    public let communityLogoPath: String?
     public let title: String
     public let description: String
     public let startsAt: Date
@@ -130,12 +138,14 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let imagePath: String?
 
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
+    public var communityLogoURL: URL? { communityLogoPath.map(Backend.communityLogoURL) }
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, location
         case imagePath = "image_path"
         case tenantId = "tenant_id"
         case communityName = "community_name"
+        case communityLogoPath = "community_logo_path"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
     }

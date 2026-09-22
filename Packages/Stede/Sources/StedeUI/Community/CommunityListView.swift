@@ -117,7 +117,7 @@ struct CommunityCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            CommunityAvatar(logoURL: community.logoURL)
+            CommunityAvatar(logoURL: community.logoURL, name: community.name)
             VStack(alignment: .leading, spacing: 4) {
                 Text(community.name).font(.headline).fontDesign(.rounded)
                 if !community.description.isEmpty {
@@ -166,9 +166,9 @@ struct CommunityEditorView: View {
                         if let logoData, let image = EventPhotoResizer.image(from: logoData) {
                             image.resizable().scaledToFill().frame(width: 72, height: 72).clipShape(StedeTheme.chipShape)
                         } else if let path = existing?.logoPath, !removeLogo {
-                            CommunityAvatar(logoURL: Backend.communityLogoURL(path: path), side: 72)
+                            CommunityAvatar(logoURL: Backend.communityLogoURL(path: path), name: name, side: 72)
                         } else {
-                            StedeIconChip(symbol: "person.3.fill", color: StedeTheme.seaTeal, side: 72)
+                            CommunityAvatar(logoURL: nil, name: name.isEmpty ? "?" : name, side: 72)
                         }
                         VStack(alignment: .leading, spacing: 8) {
                             PhotosPicker(selection: $logoItem, matching: .images) {

@@ -88,7 +88,7 @@ struct CommunityDetailView: View {
     @ViewBuilder private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                CommunityAvatar(logoURL: model.community.logoURL)
+                CommunityAvatar(logoURL: model.community.logoURL, name: model.community.name)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.community.name).font(.headline).fontDesign(.rounded)
                     pills
@@ -134,7 +134,7 @@ struct CommunityDetailView: View {
         if model.events.isEmpty { InfoCard { Text("Noch keine Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in
             CommunityEventCard(
-                title: event.title, community: nil, starts: event.startsAt, ends: event.endsAt,
+                title: event.title, community: model.community.name, communityLogoURL: model.community.logoURL, starts: event.startsAt, ends: event.endsAt,
                 location: event.location, description: event.description, imageURL: event.imageURL,
                 isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
                 participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
@@ -209,7 +209,7 @@ struct CommunityDetailView: View {
     @ViewBuilder private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                CommunityAvatar(logoURL: model.community.logoURL)
+                CommunityAvatar(logoURL: model.community.logoURL, name: model.community.name)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.community.name).font(.headline).fontDesign(.rounded)
                     pills
