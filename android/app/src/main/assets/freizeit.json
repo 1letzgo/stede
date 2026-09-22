@@ -1,0 +1,258 @@
+{
+  "source": "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Zeiten laut OSM, nicht bestätigt · Kartendaten © OpenStreetMap",
+  "fetchedAt": "2026-09-21",
+  "places": [
+    {
+      "id": "hossen-schwimmbad",
+      "name": "Hössen Schwimmbad",
+      "category": "Bad",
+      "street": "Jahnallee 2",
+      "latitude": 53.253996,
+      "longitude": 7.913921,
+      "teaser": "Hallen- und Freibad im Hössen-Sportpark mit Rutsche, Sauna und Außenbecken."
+    },
+    {
+      "id": "ebkenhof-reit-und-pensionsstall-ihorst",
+      "name": "Ebkenhof - Reit- und Pensionsstall",
+      "category": "Sport",
+      "street": "Eibenstraße 9",
+      "phone": "+49 4488 840796",
+      "email": "info@ebkenhof.de",
+      "website": "https://www.ebkenhof.de/",
+      "latitude": 53.259392,
+      "longitude": 7.834455,
+      "teaser": "Ebkenhof Reit- und Pensionsstall In einer der schönsten Gegenden Nordwestdeutschlands, in der Parklandschaft Ammerland, liegt der Ebkenhof im Ortsteil Ihorst der Kreisstadt Westerstede. Der Stadtteil Ihorst liegt ca. …"
+    },
+    {
+      "id": "hossen-sporthalle",
+      "name": "Hössen Sporthalle",
+      "category": "Sport",
+      "latitude": 53.254315,
+      "longitude": 7.913452,
+      "teaser": "Sporthalle in Westerstede.",
+      "street": "Jahnallee"
+    },
+    {
+      "id": "hossen-sportanlage",
+      "name": "Hössen-Sportanlage",
+      "category": "Sport",
+      "latitude": 53.254716,
+      "longitude": 7.91347,
+      "teaser": "Sportzentrum der Stadt mit Stadion, Plätzen und Hallen rund um die Jahnallee.",
+      "street": "Jahnallee"
+    },
+    {
+      "id": "minigolf-sonnenhof",
+      "name": "Minigolf Sonnenhof",
+      "category": "Sport",
+      "latitude": 53.258682,
+      "longitude": 7.949361,
+      "teaser": "Minigolfanlage in Westerstede.",
+      "street": "Langebrügger Straße"
+    },
+    {
+      "id": "pony-und-ferienhof-jaspers",
+      "name": "Pony und Ferienhof Jaspers",
+      "category": "Sport",
+      "street": "Fikensolterfeld 3",
+      "phone": "+49 4488 3427",
+      "website": "https://www.ponyhof-jaspers.de/",
+      "latitude": 53.233886,
+      "longitude": 7.940465,
+      "teaser": "Reitanlage in Westerstede."
+    },
+    {
+      "id": "redfit-westerstede",
+      "name": "Redfit Westerstede",
+      "category": "Sport",
+      "latitude": 53.266234,
+      "longitude": 7.938719,
+      "teaser": "Fitnessstudio in Westerstede.",
+      "street": "Langebrügger Straße"
+    },
+    {
+      "id": "reithalle-felde",
+      "name": "Reithalle Felde",
+      "category": "Sport",
+      "phone": "+49 170 8647065",
+      "latitude": 53.293493,
+      "longitude": 7.937034,
+      "teaser": "Reitanlage in Westerstede.",
+      "street": "Köhlmoorweg 13"
+    },
+    {
+      "id": "schutzenverein-westerstede-e-v",
+      "name": "Schützenverein Westerstede e.V.",
+      "category": "Sport",
+      "street": "Süderstraße 2",
+      "website": "https://derasb.de/schuetzenbund/schuetzenvereine/sv-westerstede/",
+      "latitude": 53.250858,
+      "longitude": 7.934314,
+      "teaser": "Schützenverein in Westerstede."
+    },
+    {
+      "id": "sportpark-sg-halsbek",
+      "name": "Sportpark SG Halsbek",
+      "category": "Sport",
+      "latitude": 53.310656,
+      "longitude": 7.91898,
+      "teaser": "Sporthalle in Westerstede.",
+      "street": "Wittenheimstraße"
+    },
+    {
+      "id": "tv-ocholt",
+      "name": "TV Ocholt",
+      "category": "Sport",
+      "latitude": 53.198667,
+      "longitude": 7.883533,
+      "teaser": "Tennisanlage in Westerstede.",
+      "street": "Mittelstroth"
+    },
+    {
+      "id": "tennishalle-tv-ocholt",
+      "name": "Tennishalle TV Ocholt",
+      "category": "Sport",
+      "latitude": 53.198098,
+      "longitude": 7.884462,
+      "teaser": "Tennisanlage in Westerstede.",
+      "street": "Mittelstroth"
+    },
+    {
+      "id": "tennisplatze-sg-halsbek",
+      "name": "Tennisplätze SG Halsbek",
+      "category": "Sport",
+      "latitude": 53.310551,
+      "longitude": 7.918537,
+      "teaser": "Tennisanlage in Westerstede.",
+      "street": "Am Sportplatz"
+    },
+    {
+      "id": "tus-westerloy",
+      "name": "TuS Westerloy",
+      "category": "Sport",
+      "latitude": 53.238107,
+      "longitude": 7.878329,
+      "teaser": "Fußballplatz in Westerstede.",
+      "street": "Schoolstraat"
+    },
+    {
+      "id": "bienenpark-hollriede-hollriede",
+      "name": "Bienenpark Hollriede",
+      "category": "Spiel & Familie",
+      "street": "Leerer Straße 28",
+      "phone": "+49 4488 6940",
+      "latitude": 53.29195,
+      "longitude": 7.868004,
+      "teaser": "Erlebnispark rund um Bienen und Imkerei in Hollriede."
+    },
+    {
+      "id": "landerlebnis-janen-fikensolterfeld",
+      "name": "Landerlebnis Janßen",
+      "category": "Spiel & Familie",
+      "street": "Seghorner Weg 6",
+      "phone": "+49 4488 8420071",
+      "email": "buero@landerlebnis.de",
+      "website": "https://landerlebnis.de/",
+      "hours": "Apr-Oct: Mo-So, Feiertag 10–18 Uhr · Nov-Mar: Fr-So, Feiertag 10–18 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.232624,
+      "longitude": 7.939197,
+      "teaser": "Hof mit Spielscheune, Tieren und Hofcafé für Familien in Fikensolterfeld."
+    },
+    {
+      "id": "ammerlander-spielzeugmuseum",
+      "name": "Ammerländer Spielzeugmuseum",
+      "category": "Kultur",
+      "street": "Kuhlenstraße 17",
+      "website": "https://www.ammerländer-spielzeugmuseum.de",
+      "latitude": 53.255962,
+      "longitude": 7.922104,
+      "teaser": "Privates Museum mit historischem Spielzeug aus mehreren Jahrzehnten."
+    },
+    {
+      "id": "apothekervilla",
+      "name": "Apothekervilla",
+      "category": "Kultur",
+      "street": "Gaststraße 4",
+      "website": "https://www.westerstede.de/gesundheit-familie/einrichtungen/apothekervilla/",
+      "hours": "Di 10–12 Uhr, Mi 15–17 Uhr, Do 10–12 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.256413,
+      "longitude": 7.929209,
+      "teaser": "Begegnungsstätte der Stadt in der Gaststraße – Sprechstunden, Kurse und Treffen."
+    },
+    {
+      "id": "freilichtbuhne-howiek",
+      "name": "Freilichtbühne Howiek",
+      "category": "Kultur",
+      "latitude": 53.187248,
+      "longitude": 7.893556,
+      "teaser": "Freilichttheater in Ocholt-Howiek mit Aufführungen im Sommer.",
+      "street": "Up de Höh"
+    },
+    {
+      "id": "heimathaus-halsbek-halsbek",
+      "name": "Heimathaus Halsbek",
+      "category": "Kultur",
+      "street": "Mittelstraße 2",
+      "phone": "+49 4488 9312",
+      "email": "info@heimatverein-halsbek.de",
+      "website": "https://www.heimatverein-halsbek.de/",
+      "latitude": 53.315021,
+      "longitude": 7.921858,
+      "teaser": "Kultur- und Begegnungsort in Westerstede-Halsbek."
+    },
+    {
+      "id": "jugendzentrum-ocholt-ocholt",
+      "name": "Jugendzentrum Ocholt",
+      "category": "Kultur",
+      "street": "Am Bahnhof 2",
+      "website": "https://www.juz-ocholt.de/",
+      "latitude": 53.202494,
+      "longitude": 7.887329,
+      "teaser": "Kultur- und Begegnungsort in Westerstede-Ocholt."
+    },
+    {
+      "id": "landwirtschaftsmuseum-behlen",
+      "name": "Landwirtschaftsmuseum Behlen",
+      "category": "Kultur",
+      "latitude": 53.215291,
+      "longitude": 7.865393,
+      "teaser": "Museum zur Landwirtschaft im Ammerland mit alten Geräten und Maschinen.",
+      "street": "Linderner Feldstraße"
+    },
+    {
+      "id": "stadtarchiv-westerstede",
+      "name": "Stadtarchiv Westerstede",
+      "category": "Kultur",
+      "street": "Zum Stiftungspark 27",
+      "phone": "+49 4488 55-0",
+      "website": "https://www.westerstede.de/leben-in-westerstede/einrichtungen/stadtarchiv-westerstede/",
+      "hours": "Di, Fr 9–12 Uhr",
+      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "latitude": 53.248581,
+      "longitude": 7.912089,
+      "teaser": "Kultur- und Begegnungsort in Westerstede."
+    },
+    {
+      "id": "stadtbucherei-westerstede",
+      "name": "Stadtbücherei Westerstede",
+      "category": "Kultur",
+      "street": "Poststraße 7",
+      "latitude": 53.256116,
+      "longitude": 7.925712,
+      "teaser": "Öffentliche Bibliothek der Stadt in der Poststraße."
+    },
+    {
+      "id": "zentrum-fur-kinder-und-jugend",
+      "name": "Zentrum für Kinder und Jugend",
+      "category": "Kultur",
+      "street": "An der Hössen 20",
+      "phone": "+49 4488 6098",
+      "email": "jugendzentrum@westerstede.de",
+      "latitude": 53.255,
+      "longitude": 7.91482,
+      "teaser": "Kultur- und Begegnungsort in Westerstede."
+    }
+  ]
+}

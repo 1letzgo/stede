@@ -21,14 +21,14 @@ struct OfflineIslandMap: UIViewRepresentable {
         map.showsCompass = false
         map.isPitchEnabled = false
         map.isRotateEnabled = false
-        // Nur Kernstadt und Ocholt; weiter hinaus gibt es keine Daten.
+        // Ganzes Stadtgebiet samt Hobbie und Park der Gärten; weiter hinaus gibt es keine Daten.
         map.cameraBoundary = MKMapView.CameraBoundary(
             coordinateRegion: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 53.235, longitude: 7.92),
-                span: MKCoordinateSpan(latitudeDelta: 0.10, longitudeDelta: 0.14)
+                center: CLLocationCoordinate2D(latitude: 53.26, longitude: 7.935),
+                span: MKCoordinateSpan(latitudeDelta: 0.18, longitudeDelta: 0.27)
             )
         )
-        map.cameraZoomRange = MKMapView.CameraZoomRange(minCenterCoordinateDistance: 150, maxCenterCoordinateDistance: 30000)
+        map.cameraZoomRange = MKMapView.CameraZoomRange(minCenterCoordinateDistance: 150, maxCenterCoordinateDistance: 45000)
         context.coordinator.addBaseLayers(to: map)
         context.coordinator.update(map, pins: pins, selectedID: selectedID, animated: false)
         return map

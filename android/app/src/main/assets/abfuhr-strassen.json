@@ -1,0 +1,2364 @@
+{
+ "source": "appfuhr.de · Abfallwirtschaftsbetrieb Landkreis Ammerland (Daten Ende 2025)",
+ "fetchedAt": "2026-09-22",
+ "townID": 5,
+ "town": "Westerstede",
+ "streets": [
+  {
+   "id": 8,
+   "name": "Achternstraße"
+  },
+  {
+   "id": 19,
+   "name": "Ahornstraße"
+  },
+  {
+   "id": 27,
+   "name": "Akazienweg"
+  },
+  {
+   "id": 28,
+   "name": "Albert-Post-Platz"
+  },
+  {
+   "id": 29,
+   "name": "Albert-Schweitzer-Straße"
+  },
+  {
+   "id": 31,
+   "name": "Albertskamp"
+  },
+  {
+   "id": 32,
+   "name": "Albrecht-Dürer-Straße"
+  },
+  {
+   "id": 2685,
+   "name": "Alexander-Schmorell-Straße"
+  },
+  {
+   "id": 35,
+   "name": "Alma-Rogge-Straße"
+  },
+  {
+   "id": 38,
+   "name": "Alpenrosenstraße"
+  },
+  {
+   "id": 41,
+   "name": "Alpenrosenweg"
+  },
+  {
+   "id": 48,
+   "name": "Alte Schwak"
+  },
+  {
+   "id": 50,
+   "name": "Alte Straße"
+  },
+  {
+   "id": 52,
+   "name": "Alte Weide"
+  },
+  {
+   "id": 54,
+   "name": "Alte Ziegelei"
+  },
+  {
+   "id": 66,
+   "name": "Alter Postweg"
+  },
+  {
+   "id": 70,
+   "name": "Am Achterkamp"
+  },
+  {
+   "id": 77,
+   "name": "Am Bahnhof",
+   "sections": [
+    {
+     "id": 1,
+     "label": "Ocholt"
+    },
+    {
+     "id": 2,
+     "label": "Westerstede"
+    }
+   ]
+  },
+  {
+   "id": 80,
+   "name": "Am Barkenhorn"
+  },
+  {
+   "id": 92,
+   "name": "Am Brook"
+  },
+  {
+   "id": 94,
+   "name": "Am Brookwehr"
+  },
+  {
+   "id": 95,
+   "name": "Am Brunbarg"
+  },
+  {
+   "id": 96,
+   "name": "Am Brunneneck"
+  },
+  {
+   "id": 85,
+   "name": "Am Börn"
+  },
+  {
+   "id": 98,
+   "name": "Am Bült"
+  },
+  {
+   "id": 103,
+   "name": "Am Damm",
+   "sections": [
+    {
+     "id": 3,
+     "label": "ab Seggerner Straße"
+    },
+    {
+     "id": 4,
+     "label": "von Ammerlandallee bis Seggerner Straße"
+    }
+   ],
+   "branchSections": [
+    {
+     "id": 1,
+     "label": "von Moosbrooksweg bis Kuhlenstr."
+    },
+    {
+     "id": 2,
+     "label": "von Moosbrooksweg bis Westerloy"
+    },
+    {
+     "id": 3,
+     "label": "von Westerloy bis Klampen"
+    }
+   ]
+  },
+  {
+   "id": 108,
+   "name": "Am Detershof"
+  },
+  {
+   "id": 110,
+   "name": "Am Dillfeld"
+  },
+  {
+   "id": 115,
+   "name": "Am Dorfplatz"
+  },
+  {
+   "id": 119,
+   "name": "Am Droh"
+  },
+  {
+   "id": 122,
+   "name": "Am Düwelshop"
+  },
+  {
+   "id": 132,
+   "name": "Am Esch"
+  },
+  {
+   "id": 138,
+   "name": "Am Felderfeld"
+  },
+  {
+   "id": 139,
+   "name": "Am Fischteich"
+  },
+  {
+   "id": 140,
+   "name": "Am Flach"
+  },
+  {
+   "id": 143,
+   "name": "Am Flutter"
+  },
+  {
+   "id": 144,
+   "name": "Am Fuchsbau"
+  },
+  {
+   "id": 145,
+   "name": "Am Fuchsberg"
+  },
+  {
+   "id": 149,
+   "name": "Am Grafenfeld"
+  },
+  {
+   "id": 150,
+   "name": "Am Grashoff"
+  },
+  {
+   "id": 151,
+   "name": "Am Grauen Stein"
+  },
+  {
+   "id": 156,
+   "name": "Am Haferkamp"
+  },
+  {
+   "id": 160,
+   "name": "Am Hamjebusch",
+   "sections": [
+    {
+     "id": 6,
+     "label": "westl. d. Ammerlandallee"
+    },
+    {
+     "id": 5,
+     "label": "östl. d. Ammerlandallee"
+    }
+   ]
+  },
+  {
+   "id": 165,
+   "name": "Am Harmsloh"
+  },
+  {
+   "id": 177,
+   "name": "Am Hohen Feld"
+  },
+  {
+   "id": 180,
+   "name": "Am Holtkamp"
+  },
+  {
+   "id": 181,
+   "name": "Am Hoogen Kamp"
+  },
+  {
+   "id": 182,
+   "name": "Am Horn"
+  },
+  {
+   "id": 174,
+   "name": "Am Hörntjekamp"
+  },
+  {
+   "id": 186,
+   "name": "Am Immenhof"
+  },
+  {
+   "id": 188,
+   "name": "Am Kanal"
+  },
+  {
+   "id": 193,
+   "name": "Am Knick"
+  },
+  {
+   "id": 194,
+   "name": "Am Kochskamp"
+  },
+  {
+   "id": 197,
+   "name": "Am Kuhlen"
+  },
+  {
+   "id": 203,
+   "name": "Am Lerchenfeld"
+  },
+  {
+   "id": 204,
+   "name": "Am Liebfrauenbusch"
+  },
+  {
+   "id": 206,
+   "name": "Am Logenkamp"
+  },
+  {
+   "id": 208,
+   "name": "Am Loog"
+  },
+  {
+   "id": 210,
+   "name": "Am Lukskamp"
+  },
+  {
+   "id": 212,
+   "name": "Am Maisfeld"
+  },
+  {
+   "id": 213,
+   "name": "Am Markt"
+  },
+  {
+   "id": 215,
+   "name": "Am Melmenkamp"
+  },
+  {
+   "id": 226,
+   "name": "Am Mushorn"
+  },
+  {
+   "id": 222,
+   "name": "Am Mühlenhof"
+  },
+  {
+   "id": 225,
+   "name": "Am Mühlenstein"
+  },
+  {
+   "id": 227,
+   "name": "Am Neen"
+  },
+  {
+   "id": 228,
+   "name": "Am Nesterhorn"
+  },
+  {
+   "id": 236,
+   "name": "Am Paradies"
+  },
+  {
+   "id": 242,
+   "name": "Am Posthof"
+  },
+  {
+   "id": 243,
+   "name": "Am Pothorn"
+  },
+  {
+   "id": 244,
+   "name": "Am Priettenbarg"
+  },
+  {
+   "id": 246,
+   "name": "Am Rechter"
+  },
+  {
+   "id": 249,
+   "name": "Am Ring"
+  },
+  {
+   "id": 251,
+   "name": "Am Rosenkamp"
+  },
+  {
+   "id": 250,
+   "name": "Am Röttgen"
+  },
+  {
+   "id": 261,
+   "name": "Am Schmalbrook"
+  },
+  {
+   "id": 263,
+   "name": "Am Schnapp"
+  },
+  {
+   "id": 268,
+   "name": "Am Schulhof"
+  },
+  {
+   "id": 270,
+   "name": "Am See"
+  },
+  {
+   "id": 275,
+   "name": "Am Sportplatz"
+  },
+  {
+   "id": 280,
+   "name": "Am Stekel"
+  },
+  {
+   "id": 283,
+   "name": "Am Streek"
+  },
+  {
+   "id": 284,
+   "name": "Am Stubben"
+  },
+  {
+   "id": 285,
+   "name": "Am Stümmel"
+  },
+  {
+   "id": 290,
+   "name": "Am Sundern"
+  },
+  {
+   "id": 286,
+   "name": "Am Südholt",
+   "sections": [
+    {
+     "id": 114,
+     "label": "Kampstr. bis Südholter Straße"
+    },
+    {
+     "id": 115,
+     "label": "Osterfeld bis Kampstr."
+    }
+   ]
+  },
+  {
+   "id": 288,
+   "name": "Am Sülster"
+  },
+  {
+   "id": 289,
+   "name": "Am Sünderkamp"
+  },
+  {
+   "id": 299,
+   "name": "Am Vehstall"
+  },
+  {
+   "id": 301,
+   "name": "Am Vogelpohl"
+  },
+  {
+   "id": 304,
+   "name": "Am Voßbarg"
+  },
+  {
+   "id": 310,
+   "name": "Am Wall"
+  },
+  {
+   "id": 311,
+   "name": "Am Wasserturm"
+  },
+  {
+   "id": 313,
+   "name": "Am Wehlen"
+  },
+  {
+   "id": 314,
+   "name": "Am Westerfeld"
+  },
+  {
+   "id": 315,
+   "name": "Am Wiesengrund"
+  },
+  {
+   "id": 318,
+   "name": "Am Wiesenrand"
+  },
+  {
+   "id": 324,
+   "name": "Am Wulfskamp"
+  },
+  {
+   "id": 327,
+   "name": "Ammerlandallee",
+   "sections": [
+    {
+     "id": 9,
+     "label": "nördl.d. A 28"
+    },
+    {
+     "id": 10,
+     "label": "südl.d. A 28"
+    }
+   ]
+  },
+  {
+   "id": 335,
+   "name": "Amselweg"
+  },
+  {
+   "id": 338,
+   "name": "An den Brookwiesen"
+  },
+  {
+   "id": 2698,
+   "name": "An den Kolonaten"
+  },
+  {
+   "id": 344,
+   "name": "An den Kämpen"
+  },
+  {
+   "id": 2700,
+   "name": "An der Autobahn"
+  },
+  {
+   "id": 362,
+   "name": "An der Biese"
+  },
+  {
+   "id": 359,
+   "name": "An der Bäke"
+  },
+  {
+   "id": 368,
+   "name": "An der Hössen"
+  },
+  {
+   "id": 371,
+   "name": "An der Krömerei"
+  },
+  {
+   "id": 373,
+   "name": "An der Mühle"
+  },
+  {
+   "id": 374,
+   "name": "An der Norderbäke"
+  },
+  {
+   "id": 385,
+   "name": "An der Wiek"
+  },
+  {
+   "id": 387,
+   "name": "An der Wöhr"
+  },
+  {
+   "id": 392,
+   "name": "Anemonenweg"
+  },
+  {
+   "id": 394,
+   "name": "Anton-Günther-Straße"
+  },
+  {
+   "id": 395,
+   "name": "Apener Straße"
+  },
+  {
+   "id": 405,
+   "name": "Asteder Straße"
+  },
+  {
+   "id": 407,
+   "name": "Asternweg"
+  },
+  {
+   "id": 414,
+   "name": "Auf dem Hochkamp"
+  },
+  {
+   "id": 424,
+   "name": "Auf der Hörn"
+  },
+  {
+   "id": 426,
+   "name": "Auf der Lohe"
+  },
+  {
+   "id": 435,
+   "name": "August-Lauw-Straße"
+  },
+  {
+   "id": 436,
+   "name": "Auguste-Wettermann-Straße"
+  },
+  {
+   "id": 437,
+   "name": "Augustfehner Straße",
+   "sections": [
+    {
+     "id": 11,
+     "label": "Ihausener Str. bis Leerer Str."
+    },
+    {
+     "id": 12,
+     "label": "Stahlwerkstr. bis Ihausener Str."
+    }
+   ]
+  },
+  {
+   "id": 441,
+   "name": "Azaleenstraße"
+  },
+  {
+   "id": 455,
+   "name": "Bahnhofsgang"
+  },
+  {
+   "id": 459,
+   "name": "Bahnhofstraße"
+  },
+  {
+   "id": 465,
+   "name": "Bahnweg"
+  },
+  {
+   "id": 468,
+   "name": "Bankstraße"
+  },
+  {
+   "id": 476,
+   "name": "Baumschulenstraße"
+  },
+  {
+   "id": 480,
+   "name": "Beethovenstraße"
+  },
+  {
+   "id": 488,
+   "name": "Bekassinenweg"
+  },
+  {
+   "id": 495,
+   "name": "Bentshöhe"
+  },
+  {
+   "id": 501,
+   "name": "Berdingweg"
+  },
+  {
+   "id": 502,
+   "name": "Berliner Platz"
+  },
+  {
+   "id": 503,
+   "name": "Berliner Straße"
+  },
+  {
+   "id": 508,
+   "name": "Bertha-von-Suttner-Straße"
+  },
+  {
+   "id": 509,
+   "name": "Bertolt-Brecht-Straße"
+  },
+  {
+   "id": 510,
+   "name": "Biberweg"
+  },
+  {
+   "id": 523,
+   "name": "Birkenstraße"
+  },
+  {
+   "id": 528,
+   "name": "Birkenweg"
+  },
+  {
+   "id": 531,
+   "name": "Birkhahnstraße"
+  },
+  {
+   "id": 543,
+   "name": "Blumenstraße"
+  },
+  {
+   "id": 554,
+   "name": "Bohmsende"
+  },
+  {
+   "id": 563,
+   "name": "Boßeldamm"
+  },
+  {
+   "id": 569,
+   "name": "Brakenhoffstraße"
+  },
+  {
+   "id": 577,
+   "name": "Bredehorner Straße"
+  },
+  {
+   "id": 586,
+   "name": "Breslauer Straße"
+  },
+  {
+   "id": 588,
+   "name": "Brinkstraße"
+  },
+  {
+   "id": 597,
+   "name": "Brookstraße"
+  },
+  {
+   "id": 607,
+   "name": "Brunnenstraße"
+  },
+  {
+   "id": 590,
+   "name": "Brökenweg"
+  },
+  {
+   "id": 613,
+   "name": "Buchenstraße"
+  },
+  {
+   "id": 619,
+   "name": "Buchweizenweg"
+  },
+  {
+   "id": 626,
+   "name": "Buernstraße"
+  },
+  {
+   "id": 633,
+   "name": "Burgforder Kamp"
+  },
+  {
+   "id": 635,
+   "name": "Burgstraße"
+  },
+  {
+   "id": 637,
+   "name": "Burnhörn"
+  },
+  {
+   "id": 640,
+   "name": "Buschweg"
+  },
+  {
+   "id": 2688,
+   "name": "Bussardweg"
+  },
+  {
+   "id": 647,
+   "name": "Bußweg"
+  },
+  {
+   "id": 2653,
+   "name": "Börns End"
+  },
+  {
+   "id": 2654,
+   "name": "Börns Kamp"
+  },
+  {
+   "id": 2655,
+   "name": "Börns Wiek"
+  },
+  {
+   "id": 549,
+   "name": "Börnsweg"
+  },
+  {
+   "id": 625,
+   "name": "Bürgermeister-Niemann-Straße"
+  },
+  {
+   "id": 653,
+   "name": "Carl-Baasen-Straße"
+  },
+  {
+   "id": 654,
+   "name": "Carl-Benz-Straße"
+  },
+  {
+   "id": 656,
+   "name": "Carstensweg"
+  },
+  {
+   "id": 657,
+   "name": "Charlottenburger Weg"
+  },
+  {
+   "id": 664,
+   "name": "Dachsstraße"
+  },
+  {
+   "id": 674,
+   "name": "Damsweg"
+  },
+  {
+   "id": 677,
+   "name": "Danziger Straße"
+  },
+  {
+   "id": 680,
+   "name": "Deborgsweg"
+  },
+  {
+   "id": 685,
+   "name": "Deepengöhlen"
+  },
+  {
+   "id": 696,
+   "name": "Diedrich-Lanje-Straße"
+  },
+  {
+   "id": 700,
+   "name": "Dielenweg"
+  },
+  {
+   "id": 2752,
+   "name": "Dohlenweg"
+  },
+  {
+   "id": 726,
+   "name": "Dr.-Winters-Straße"
+  },
+  {
+   "id": 738,
+   "name": "Drosselweg"
+  },
+  {
+   "id": 747,
+   "name": "Dwaschweg"
+  },
+  {
+   "id": 712,
+   "name": "Dörn Pool"
+  },
+  {
+   "id": 713,
+   "name": "Dörn Wärgen"
+  },
+  {
+   "id": 743,
+   "name": "Dünje Moor"
+  },
+  {
+   "id": 746,
+   "name": "Düsterbäksweg"
+  },
+  {
+   "id": 753,
+   "name": "Ebereschenweg"
+  },
+  {
+   "id": 754,
+   "name": "Eberhard-Ries-Straße"
+  },
+  {
+   "id": 755,
+   "name": "Ebkehofstraße"
+  },
+  {
+   "id": 764,
+   "name": "Eekenpadd"
+  },
+  {
+   "id": 768,
+   "name": "Eggeloger Straße"
+  },
+  {
+   "id": 773,
+   "name": "Eibenstraße"
+  },
+  {
+   "id": 782,
+   "name": "Eichendorffstraße"
+  },
+  {
+   "id": 791,
+   "name": "Eichenweg"
+  },
+  {
+   "id": 804,
+   "name": "Elbinger Straße"
+  },
+  {
+   "id": 809,
+   "name": "Ellernstraße"
+  },
+  {
+   "id": 811,
+   "name": "Ellernweg"
+  },
+  {
+   "id": 835,
+   "name": "Ernst-Barlach-Straße"
+  },
+  {
+   "id": 841,
+   "name": "Eschmeede"
+  },
+  {
+   "id": 854,
+   "name": "Falkenhorst"
+  },
+  {
+   "id": 861,
+   "name": "Fasanenweg"
+  },
+  {
+   "id": 867,
+   "name": "Fehmsweg"
+  },
+  {
+   "id": 871,
+   "name": "Felder Straße"
+  },
+  {
+   "id": 872,
+   "name": "Feldeschweg"
+  },
+  {
+   "id": 875,
+   "name": "Feldkampstraße"
+  },
+  {
+   "id": 882,
+   "name": "Feldstraße"
+  },
+  {
+   "id": 893,
+   "name": "Fichtenstraße"
+  },
+  {
+   "id": 897,
+   "name": "Fikensolterfeld"
+  },
+  {
+   "id": 900,
+   "name": "Finkenweg"
+  },
+  {
+   "id": 903,
+   "name": "Finkstroth"
+  },
+  {
+   "id": 905,
+   "name": "Fischotterweg"
+  },
+  {
+   "id": 911,
+   "name": "Fliederstraße"
+  },
+  {
+   "id": 921,
+   "name": "Franz-Poppe-Straße"
+  },
+  {
+   "id": 928,
+   "name": "Friedrich-Wilhelm-Straße"
+  },
+  {
+   "id": 932,
+   "name": "Friesenschanze"
+  },
+  {
+   "id": 933,
+   "name": "Friesenstraße"
+  },
+  {
+   "id": 935,
+   "name": "Fritz-Büsing-Straße"
+  },
+  {
+   "id": 939,
+   "name": "Fröbelstraße"
+  },
+  {
+   "id": 950,
+   "name": "Gabelsbergerstraße"
+  },
+  {
+   "id": 952,
+   "name": "Gagelstraße"
+  },
+  {
+   "id": 954,
+   "name": "Garnholter Straße"
+  },
+  {
+   "id": 955,
+   "name": "Garnholterdamm"
+  },
+  {
+   "id": 961,
+   "name": "Gartenstraße"
+  },
+  {
+   "id": 962,
+   "name": "Gaststraße"
+  },
+  {
+   "id": 963,
+   "name": "Gebhard-Strenge-Allee"
+  },
+  {
+   "id": 969,
+   "name": "Georg-Ruseler-Straße"
+  },
+  {
+   "id": 974,
+   "name": "Geranienweg"
+  },
+  {
+   "id": 975,
+   "name": "Gerhard-Diedrich-Böhlje-Straße"
+  },
+  {
+   "id": 976,
+   "name": "Gerhard-Eimers-Straße"
+  },
+  {
+   "id": 2658,
+   "name": "Gerhard-Wilhelm-Vogts-Straße"
+  },
+  {
+   "id": 977,
+   "name": "Gerhart-Hauptmann-Straße"
+  },
+  {
+   "id": 980,
+   "name": "Gerold-Otten-Weg"
+  },
+  {
+   "id": 981,
+   "name": "Gertrud-Jaspers-Weg"
+  },
+  {
+   "id": 982,
+   "name": "Gießelhorster Kirchweg"
+  },
+  {
+   "id": 983,
+   "name": "Ginsterstraße"
+  },
+  {
+   "id": 991,
+   "name": "Glockenblumenweg"
+  },
+  {
+   "id": 996,
+   "name": "Godensholter Straße"
+  },
+  {
+   "id": 1001,
+   "name": "Goethestraße"
+  },
+  {
+   "id": 1013,
+   "name": "Gottfried-Benn-Straße"
+  },
+  {
+   "id": 1018,
+   "name": "Grasbrook"
+  },
+  {
+   "id": 1022,
+   "name": "Grenzweg"
+  },
+  {
+   "id": 1026,
+   "name": "Grootflach"
+  },
+  {
+   "id": 1032,
+   "name": "Grotvaderskamp"
+  },
+  {
+   "id": 1027,
+   "name": "Groß Neudorfer Weg"
+  },
+  {
+   "id": 1029,
+   "name": "Große Mühlenstraße"
+  },
+  {
+   "id": 1038,
+   "name": "Grüne Straße"
+  },
+  {
+   "id": 1043,
+   "name": "Grüner Weg"
+  },
+  {
+   "id": 1051,
+   "name": "Gutenbergstraße"
+  },
+  {
+   "id": 997,
+   "name": "Göhlen"
+  },
+  {
+   "id": 998,
+   "name": "Göhlenkamp"
+  },
+  {
+   "id": 1058,
+   "name": "Haarfurther Straße"
+  },
+  {
+   "id": 1072,
+   "name": "Hainbuchenweg"
+  },
+  {
+   "id": 1074,
+   "name": "Haisinger Weg"
+  },
+  {
+   "id": 1076,
+   "name": "Halbstrengen"
+  },
+  {
+   "id": 1078,
+   "name": "Halsbeker Esch"
+  },
+  {
+   "id": 1079,
+   "name": "Halsbeker Hauptstraße"
+  },
+  {
+   "id": 1080,
+   "name": "Halsbeker Straße"
+  },
+  {
+   "id": 1087,
+   "name": "Hans-Oetken-Padd"
+  },
+  {
+   "id": 1088,
+   "name": "Hans-Sander-Straße"
+  },
+  {
+   "id": 2689,
+   "name": "Hans-Scholl-Straße"
+  },
+  {
+   "id": 1089,
+   "name": "Hansacker"
+  },
+  {
+   "id": 1093,
+   "name": "Hasbrink"
+  },
+  {
+   "id": 1097,
+   "name": "Hasenweg"
+  },
+  {
+   "id": 1107,
+   "name": "Hausmannstraße"
+  },
+  {
+   "id": 1124,
+   "name": "Heidelbeerstraße"
+  },
+  {
+   "id": 1130,
+   "name": "Heideweg"
+  },
+  {
+   "id": 1141,
+   "name": "Heidkampsweg"
+  },
+  {
+   "id": 1149,
+   "name": "Heinrich-Borgmann-Straße"
+  },
+  {
+   "id": 1156,
+   "name": "Heinrich-Siede-Straße",
+   "sections": [
+    {
+     "id": 123,
+     "label": "ab Nr. 23"
+    },
+    {
+     "id": 107,
+     "label": "Hausnr. 1 - 22, von Tannenloge"
+    }
+   ]
+  },
+  {
+   "id": 1159,
+   "name": "Heinz-Böhnke-Straße"
+  },
+  {
+   "id": 1168,
+   "name": "Henkenstraße"
+  },
+  {
+   "id": 1178,
+   "name": "Hermann-Löns-Straße"
+  },
+  {
+   "id": 1181,
+   "name": "Hermannsplatz"
+  },
+  {
+   "id": 1182,
+   "name": "Hermelinstraße"
+  },
+  {
+   "id": 1196,
+   "name": "Hinterm Berg"
+  },
+  {
+   "id": 1205,
+   "name": "Hisjeweg"
+  },
+  {
+   "id": 1209,
+   "name": "Hochkamp"
+  },
+  {
+   "id": 1211,
+   "name": "Hochtanger Weg"
+  },
+  {
+   "id": 1218,
+   "name": "Hofstraße"
+  },
+  {
+   "id": 1229,
+   "name": "Hohenmoorweg"
+  },
+  {
+   "id": 1234,
+   "name": "Hoher Weg"
+  },
+  {
+   "id": 1243,
+   "name": "Hollrieder Straße"
+  },
+  {
+   "id": 1244,
+   "name": "Hollwegerfelder Straße"
+  },
+  {
+   "id": 1250,
+   "name": "Holtkampsweg"
+  },
+  {
+   "id": 1257,
+   "name": "Holunderweg"
+  },
+  {
+   "id": 1263,
+   "name": "Hornsweg"
+  },
+  {
+   "id": 1268,
+   "name": "Howieker Flach"
+  },
+  {
+   "id": 1269,
+   "name": "Howieker Kamp"
+  },
+  {
+   "id": 1270,
+   "name": "Howieker Ring"
+  },
+  {
+   "id": 1271,
+   "name": "Howieker Straße"
+  },
+  {
+   "id": 1272,
+   "name": "Howieker Wall"
+  },
+  {
+   "id": 1282,
+   "name": "Humboldtstraße"
+  },
+  {
+   "id": 1065,
+   "name": "Hänflingweg"
+  },
+  {
+   "id": 1217,
+   "name": "Hössenweg"
+  },
+  {
+   "id": 1276,
+   "name": "Hüls"
+  },
+  {
+   "id": 1292,
+   "name": "Igelstraße"
+  },
+  {
+   "id": 1294,
+   "name": "Ihausener Straße"
+  },
+  {
+   "id": 1295,
+   "name": "Ihauser Damm"
+  },
+  {
+   "id": 1300,
+   "name": "Iltisstraße"
+  },
+  {
+   "id": 1321,
+   "name": "Im Wald"
+  },
+  {
+   "id": 1327,
+   "name": "Imkerstraße"
+  },
+  {
+   "id": 1331,
+   "name": "In der Baumschule"
+  },
+  {
+   "id": 1333,
+   "name": "In der Loge"
+  },
+  {
+   "id": 1335,
+   "name": "Industriestraße"
+  },
+  {
+   "id": 1350,
+   "name": "Jahnallee"
+  },
+  {
+   "id": 1355,
+   "name": "Jasperskamp"
+  },
+  {
+   "id": 1368,
+   "name": "Johann-Wieting-Weg"
+  },
+  {
+   "id": 1369,
+   "name": "Johanna-Kirchner-Straße"
+  },
+  {
+   "id": 1345,
+   "name": "Jägerskamp"
+  },
+  {
+   "id": 1376,
+   "name": "Jührdener Straße"
+  },
+  {
+   "id": 1389,
+   "name": "Kampstraße"
+  },
+  {
+   "id": 1395,
+   "name": "Kanalstraße"
+  },
+  {
+   "id": 1401,
+   "name": "Kantstraße"
+  },
+  {
+   "id": 1402,
+   "name": "Karkhorner Straße"
+  },
+  {
+   "id": 2672,
+   "name": "Karl-Heinz-Ewert-Straße"
+  },
+  {
+   "id": 1406,
+   "name": "Karl-Jaspers-Straße"
+  },
+  {
+   "id": 1408,
+   "name": "Karlshofer Straße"
+  },
+  {
+   "id": 1412,
+   "name": "Kastanienstraße"
+  },
+  {
+   "id": 1414,
+   "name": "Kattekerpadd"
+  },
+  {
+   "id": 1424,
+   "name": "Kiebitzweg"
+  },
+  {
+   "id": 1427,
+   "name": "Kiefernstraße"
+  },
+  {
+   "id": 1435,
+   "name": "Kirchenstraße"
+  },
+  {
+   "id": 1441,
+   "name": "Kirchweg"
+  },
+  {
+   "id": 2682,
+   "name": "Klein Helmsdorfer Weg"
+  },
+  {
+   "id": 1454,
+   "name": "Kleinburgforder Straße"
+  },
+  {
+   "id": 1469,
+   "name": "Klünmoorsweg"
+  },
+  {
+   "id": 1487,
+   "name": "Kolberger Straße"
+  },
+  {
+   "id": 1498,
+   "name": "Kornblumenweg"
+  },
+  {
+   "id": 1499,
+   "name": "Kornstraße"
+  },
+  {
+   "id": 1508,
+   "name": "Kramerei"
+  },
+  {
+   "id": 1520,
+   "name": "Krügerskamp"
+  },
+  {
+   "id": 1523,
+   "name": "Kuckucksweg"
+  },
+  {
+   "id": 1530,
+   "name": "Kuhlenstraße"
+  },
+  {
+   "id": 1383,
+   "name": "Käthe-Kollwitz-Straße"
+  },
+  {
+   "id": 1472,
+   "name": "Köhlmoorweg"
+  },
+  {
+   "id": 1473,
+   "name": "Königsberger Straße"
+  },
+  {
+   "id": 1479,
+   "name": "Königstraße"
+  },
+  {
+   "id": 1482,
+   "name": "Kösliner Straße"
+  },
+  {
+   "id": 1484,
+   "name": "Köterhörn"
+  },
+  {
+   "id": 2707,
+   "name": "Ladestraße"
+  },
+  {
+   "id": 1547,
+   "name": "Lange Riehe"
+  },
+  {
+   "id": 1550,
+   "name": "Lange Straße"
+  },
+  {
+   "id": 1552,
+   "name": "Lange Wischen"
+  },
+  {
+   "id": 1554,
+   "name": "Langebrügger Straße",
+   "branchSections": [
+    {
+     "id": 57,
+     "label": "von Autobahn bis Langebrügge"
+    },
+    {
+     "id": 58,
+     "label": "von Autobahn bis Neuenburger Str."
+    }
+   ]
+  },
+  {
+   "id": 1561,
+   "name": "Langer Weg"
+  },
+  {
+   "id": 1571,
+   "name": "Leerer Straße"
+  },
+  {
+   "id": 1576,
+   "name": "Lehmkuhlenweg"
+  },
+  {
+   "id": 1579,
+   "name": "Leibnizstraße"
+  },
+  {
+   "id": 1586,
+   "name": "Lerchenweg"
+  },
+  {
+   "id": 1589,
+   "name": "Lessingstraße"
+  },
+  {
+   "id": 1596,
+   "name": "Liebfrauenstraße"
+  },
+  {
+   "id": 1607,
+   "name": "Lilienweg"
+  },
+  {
+   "id": 1609,
+   "name": "Lina-Mineur-Straße"
+  },
+  {
+   "id": 1611,
+   "name": "Lindenallee",
+   "sections": [
+    {
+     "id": 49,
+     "label": "südl.ab Ecke Am Paradies"
+    },
+    {
+     "id": 50,
+     "label": "westl.ab Ecke Am Paradies"
+    }
+   ],
+   "branchSections": [
+    {
+     "id": 59,
+     "label": "Ihorst"
+    },
+    {
+     "id": 60,
+     "label": "Ort, Westerstederfeld, Halstrup"
+    }
+   ]
+  },
+  {
+   "id": 1616,
+   "name": "Lindenstraße"
+  },
+  {
+   "id": 1620,
+   "name": "Linderner Damm"
+  },
+  {
+   "id": 1622,
+   "name": "Linderner Feldstraße"
+  },
+  {
+   "id": 1623,
+   "name": "Linsweger Esch"
+  },
+  {
+   "id": 1641,
+   "name": "Lubinusweg"
+  },
+  {
+   "id": 1659,
+   "name": "Lupinenweg"
+  },
+  {
+   "id": 1643,
+   "name": "Lübbersdamm"
+  },
+  {
+   "id": 1651,
+   "name": "Lüttje Moorpadd"
+  },
+  {
+   "id": 1662,
+   "name": "Maiglöckchenweg"
+  },
+  {
+   "id": 1668,
+   "name": "Marderstraße"
+  },
+  {
+   "id": 1670,
+   "name": "Marderweg"
+  },
+  {
+   "id": 1673,
+   "name": "Margeritenweg"
+  },
+  {
+   "id": 2691,
+   "name": "Marianne-Scheelken-Str."
+  },
+  {
+   "id": 1675,
+   "name": "Marienstraße"
+  },
+  {
+   "id": 1690,
+   "name": "Max-Eyth-Straße"
+  },
+  {
+   "id": 2692,
+   "name": "Mayerskamp"
+  },
+  {
+   "id": 1696,
+   "name": "Meinardusstraße"
+  },
+  {
+   "id": 1700,
+   "name": "Meisenweg"
+  },
+  {
+   "id": 1708,
+   "name": "Mendelstraße"
+  },
+  {
+   "id": 1719,
+   "name": "Minna-Hemken-Straße"
+  },
+  {
+   "id": 1725,
+   "name": "Mittelstraße"
+  },
+  {
+   "id": 1726,
+   "name": "Mittelstroth"
+  },
+  {
+   "id": 1739,
+   "name": "Molkereiweg"
+  },
+  {
+   "id": 1752,
+   "name": "Moorweg"
+  },
+  {
+   "id": 1756,
+   "name": "Moosbroksweg"
+  },
+  {
+   "id": 1762,
+   "name": "Mozartstraße"
+  },
+  {
+   "id": 1730,
+   "name": "Möhlenkamp"
+  },
+  {
+   "id": 1731,
+   "name": "Möhlenpadd"
+  },
+  {
+   "id": 1733,
+   "name": "Mörikestraße"
+  },
+  {
+   "id": 1766,
+   "name": "Mühlenbrink"
+  },
+  {
+   "id": 1768,
+   "name": "Mühlendamm"
+  },
+  {
+   "id": 1775,
+   "name": "Mühlenstraße"
+  },
+  {
+   "id": 1778,
+   "name": "Mühlenweg"
+  },
+  {
+   "id": 1787,
+   "name": "Nachtigallenweg"
+  },
+  {
+   "id": 1789,
+   "name": "Narzissenweg"
+  },
+  {
+   "id": 1798,
+   "name": "Nelkenweg"
+  },
+  {
+   "id": 1799,
+   "name": "Nestenweg"
+  },
+  {
+   "id": 1805,
+   "name": "Neue Siedlung"
+  },
+  {
+   "id": 1807,
+   "name": "Neue Straße"
+  },
+  {
+   "id": 1809,
+   "name": "Neuenburger Straße"
+  },
+  {
+   "id": 1810,
+   "name": "Neuengländer Ringstraße"
+  },
+  {
+   "id": 1811,
+   "name": "Neuengländer Straße"
+  },
+  {
+   "id": 2709,
+   "name": "Neuer Bahnweg"
+  },
+  {
+   "id": 1819,
+   "name": "Neukamp"
+  },
+  {
+   "id": 1820,
+   "name": "Neulanden"
+  },
+  {
+   "id": 1825,
+   "name": "Norderstraße"
+  },
+  {
+   "id": 1827,
+   "name": "Norderweg"
+  },
+  {
+   "id": 1853,
+   "name": "Ohrweger Straße"
+  },
+  {
+   "id": 1856,
+   "name": "Oldenburger Straße",
+   "branchSections": [
+    {
+     "id": 61,
+     "label": "von Ammerlandallee bis Vogelpark"
+    },
+    {
+     "id": 62,
+     "label": "von Vogelpark bis Stubberei"
+    }
+   ]
+  },
+  {
+   "id": 1860,
+   "name": "Ole Kamp"
+  },
+  {
+   "id": 1863,
+   "name": "Ollenflag"
+  },
+  {
+   "id": 1864,
+   "name": "Ollenharder Straße",
+   "sections": [
+    {
+     "id": 70,
+     "label": "nördl. Zwischenahner Straße"
+    },
+    {
+     "id": 71,
+     "label": "südl. Zwischenahner Straße"
+    }
+   ]
+  },
+  {
+   "id": 1869,
+   "name": "Omorikastraße"
+  },
+  {
+   "id": 1873,
+   "name": "Orchideenweg"
+  },
+  {
+   "id": 1877,
+   "name": "Osterende"
+  },
+  {
+   "id": 1878,
+   "name": "Osterfeld"
+  },
+  {
+   "id": 1880,
+   "name": "Osterkamp"
+  },
+  {
+   "id": 1881,
+   "name": "Osterloge"
+  },
+  {
+   "id": 1882,
+   "name": "Ostermoorstraße"
+  },
+  {
+   "id": 1886,
+   "name": "Ostlandstraße"
+  },
+  {
+   "id": 1889,
+   "name": "Otterbäksmoor"
+  },
+  {
+   "id": 1891,
+   "name": "Otto-Hahn-Straße"
+  },
+  {
+   "id": 1896,
+   "name": "Pappelstraße"
+  },
+  {
+   "id": 1903,
+   "name": "Pastorenpadd"
+  },
+  {
+   "id": 1909,
+   "name": "Peterstraße"
+  },
+  {
+   "id": 1919,
+   "name": "Plackenweg"
+  },
+  {
+   "id": 1928,
+   "name": "Poischwitzer Straße"
+  },
+  {
+   "id": 2753,
+   "name": "Portmanns Kamp"
+  },
+  {
+   "id": 1940,
+   "name": "Poststraße"
+  },
+  {
+   "id": 1944,
+   "name": "Primelweg"
+  },
+  {
+   "id": 1952,
+   "name": "Querweg"
+  },
+  {
+   "id": 1954,
+   "name": "Quittenweg"
+  },
+  {
+   "id": 1959,
+   "name": "Raiffeisenstraße"
+  },
+  {
+   "id": 1963,
+   "name": "Raschenstraße"
+  },
+  {
+   "id": 1983,
+   "name": "Rhadenweg"
+  },
+  {
+   "id": 1986,
+   "name": "Rhododendronstraße"
+  },
+  {
+   "id": 1994,
+   "name": "Rienstraße"
+  },
+  {
+   "id": 1995,
+   "name": "Ringelmannsdamm"
+  },
+  {
+   "id": 1996,
+   "name": "Ringstraße"
+  },
+  {
+   "id": 2001,
+   "name": "Robert-Koch-Straße"
+  },
+  {
+   "id": 2693,
+   "name": "Rolf-Hornig-Str."
+  },
+  {
+   "id": 2017,
+   "name": "Rosenweg"
+  },
+  {
+   "id": 2022,
+   "name": "Rostruper Straße"
+  },
+  {
+   "id": 2031,
+   "name": "Routweg"
+  },
+  {
+   "id": 2003,
+   "name": "Röntgenstraße"
+  },
+  {
+   "id": 2037,
+   "name": "Rüschendamm"
+  },
+  {
+   "id": 2050,
+   "name": "Sanddornweg"
+  },
+  {
+   "id": 2054,
+   "name": "Sanders Padd"
+  },
+  {
+   "id": 2072,
+   "name": "Schafweg"
+  },
+  {
+   "id": 2079,
+   "name": "Scheeperskamp"
+  },
+  {
+   "id": 2085,
+   "name": "Schillerstraße"
+  },
+  {
+   "id": 2091,
+   "name": "Schlehdornstraße"
+  },
+  {
+   "id": 2097,
+   "name": "Schlesier Straße"
+  },
+  {
+   "id": 2099,
+   "name": "Schloßweg"
+  },
+  {
+   "id": 2101,
+   "name": "Schmalhorn"
+  },
+  {
+   "id": 2108,
+   "name": "Schnepfenweg"
+  },
+  {
+   "id": 2114,
+   "name": "Schoolpadd"
+  },
+  {
+   "id": 2118,
+   "name": "Schoolstraat"
+  },
+  {
+   "id": 2129,
+   "name": "Schulkamp"
+  },
+  {
+   "id": 2135,
+   "name": "Schulstraße"
+  },
+  {
+   "id": 2145,
+   "name": "Schwalbenweg"
+  },
+  {
+   "id": 2158,
+   "name": "Seggeriedenweg"
+  },
+  {
+   "id": 2159,
+   "name": "Seggerner Straße"
+  },
+  {
+   "id": 2160,
+   "name": "Seghorner Weg",
+   "branchSections": [
+    {
+     "id": 75,
+     "label": "Torsholt, Gießelhorst"
+    },
+    {
+     "id": 76,
+     "label": "Westerstede Ort"
+    }
+   ]
+  },
+  {
+   "id": 2163,
+   "name": "Sekmeder"
+  },
+  {
+   "id": 2165,
+   "name": "Sexmähen"
+  },
+  {
+   "id": 2174,
+   "name": "Sonnenblumenweg"
+  },
+  {
+   "id": 2181,
+   "name": "Sophie-Scholl-Straße"
+  },
+  {
+   "id": 2197,
+   "name": "Spitzenmeer"
+  },
+  {
+   "id": 2201,
+   "name": "Spohlermehden"
+  },
+  {
+   "id": 2211,
+   "name": "Steenfeldskamp"
+  },
+  {
+   "id": 2216,
+   "name": "Steilwall"
+  },
+  {
+   "id": 2219,
+   "name": "Stellhorner Straße",
+   "sections": [
+    {
+     "id": 82,
+     "label": "Langebrügger Str. bis Autobahn"
+    },
+    {
+     "id": 83,
+     "label": "Langebrügger Str. bis Oldenburger Str."
+    }
+   ]
+  },
+  {
+   "id": 2222,
+   "name": "Sternkamp"
+  },
+  {
+   "id": 2223,
+   "name": "Stettiner Straße"
+  },
+  {
+   "id": 2233,
+   "name": "Streehorn"
+  },
+  {
+   "id": 2234,
+   "name": "Streek"
+  },
+  {
+   "id": 2240,
+   "name": "Stroen"
+  },
+  {
+   "id": 2241,
+   "name": "Strohen"
+  },
+  {
+   "id": 2246,
+   "name": "Stubberei"
+  },
+  {
+   "id": 2252,
+   "name": "Süderstraße",
+   "sections": [
+    {
+     "id": 86,
+     "label": "Neue Straße bis Langebrügger Straße"
+    },
+    {
+     "id": 87,
+     "label": "Oldenburger Straße bis Neue Straße"
+    }
+   ]
+  },
+  {
+   "id": 2254,
+   "name": "Südholter Straße"
+  },
+  {
+   "id": 2255,
+   "name": "Südring"
+  },
+  {
+   "id": 2261,
+   "name": "Takerbarg"
+  },
+  {
+   "id": 2264,
+   "name": "Tanneneck"
+  },
+  {
+   "id": 2268,
+   "name": "Tannenloge"
+  },
+  {
+   "id": 2285,
+   "name": "Thalenstraße"
+  },
+  {
+   "id": 2300,
+   "name": "Tietjenstraße"
+  },
+  {
+   "id": 2302,
+   "name": "Tilsiter Straße"
+  },
+  {
+   "id": 2311,
+   "name": "Torfweg"
+  },
+  {
+   "id": 2312,
+   "name": "Torsholter Hauptstraße"
+  },
+  {
+   "id": 2313,
+   "name": "Torsholter Kirchweg"
+  },
+  {
+   "id": 2314,
+   "name": "Torsholter Weg"
+  },
+  {
+   "id": 2321,
+   "name": "Tulpenweg"
+  },
+  {
+   "id": 2325,
+   "name": "Twüschenweg"
+  },
+  {
+   "id": 2328,
+   "name": "Uhlandstraße"
+  },
+  {
+   "id": 2335,
+   "name": "Ulmenstraße"
+  },
+  {
+   "id": 2344,
+   "name": "Unter den Eichen"
+  },
+  {
+   "id": 2347,
+   "name": "Up de Höh"
+  },
+  {
+   "id": 2350,
+   "name": "Upn Hoff"
+  },
+  {
+   "id": 2354,
+   "name": "Vareler Straße"
+  },
+  {
+   "id": 2358,
+   "name": "Veilchenweg"
+  },
+  {
+   "id": 2363,
+   "name": "Virchowstraße"
+  },
+  {
+   "id": 2370,
+   "name": "Vogelkamp"
+  },
+  {
+   "id": 2371,
+   "name": "Vom-Stein-Straße"
+  },
+  {
+   "id": 2376,
+   "name": "Von-Negelein-Straße"
+  },
+  {
+   "id": 2377,
+   "name": "Von-Weber-Straße"
+  },
+  {
+   "id": 2379,
+   "name": "Von-Witken-Straße"
+  },
+  {
+   "id": 2400,
+   "name": "Vosskamp"
+  },
+  {
+   "id": 2403,
+   "name": "Wacholderweg"
+  },
+  {
+   "id": 2411,
+   "name": "Wachtendorfsweg"
+  },
+  {
+   "id": 2416,
+   "name": "Walbroksweg"
+  },
+  {
+   "id": 2421,
+   "name": "Waldstraße"
+  },
+  {
+   "id": 2424,
+   "name": "Waldweg"
+  },
+  {
+   "id": 2438,
+   "name": "Webers Flach"
+  },
+  {
+   "id": 2470,
+   "name": "Werner-von-Siemens-Straße"
+  },
+  {
+   "id": 2474,
+   "name": "Weshorn"
+  },
+  {
+   "id": 2481,
+   "name": "Westerkamp"
+  },
+  {
+   "id": 2482,
+   "name": "Westerloyer Straße"
+  },
+  {
+   "id": 2485,
+   "name": "Westersteder Straße"
+  },
+  {
+   "id": 2487,
+   "name": "Westerwischen"
+  },
+  {
+   "id": 2489,
+   "name": "Westring"
+  },
+  {
+   "id": 2490,
+   "name": "Wichelnstraße"
+  },
+  {
+   "id": 2499,
+   "name": "Wieselstraße"
+  },
+  {
+   "id": 2507,
+   "name": "Wiesenweg"
+  },
+  {
+   "id": 2518,
+   "name": "Wilhelm-Busch-Straße"
+  },
+  {
+   "id": 2519,
+   "name": "Wilhelm-Geiler-Straße"
+  },
+  {
+   "id": 2529,
+   "name": "Willerfang"
+  },
+  {
+   "id": 2765,
+   "name": "Willi-Graf-Straße"
+  },
+  {
+   "id": 2533,
+   "name": "Winnewuppstraat"
+  },
+  {
+   "id": 2538,
+   "name": "Wittenheimstraße"
+  },
+  {
+   "id": 2545,
+   "name": "Wittriehendamm"
+  },
+  {
+   "id": 2697,
+   "name": "Wollgrasweg"
+  },
+  {
+   "id": 2555,
+   "name": "Woltersdamm"
+  },
+  {
+   "id": 2559,
+   "name": "Wulfskuhl"
+  },
+  {
+   "id": 2754,
+   "name": "Zaunkönigweg"
+  },
+  {
+   "id": 2564,
+   "name": "Zedernstraße"
+  },
+  {
+   "id": 2569,
+   "name": "Zeisigweg"
+  },
+  {
+   "id": 2571,
+   "name": "Ziegeleistraße"
+  },
+  {
+   "id": 2576,
+   "name": "Zu den Placken"
+  },
+  {
+   "id": 2577,
+   "name": "Zu den Tannen"
+  },
+  {
+   "id": 2578,
+   "name": "Zu den Wiesen"
+  },
+  {
+   "id": 2579,
+   "name": "Zu den Wischen"
+  },
+  {
+   "id": 2584,
+   "name": "Zum Burnkamp"
+  },
+  {
+   "id": 2592,
+   "name": "Zum Heerenberg"
+  },
+  {
+   "id": 2597,
+   "name": "Zum Hullen"
+  },
+  {
+   "id": 2665,
+   "name": "Zum Orchideenkamp"
+  },
+  {
+   "id": 2605,
+   "name": "Zum Stadtpark"
+  },
+  {
+   "id": 2606,
+   "name": "Zum Stiftungspark"
+  },
+  {
+   "id": 2610,
+   "name": "Zum Wehlen"
+  },
+  {
+   "id": 2620,
+   "name": "Zur Großen Meede"
+  },
+  {
+   "id": 2619,
+   "name": "Zur Gärtnerei"
+  },
+  {
+   "id": 2621,
+   "name": "Zur Hasenweide"
+  },
+  {
+   "id": 2791,
+   "name": "Zur Koppel"
+  },
+  {
+   "id": 2647,
+   "name": "Zwischenahner Straße"
+  },
+  {
+   "id": 1849,
+   "name": "Överstendamm"
+  }
+ ]
+}
