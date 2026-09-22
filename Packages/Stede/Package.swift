@@ -12,9 +12,13 @@ let package = Package(
         .library(name: "StedeCore", targets: ["StedeCore"]),
         .library(name: "StedeUI", targets: ["StedeUI"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.30.0"),
+    ],
     targets: [
         .target(
             name: "StedeCore",
+            dependencies: [.product(name: "Supabase", package: "supabase-swift")],
             resources: [.process("Resources")],
             swiftSettings: [
                 .enableUpcomingFeature("MemberImportVisibility"),

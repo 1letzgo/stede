@@ -4,11 +4,15 @@ import StedeCore
 enum AppTab: Hashable, CaseIterable {
     case start
     case events
+    case community
+    case admin
 
     var title: String {
         switch self {
         case .start: "Start"
         case .events: "Kalender"
+        case .community: "Community"
+        case .admin: "Admin"
         }
     }
 
@@ -16,6 +20,8 @@ enum AppTab: Hashable, CaseIterable {
         switch self {
         case .start: "house.fill"
         case .events: "calendar"
+        case .community: "person.3.fill"
+        case .admin: "checkmark.seal.fill"
         }
     }
 }
@@ -36,6 +42,8 @@ public struct ContentView: View {
     /// Gewählter Tag gehört der App, nicht dem einzelnen Screen — sonst fällt er
     /// bei jedem Tabwechsel auf heute zurück.
     @State private var dateStore = SelectedDateStore()
+    /// Konto, Mandant und Rollen — ein Objekt für alle Screens.
+    @State private var auth = AuthStore()
     /// Die Fahrtrichtung bleibt über App-Starts erhalten — meist interessiert nur eine.
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     /// Favoriten der Rubrik „Insel" — Kacheln auf Start und Kategorie-Ansichten
@@ -65,10 +73,21 @@ public struct ContentView: View {
             Tab(AppTab.events.title, systemImage: AppTab.events.symbol, value: AppTab.events) {
                 screen { EventView() }
             }
+            Tab(AppTab.community.title, systemImage: AppTab.community.symbol, value: AppTab.community) {
+                screen { CommunityListView() }
+            }
+            if auth.showsAdminTab {
+                Tab(AppTab.admin.title, systemImage: AppTab.admin.symbol, value: AppTab.admin) {
+                    screen { AdminView() }
+                }
+            }
         }
         .environment(dateStore)
         .environment(favorites)
         .environment(navigation)
+        .environment(auth)
+        .onAppear { auth.start() }
+        .onOpenURL { url in Task { await auth.handle(url: url) } }
         .task {
             // Ohne diesen Startwert hat der Vorwärtspfeil keine Obergrenze,
             // solange Wetter noch nicht geöffnet war.
@@ -89,6 +108,8 @@ enum LaunchOptions {
     static var tab: AppTab {
         switch UserDefaults.standard.string(forKey: "startScreen") {
         case "events": .events
+        case "community": .community
+        case "admin": .admin
         default: .start
         }
     }

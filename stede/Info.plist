@@ -7,5 +7,20 @@
 	     Ausfuhr-Frage bei jedem Upload. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Welche Gemeinde diese App ist; das Backend hält je Mandant eigene Communities. -->
+	<key>StedeTenantSlug</key>
+	<string>stede</string>
+	<!-- Rückkehr aus Magic-Link-Mails: stede://auth-callback -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>de.letzgo.stede</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>stede</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

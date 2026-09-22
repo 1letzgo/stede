@@ -3,7 +3,9 @@ import StedeCore
 
 struct EventView: View {
     @Environment(SelectedDateStore.self) private var dateStore
+    @Environment(AuthStore.self) private var auth
     @State private var model = EventViewModel()
+    @State private var community = CommunityCalendarModel()
 
     var body: some View {
         TabScreen(title: "Kalender") {
@@ -16,9 +18,16 @@ struct EventView: View {
                             // Nach Tageszeit gegliedert, jede mit eigener Farbe.
                             ForEach(sections, id: \.part) { section in
                                 StedeSectionHeader(title: section.part.title, symbol: section.part.symbol)
-                                ForEach(section.events) { event in
-                                    EventCard(event: event, tint: section.part.tint)
-                                        .id("event-\(event.id)")
+                                ForEach(section.events) { entry in
+                                    switch entry {
+                                    case .city(let event):
+                                        EventCard(event: event, tint: section.part.tint)
+                                            .id("event-\(event.id)")
+                                    case .community(let event):
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: event.isPublic, tint: section.part.tint)
+                                    case .publicEvent(let event):
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: true, tint: section.part.tint)
+                                    }
                                 }
                             }
                             SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen")
@@ -34,11 +43,28 @@ struct EventView: View {
         .task(id: dateStore.selectedDate) {
             await model.load(day: dateStore.selectedDate)
         }
+        .task(id: "\(IslandTime.isoDate(dateStore.selectedDate))|\(auth.tenant?.id.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
+            await community.load(day: dateStore.selectedDate, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs)
+        }
     }
 
-    private var sections: [(part: EventDaypart, events: [StedeEvent])] {
+    private var memberCommunityIDs: [UUID] {
+        auth.memberships.filter { $0.status == .active }.map(\.communityId)
+    }
+
+    /// Stadt-Termine, Termine der eigenen Communities und öffentliche Community-Termine
+    /// in einer Liste; öffentliche Termine eigener Communities erscheinen nur einmal.
+    private var entries: [CalendarEntry] {
+        var result: [CalendarEntry] = model.events.map(CalendarEntry.city)
+        let memberIDs = Set(community.memberEvents.map(\.id))
+        result += community.memberEvents.filter { $0.cancelledAt == nil }.map(CalendarEntry.community)
+        result += community.publicEvents.filter { !memberIDs.contains($0.id) }.map(CalendarEntry.publicEvent)
+        return result.sorted { ($0.time ?? .distantPast) < ($1.time ?? .distantPast) }
+    }
+
+    private var sections: [(part: EventDaypart, events: [CalendarEntry])] {
         EventDaypart.allCases.compactMap { part in
-            let events = model.events.filter { EventDaypart(time: $0.time) == part }
+            let events = entries.filter { EventDaypart(time: $0.time) == part }
             return events.isEmpty ? nil : (part, events)
         }
     }
@@ -53,6 +79,64 @@ struct EventView: View {
         } ?? model.events.last
         guard let target, target.id != first.id else { return }
         scrollToCurrent("event-\(target.id)", in: proxy)
+    }
+}
+
+/// Ein Eintrag im Kalender-Tab, egal aus welcher Quelle.
+private enum CalendarEntry: Identifiable {
+    case city(StedeEvent)
+    case community(CommunityEvent)
+    case publicEvent(PublicEvent)
+
+    var id: String {
+        switch self {
+        case .city(let e): "city-\(e.id)"
+        case .community(let e): "community-\(e.id.uuidString)"
+        case .publicEvent(let e): "public-\(e.id.uuidString)"
+        }
+    }
+
+    var time: Date? {
+        switch self {
+        case .city(let e): e.time
+        case .community(let e): e.startsAt
+        case .publicEvent(let e): e.startsAt
+        }
+    }
+}
+
+/// Karte für Community-Termine im Stadt-Kalender: wie die Stadt-Karte, mit Community-Pille.
+private struct CalendarCommunityCard: View {
+    let title: String
+    let community: String
+    let time: Date
+    let end: Date?
+    let location: String?
+    let description: String
+    let isPublic: Bool
+    let tint: Color
+
+    private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+        .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Label(end.map { "\(time.formatted(Self.timeFormat))–\($0.formatted(Self.timeFormat))" } ?? time.formatted(Self.timeFormat), systemImage: "clock")
+                    .font(.subheadline.weight(.semibold)).monospacedDigit()
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(tint.opacity(0.18), in: Capsule()).foregroundStyle(tint)
+                StedeTagPill(text: community, color: StedeTheme.seaTeal)
+                if !isPublic { StedeTagPill(text: "intern", color: StedeTheme.mudflat) }
+                Spacer()
+            }
+            Text(title).font(.headline)
+            if !description.isEmpty { Text(description).font(.subheadline).foregroundStyle(.secondary).lineLimit(4) }
+            if let location, !location.isEmpty {
+                Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
     }
 }
 
