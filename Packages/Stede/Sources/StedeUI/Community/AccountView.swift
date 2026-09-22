@@ -48,15 +48,17 @@ struct AccountView: View {
         Section {
             Text("Ein Konto gilt für alle Gemeinde-Apps. Du brauchst es nur für Communities und ihre Termine.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            SignInWithAppleButton(.signIn) { request in
-                auth.prepareAppleRequest(request)
-            } onCompletion: { result in
-                Task { await auth.completeAppleSignIn(result) }
+            if AuthStore.appleSignInAvailable {
+                SignInWithAppleButton(.signIn) { request in
+                    auth.prepareAppleRequest(request)
+                } onCompletion: { result in
+                    Task { await auth.completeAppleSignIn(result) }
+                }
+                .frame(height: 48)
+                .listRowInsets(EdgeInsets())
             }
-            .frame(height: 48)
-            .listRowInsets(EdgeInsets())
         }
-        Section("Oder per E-Mail") {
+        Section(AuthStore.appleSignInAvailable ? "Oder per E-Mail" : "Per E-Mail") {
             TextField("E-Mail-Adresse", text: $email)
                 .textContentType(.emailAddress)
                 #if !os(macOS)

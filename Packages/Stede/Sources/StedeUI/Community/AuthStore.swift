@@ -8,6 +8,10 @@ import Supabase
 /// Mitgliedschaften. Ein Konto gilt über alle Gemeinde-Apps.
 @Observable
 final class AuthStore {
+    /// Erst true, wenn die App-ID die Capability „Sign in with Apple“ hat und das
+    /// Entitlement gesetzt ist — sonst bleibt der Apple-Button verborgen.
+    static let appleSignInAvailable = false
+
     private(set) var userID: UUID?
     private(set) var profile: Profile?
     private(set) var tenant: Tenant?
