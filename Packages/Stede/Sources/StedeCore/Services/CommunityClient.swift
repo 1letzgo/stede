@@ -134,7 +134,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -184,21 +184,31 @@ public nonisolated struct CommunityClient: Sendable {
     // MARK: Teilnahme
 
     public func participations(eventID: UUID) async throws -> [EventParticipation] {
-        try await client.from("event_participations").select("event_id, user_id, status, profiles(user_id, display_name, avatar_url)")
+        try await client.from("event_participations").select("event_id, user_id, status, helping, profiles(user_id, display_name, avatar_url)")
             .eq("event_id", value: eventID).execute().value
     }
 
     public func myParticipations(userID: UUID) async throws -> [EventParticipation] {
-        try await client.from("event_participations").select("event_id, user_id, status").eq("user_id", value: userID).execute().value
+        try await client.from("event_participations").select("event_id, user_id, status, helping").eq("user_id", value: userID).execute().value
     }
 
-    public func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?) async throws {
+    /// Zusage setzen (nil löscht die Zeile); `helping` nur mit Zusage oder Vielleicht.
+    public func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?, helping: Bool = false) async throws {
         if let status {
-            struct Row: Encodable { let event_id: UUID; let user_id: UUID; let status: ParticipationStatus }
-            try await client.from("event_participations").upsert(Row(event_id: eventID, user_id: userID, status: status)).execute()
+            struct Row: Encodable { let event_id: UUID; let user_id: UUID; let status: ParticipationStatus; let helping: Bool }
+            try await client.from("event_participations").upsert(Row(event_id: eventID, user_id: userID, status: status, helping: helping && status != .declined)).execute()
         } else {
             try await client.from("event_participations").delete().eq("event_id", value: eventID).eq("user_id", value: userID).execute()
         }
+    }
+
+    /// Helferzahl je Termin, auch für Termine fremder Communities.
+    public func helperCounts(eventIDs: [UUID]) async throws -> [UUID: Int] {
+        guard !eventIDs.isEmpty else { return [:] }
+        struct Row: Decodable { let event_id: UUID; let helpers: Int }
+        struct Params: Encodable { let event_ids: [UUID] }
+        let rows: [Row] = try await client.rpc("event_helper_counts", params: Params(event_ids: eventIDs)).execute().value
+        return Dictionary(uniqueKeysWithValues: rows.map { ($0.event_id, $0.helpers) })
     }
 
     // MARK: Kalender-Abo

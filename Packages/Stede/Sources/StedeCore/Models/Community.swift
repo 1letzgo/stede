@@ -86,6 +86,8 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var endsAt: Date?
     public var location: String?
     public var imagePath: String?
+    /// 0 = keine Helfer gesucht.
+    public var helpersNeeded: Int
     public var visibility: EventVisibility
     public var publishedAt: Date?
     public var cancelledAt: Date?
@@ -109,6 +111,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case id, title, description, location, visibility, version
         case communityId = "community_id"
         case imagePath = "image_path"
+        case helpersNeeded = "helpers_needed"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case publishedAt = "published_at"
@@ -136,6 +139,7 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let endsAt: Date?
     public let location: String?
     public let imagePath: String?
+    public let helpersNeeded: Int
 
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
     public var communityLogoURL: URL? { communityLogoPath.map(Backend.communityLogoURL) }
@@ -143,6 +147,7 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     enum CodingKeys: String, CodingKey {
         case id, title, description, location
         case imagePath = "image_path"
+        case helpersNeeded = "helpers_needed"
         case tenantId = "tenant_id"
         case communityName = "community_name"
         case communityLogoPath = "community_logo_path"
@@ -155,13 +160,25 @@ public nonisolated struct EventParticipation: Codable, Hashable, Sendable {
     public let eventId: UUID
     public let userId: UUID
     public var status: ParticipationStatus
+    public var helping: Bool
     public var profile: Profile?
 
     enum CodingKeys: String, CodingKey {
-        case status
+        case status, helping
         case eventId = "event_id"
         case userId = "user_id"
         case profile = "profiles"
+    }
+}
+
+/// Eigener Stand zu einem Termin: Zusage plus Helfer-Flag.
+public nonisolated struct MyParticipation: Hashable, Sendable {
+    public var status: ParticipationStatus
+    public var helping: Bool
+
+    public init(status: ParticipationStatus, helping: Bool) {
+        self.status = status
+        self.helping = helping
     }
 }
 
@@ -174,10 +191,11 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     public var endsAt: Date?
     public var location: String?
     public var imagePath: String?
+    public var helpersNeeded: Int
     public var visibility: EventVisibility
     public var createdBy: UUID
 
-    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, visibility: EventVisibility, createdBy: UUID) {
+    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, visibility: EventVisibility, createdBy: UUID) {
         self.communityId = communityId
         self.title = title
         self.description = description
@@ -185,6 +203,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         self.endsAt = endsAt
         self.location = location
         self.imagePath = imagePath
+        self.helpersNeeded = helpersNeeded
         self.visibility = visibility
         self.createdBy = createdBy
     }
@@ -193,6 +212,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         case title, description, location, visibility
         case communityId = "community_id"
         case imagePath = "image_path"
+        case helpersNeeded = "helpers_needed"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case createdBy = "created_by"

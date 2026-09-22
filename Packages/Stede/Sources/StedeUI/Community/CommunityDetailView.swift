@@ -137,9 +137,10 @@ struct CommunityDetailView: View {
                 title: event.title, community: model.community.name, communityLogoURL: model.community.logoURL, starts: event.startsAt, ends: event.endsAt,
                 location: event.location, description: event.description, imageURL: event.imageURL,
                 isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
+                helpersNeeded: event.helpersNeeded, helperCount: model.helperCounts[event.id] ?? 0,
                 participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                onParticipate: { status in
-                    Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status) } }
+                onParticipate: { status, helping in
+                    Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
                 },
                 signIn: { showsAccount = true },
                 onEdit: (isAdmin || event.createdBy == auth.userID) ? { editingEvent = event } : nil
@@ -334,6 +335,8 @@ struct EventEditorView: View {
     @State private var hasEnd = false
     @State private var endsAt = Date().addingTimeInterval(7200)
     @State private var isPublic = false
+    @State private var wantsHelpers = false
+    @State private var helpersNeeded = 3
     @State private var saving = false
     @State private var photoItem: PhotosPickerItem?
     @State private var photoData: Data?
@@ -370,6 +373,14 @@ struct EventEditorView: View {
                     TextField("Ort", text: $location)
                     TextField("Beschreibung", text: $description, axis: .vertical).lineLimit(3 ... 8)
                 }
+                Section("Helfer") {
+                    Toggle("Helfer gesucht", isOn: $wantsHelpers.animation())
+                    if wantsHelpers {
+                        Stepper("Anzahl: \(helpersNeeded)", value: $helpersNeeded, in: 1 ... 99)
+                    }
+                    Text("Mitglieder und – bei öffentlichen Terminen – alle Nutzer können sich als Helfer eintragen, bis die Zahl erreicht ist.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section {
                     Toggle("Öffentlich im Kalender der Gemeinde", isOn: $isPublic)
                     Text("Öffentlich zeigt Titel, Zeit, Ort und Community-Name allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
@@ -404,6 +415,8 @@ struct EventEditorView: View {
                     startsAt = existing.startsAt; hasEnd = existing.endsAt != nil; endsAt = existing.endsAt ?? existing.startsAt.addingTimeInterval(3600)
                     isPublic = existing.visibility == .public
                     existingImagePath = existing.imagePath
+                    wantsHelpers = existing.helpersNeeded > 0
+                    helpersNeeded = max(existing.helpersNeeded, 1)
                 }
             }
         }
@@ -426,7 +439,7 @@ struct EventEditorView: View {
         let draft = CommunityEventDraft(
             communityId: community.id, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            imagePath: imagePath, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
+            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
         )
         if await onSave(draft) {
             // Altes Foto räumen, wenn ersetzt oder entfernt.

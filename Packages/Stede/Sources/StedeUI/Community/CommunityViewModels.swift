@@ -26,7 +26,8 @@ final class CommunityDetailModel {
     var community: Community
     var members: [CommunityMember] = []
     var events: [CommunityEvent] = []
-    var myParticipations: [UUID: ParticipationStatus] = [:]
+    var myParticipations: [UUID: MyParticipation] = [:]
+    var helperCounts: [UUID: Int] = [:]
     var state: LoadState = .idle
     var lastError: String?
     private let client = CommunityClient()
@@ -46,8 +47,9 @@ final class CommunityDetailModel {
                 events = try await eventsTask
                 if let userID {
                     let mine = try await client.myParticipations(userID: userID)
-                    myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, $0.status) })
+                    myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, MyParticipation(status: $0.status, helping: $0.helping)) })
                 }
+                helperCounts = try await client.helperCounts(eventIDs: events.filter { $0.helpersNeeded > 0 }.map(\.id))
             } else {
                 members = []
                 events = []
@@ -105,10 +107,11 @@ final class CommunityDetailModel {
         } catch { lastError = error.localizedDescription }
     }
 
-    func setParticipation(event: CommunityEvent, userID: UUID, status: ParticipationStatus?) async {
+    func setParticipation(event: CommunityEvent, userID: UUID, status: ParticipationStatus?, helping: Bool = false) async {
         do {
-            try await client.setParticipation(eventID: event.id, userID: userID, status: status)
-            if let status { myParticipations[event.id] = status } else { myParticipations[event.id] = nil }
+            try await client.setParticipation(eventID: event.id, userID: userID, status: status, helping: helping)
+            if let status { myParticipations[event.id] = MyParticipation(status: status, helping: helping && status != .declined) } else { myParticipations[event.id] = nil }
+            if event.helpersNeeded > 0 { helperCounts = try await client.helperCounts(eventIDs: [event.id]).merging(helperCounts) { new, _ in new } }
         } catch { lastError = error.localizedDescription }
     }
 
@@ -129,7 +132,8 @@ final class CommunityDetailModel {
 final class CommunityCalendarModel {
     var publicEvents: [PublicEvent] = []
     var memberEvents: [CommunityEvent] = []
-    var myParticipations: [UUID: ParticipationStatus] = [:]
+    var myParticipations: [UUID: MyParticipation] = [:]
+    var helperCounts: [UUID: Int] = [:]
     private let client = CommunityClient()
 
     /// Lädt bei jedem Aufruf neu — Termine entstehen auch in anderen Tabs.
@@ -144,19 +148,22 @@ final class CommunityCalendarModel {
             memberEvents = try await memberTask
             if let userID {
                 let mine = try await client.myParticipations(userID: userID)
-                myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, $0.status) })
+                myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, MyParticipation(status: $0.status, helping: $0.helping)) })
             } else {
                 myParticipations = [:]
             }
+            let helperIDs = memberEvents.filter { $0.helpersNeeded > 0 }.map(\.id) + publicEvents.filter { $0.helpersNeeded > 0 }.map(\.id)
+            helperCounts = try await client.helperCounts(eventIDs: helperIDs)
         } catch {
             // Community-Termine sind Beiwerk im Kalender: Fehler stören die Stadt-Termine nicht.
         }
     }
 
-    func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?) async {
+    func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?, helping: Bool = false) async {
         do {
-            try await client.setParticipation(eventID: eventID, userID: userID, status: status)
-            myParticipations[eventID] = status
+            try await client.setParticipation(eventID: eventID, userID: userID, status: status, helping: helping)
+            myParticipations[eventID] = status.map { MyParticipation(status: $0, helping: helping && $0 != .declined) }
+            helperCounts = try await client.helperCounts(eventIDs: [eventID]).merging(helperCounts) { new, _ in new }
         } catch {
             // Fehler zeigt sich daran, dass die Pille nicht umspringt.
         }

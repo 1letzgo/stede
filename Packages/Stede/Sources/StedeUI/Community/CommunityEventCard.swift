@@ -16,9 +16,13 @@ struct CommunityEventCard: View {
     let imageURL: URL?
     let isPublic: Bool
     let isCancelled: Bool
-    let participation: ParticipationStatus?
+    /// Gesuchte Helfer (0 = keine) und Stand.
+    var helpersNeeded = 0
+    var helperCount = 0
+    let participation: MyParticipation?
     let isSignedIn: Bool
-    let onParticipate: (ParticipationStatus?) -> Void
+    /// Status und Helfer-Flag; nil löscht die Zusage.
+    let onParticipate: (ParticipationStatus?, Bool) -> Void
     let signIn: () -> Void
     /// Vorhanden, wenn der Nutzer den Termin bearbeiten darf.
     var onEdit: (() -> Void)?
@@ -37,8 +41,11 @@ struct CommunityEventCard: View {
             details
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .stedeCard(highlighted: participation == .going)
+        .stedeCard(highlighted: participation?.status == .going)
     }
+
+    private var isHelping: Bool { participation?.helping == true }
+    private var helpersOpen: Bool { helpersNeeded > 0 && helperCount < helpersNeeded }
 
     private var details: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -50,6 +57,9 @@ struct CommunityEventCard: View {
                         HStack(spacing: 6) {
                             StedeTagPill(text: starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? ""), color: tint)
                             if isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
+                            if helpersNeeded > 0 {
+                                StedeTagPill(text: helperCount >= helpersNeeded ? "Helfer komplett" : "Helfer \(helperCount)/\(helpersNeeded)", color: helperCount >= helpersNeeded ? StedeTheme.duneGreen : StedeTheme.heather)
+                            }
                         }
                     }
                 }
@@ -72,7 +82,23 @@ struct CommunityEventCard: View {
             }
             if !isCancelled {
                 if isSignedIn {
-                    ParticipationChips(participation: participation, onParticipate: onParticipate)
+                    ParticipationChips(participation: participation?.status) { status in
+                        onParticipate(status, isHelping && status != nil && status != .declined)
+                    }
+                    // Mithelfen: sichtbar, solange Plätze frei sind oder man selbst hilft.
+                    if helpersNeeded > 0, helpersOpen || isHelping {
+                        Button {
+                            if isHelping {
+                                onParticipate(participation?.status ?? .going, false)
+                            } else {
+                                onParticipate(participation?.status == .declined ? .going : (participation?.status ?? .going), true)
+                            }
+                        } label: {
+                            StedeColorChip(title: isHelping ? "Ich helfe mit" : "Mithelfen", symbol: "hands.sparkles.fill", color: StedeTheme.heather, isSelected: isHelping)
+                        }
+                        .buttonStyle(StedeCardButtonStyle())
+                        .accessibilityAddTraits(isHelping ? .isSelected : [])
+                    }
                 } else {
                     Button(action: signIn) {
                         StedeColorChip(title: "Anmelden, um zuzusagen", symbol: "person.crop.circle", color: StedeTheme.ink)

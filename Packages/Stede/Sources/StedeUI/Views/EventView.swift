@@ -29,9 +29,10 @@ struct EventView: View {
                                             title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
                                             location: event.location, description: event.description, imageURL: event.imageURL,
                                             isPublic: event.isPublic, isCancelled: event.cancelledAt != nil,
+                                            helpersNeeded: event.helpersNeeded, helperCount: community.helperCounts[event.id] ?? 0,
                                             participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                                            onParticipate: { status in
-                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                            onParticipate: { status, helping in
+                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status, helping: helping) } }
                                             },
                                             signIn: { showsAccount = true }
                                         )
@@ -40,9 +41,10 @@ struct EventView: View {
                                             title: event.title, community: event.communityName, communityLogoURL: event.communityLogoURL, starts: event.startsAt, ends: event.endsAt,
                                             location: event.location, description: event.description, imageURL: event.imageURL,
                                             isPublic: true, isCancelled: false,
+                                            helpersNeeded: event.helpersNeeded, helperCount: community.helperCounts[event.id] ?? 0,
                                             participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                                            onParticipate: { status in
-                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                            onParticipate: { status, helping in
+                                                Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status, helping: helping) } }
                                             },
                                             signIn: { showsAccount = true }
                                         )
