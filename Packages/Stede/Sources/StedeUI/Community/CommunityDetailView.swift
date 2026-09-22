@@ -307,21 +307,31 @@ struct CommunityEventCard: View {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
             }
             if event.cancelledAt == nil {
-                HStack(spacing: 6) {
-                    ForEach([ParticipationStatus.going, .maybe, .declined], id: \.self) { status in
-                        Button {
-                            onParticipate(participation == status ? nil : status)
-                        } label: {
-                            StedeColorChip(title: label(for: status), symbol: symbol(for: status), color: color(for: status), isSelected: participation == status)
-                        }
-                        .buttonStyle(StedeCardButtonStyle())
-                        .accessibilityAddTraits(participation == status ? .isSelected : [])
-                    }
-                }
-                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                ParticipationChips(participation: participation, onParticipate: onParticipate)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard(highlighted: participation == .going)
+    }
+}
+
+/// Ich komme · Vielleicht · Absage — grün, gelb, rot; nochmal tippen hebt die Wahl auf.
+struct ParticipationChips: View {
+    let participation: ParticipationStatus?
+    let onParticipate: (ParticipationStatus?) -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach([ParticipationStatus.going, .maybe, .declined], id: \.self) { status in
+                Button {
+                    onParticipate(participation == status ? nil : status)
+                } label: {
+                    StedeColorChip(title: label(for: status), symbol: symbol(for: status), color: color(for: status), isSelected: participation == status)
+                }
+                .buttonStyle(StedeCardButtonStyle())
+                .accessibilityAddTraits(participation == status ? .isSelected : [])
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     private func label(for status: ParticipationStatus) -> String {

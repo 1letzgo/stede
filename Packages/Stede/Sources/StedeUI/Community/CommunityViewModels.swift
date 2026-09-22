@@ -129,13 +129,12 @@ final class CommunityDetailModel {
 final class CommunityCalendarModel {
     var publicEvents: [PublicEvent] = []
     var memberEvents: [CommunityEvent] = []
+    var myParticipations: [UUID: ParticipationStatus] = [:]
     private let client = CommunityClient()
-    private var loadedKey: String?
 
-    func load(day: Date, tenantID: UUID?, memberCommunityIDs: [UUID], force: Bool = false) async {
+    /// Lädt bei jedem Aufruf neu — Termine entstehen auch in anderen Tabs.
+    func load(day: Date, tenantID: UUID?, memberCommunityIDs: [UUID], userID: UUID?) async {
         guard let tenantID else { return }
-        let key = "\(IslandTime.isoDate(day))|\(memberCommunityIDs.map(\.uuidString).sorted().joined())"
-        if !force, loadedKey == key { return }
         let start = IslandTime.startOfDay(day)
         let end = IslandTime.endOfDay(day)
         do {
@@ -143,9 +142,23 @@ final class CommunityCalendarModel {
             async let memberTask = client.events(communityIDs: memberCommunityIDs, from: start, to: end)
             publicEvents = try await publicTask
             memberEvents = try await memberTask
-            loadedKey = key
+            if let userID {
+                let mine = try await client.myParticipations(userID: userID)
+                myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, $0.status) })
+            } else {
+                myParticipations = [:]
+            }
         } catch {
             // Community-Termine sind Beiwerk im Kalender: Fehler stören die Stadt-Termine nicht.
+        }
+    }
+
+    func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?) async {
+        do {
+            try await client.setParticipation(eventID: eventID, userID: userID, status: status)
+            myParticipations[eventID] = status
+        } catch {
+            // Fehler zeigt sich daran, dass die Pille nicht umspringt.
         }
     }
 }

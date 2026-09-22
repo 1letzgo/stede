@@ -10,6 +10,7 @@ struct EventView: View {
     var body: some View {
         TabScreen(title: "Kalender") {
             await model.load(day: dateStore.selectedDate, force: true)
+            await loadCommunity()
         } content: {
             LoadStateView(state: model.state, emptyMessage: "Für diesen Tag sind keine Veranstaltungen eingetragen.") {
                 ScrollViewReader { proxy in
@@ -24,9 +25,13 @@ struct EventView: View {
                                         EventCard(event: event, tint: section.part.tint)
                                             .id("event-\(event.id)")
                                     case .community(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: event.isPublic, tint: section.part.tint)
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: event.isPublic, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
+                                            Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                        } signIn: { showsAccount = true }
                                     case .publicEvent(let event):
-                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: true, tint: section.part.tint)
+                                        CalendarCommunityCard(title: event.title, community: event.communityName, time: event.startsAt, end: event.endsAt, location: event.location, description: event.description, isPublic: true, tint: section.part.tint, participation: community.myParticipations[event.id], isSignedIn: auth.isSignedIn) { status in
+                                            Task { if let userID = auth.userID { await community.setParticipation(eventID: event.id, userID: userID, status: status) } }
+                                        } signIn: { showsAccount = true }
                                     }
                                 }
                             }
@@ -43,9 +48,17 @@ struct EventView: View {
         .task(id: dateStore.selectedDate) {
             await model.load(day: dateStore.selectedDate)
         }
-        .task(id: "\(IslandTime.isoDate(dateStore.selectedDate))|\(auth.tenant?.id.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
-            await community.load(day: dateStore.selectedDate, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs)
+        .task(id: "\(IslandTime.isoDate(dateStore.selectedDate))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
+            await loadCommunity()
         }
+        .onAppear { Task { await loadCommunity() } }
+        .sheet(isPresented: $showsAccount) { AccountView() }
+    }
+
+    @State private var showsAccount = false
+
+    private func loadCommunity() async {
+        await community.load(day: dateStore.selectedDate, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
     }
 
     private var memberCommunityIDs: [UUID] {
@@ -115,6 +128,10 @@ private struct CalendarCommunityCard: View {
     let description: String
     let isPublic: Bool
     let tint: Color
+    let participation: ParticipationStatus?
+    let isSignedIn: Bool
+    let onParticipate: (ParticipationStatus?) -> Void
+    let signIn: () -> Void
 
     private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
         .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
@@ -135,8 +152,16 @@ private struct CalendarCommunityCard: View {
             if let location, !location.isEmpty {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
             }
+            if isSignedIn {
+                ParticipationChips(participation: participation, onParticipate: onParticipate)
+            } else {
+                Button(action: signIn) {
+                    StedeColorChip(title: "Anmelden, um zuzusagen", symbol: "person.crop.circle", color: StedeTheme.ink)
+                }
+                .buttonStyle(StedeCardButtonStyle())
+            }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).stedeCard(highlighted: participation == .going)
     }
 }
 

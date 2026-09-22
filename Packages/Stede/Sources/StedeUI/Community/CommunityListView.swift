@@ -75,8 +75,12 @@ struct CommunityListView: View {
         .navigationDestination(item: $invited) { CommunityDetailView(community: $0) }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { showsAccount = true } label: { Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle") }
-                    .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")
+                Button { showsAccount = true } label: {
+                    Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+                        .foregroundStyle(.white)
+                }
+                .tint(.white)
+                .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
