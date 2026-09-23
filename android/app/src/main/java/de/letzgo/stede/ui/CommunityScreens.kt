@@ -145,6 +145,8 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var events by remember { mutableStateOf<List<EventInfo>?>(null) }
     var members by remember { mutableStateOf<List<Member>?>(null) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var past by remember { mutableStateOf<List<EventInfo>?>(null) }
+    var showsPast by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(CommunityTab.Events) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
@@ -163,6 +165,16 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             helpers = runCatching { CommunityApi.helperCounts(events.orEmpty().filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             MyParticipation.load()
         }
+    }
+    // Vergangene Termine erst auf Wunsch laden; nach Änderungen mit auffrischen.
+    LaunchedEffect(id, showsPast, Changes.version) {
+        if (!showsPast || !isMember) return@LaunchedEffect
+        val before = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
+        runCatching { CommunityApi.pastEvents(id, before) }.onSuccess { list ->
+            past = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
+            val counts = runCatching { CommunityApi.helperCounts(list.filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
+            helpers = helpers + counts
+        }.onFailure { past = emptyList() }
     }
     val community = c
     Scaffold(topBar = {
@@ -199,6 +211,15 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (events == null) item { Loading() }
                         else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
                         items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                        if (!showsPast) item {
+                            ColorChip("Vergangene Termine", C.ink, Modifier.fillMaxWidth(), icon = Icons.Default.History) { showsPast = true }
+                        } else {
+                            item { SectionHeader("Vergangen", Icons.Default.History) }
+                            val list = past
+                            if (list == null) item { Loading() }
+                            else if (list.isEmpty()) item { InfoCard("Keine vergangenen Termine.") }
+                            else items(list, key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                        }
                     }
                     CommunityTab.Members -> {
                         val all = members.orEmpty()

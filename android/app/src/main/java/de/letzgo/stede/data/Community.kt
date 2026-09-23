@@ -124,6 +124,10 @@ object CommunityApi {
     suspend fun setMemberRole(communityId: String, userId: String, role: String) { db.from("community_members").update({ set("role", role) }) { filter { eq("community_id", communityId); eq("user_id", userId) } } }
 
     suspend fun events(communityId: String, fromIso: String) = db.from("community_events").select(Columns.raw(EVENT)) { filter { eq("community_id", communityId); gte("starts_at", fromIso) }; order("starts_at", Order.ASCENDING) }.decodeList<CommunityEvent>()
+    /** Vergangene Termine einer Community, neueste zuerst. */
+    suspend fun pastEvents(communityId: String, beforeIso: String, limit: Long = 50) = db.from("community_events").select(Columns.raw(EVENT)) {
+        filter { eq("community_id", communityId); lt("starts_at", beforeIso) }; order("starts_at", Order.DESCENDING); limit(limit)
+    }.decodeList<CommunityEvent>()
     suspend fun events(communityIds: List<String>, fromIso: String, toIso: String): List<CommunityEvent> {
         if (communityIds.isEmpty()) return emptyList()
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()

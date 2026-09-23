@@ -26,6 +26,9 @@ final class CommunityDetailModel {
     var community: Community
     var members: [CommunityMember] = []
     var events: [CommunityEvent] = []
+    /// Erst nach Tipp auf „Vergangene Termine“ geladen; nil = nicht geladen.
+    var pastEvents: [CommunityEvent]?
+    var loadingPast = false
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
     var state: LoadState = .idle
@@ -50,6 +53,7 @@ final class CommunityDetailModel {
                     myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, MyParticipation(status: $0.status, helping: $0.helping)) })
                 }
                 helperCounts = try await client.helperCounts(eventIDs: events.filter { $0.helpersNeeded > 0 }.map(\.id))
+                if pastEvents != nil { await loadPastEvents() }
             } else {
                 members = []
                 events = []
@@ -57,6 +61,19 @@ final class CommunityDetailModel {
             state = .loaded
         } catch {
             state = .failed(error.localizedDescription)
+        }
+    }
+
+    func loadPastEvents() async {
+        loadingPast = true
+        defer { loadingPast = false }
+        do {
+            let past = try await client.pastEvents(communityID: community.id, before: IslandTime.startOfDay(Date()))
+            let counts = try await client.helperCounts(eventIDs: past.filter { $0.helpersNeeded > 0 }.map(\.id))
+            helperCounts.merge(counts) { _, new in new }
+            pastEvents = past
+        } catch {
+            lastError = error.localizedDescription
         }
     }
 
@@ -93,6 +110,7 @@ final class CommunityDetailModel {
         do {
             if let id { try await client.updateEvent(id: id, draft) } else { _ = try await client.createEvent(draft) }
             events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
+            if pastEvents != nil { await loadPastEvents() }
             return true
         } catch {
             lastError = error.localizedDescription
@@ -104,6 +122,7 @@ final class CommunityDetailModel {
         do {
             try await client.cancelEvent(id: event.id)
             events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
+            if pastEvents != nil { await loadPastEvents() }
         } catch { lastError = error.localizedDescription }
     }
 

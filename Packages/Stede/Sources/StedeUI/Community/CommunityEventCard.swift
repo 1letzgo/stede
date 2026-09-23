@@ -98,6 +98,8 @@ private struct EventBody: View {
     private var tint: Color { info.isCancelled ? StedeTheme.harborRed : StedeTheme.seaTeal }
     private var isHelping: Bool { participation?.helping == true }
     private var helpersOpen: Bool { info.helpersNeeded > 0 && helperCount < info.helpersNeeded }
+    /// Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
+    private var isPast: Bool { (info.ends ?? info.starts) < Date() }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -109,6 +111,7 @@ private struct EventBody: View {
                         HStack(spacing: 6) {
                             StedeTagPill(text: showsDate ? info.timeLabel : info.clockLabel, color: tint)
                             if info.isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
+                            else if isPast { StedeTagPill(text: "vorbei", color: StedeTheme.mudflat) }
                             if info.helpersNeeded > 0 {
                                 StedeTagPill(text: helperCount >= info.helpersNeeded ? "Helfer komplett" : "Helfer \(helperCount)/\(info.helpersNeeded)", color: helperCount >= info.helpersNeeded ? StedeTheme.duneGreen : StedeTheme.heather)
                             }
@@ -131,7 +134,7 @@ private struct EventBody: View {
             if let location = info.location, !location.isEmpty {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
             }
-            if !info.isCancelled {
+            if !info.isCancelled && !isPast {
                 if isSignedIn {
                     ParticipationRow(
                         participation: participation,

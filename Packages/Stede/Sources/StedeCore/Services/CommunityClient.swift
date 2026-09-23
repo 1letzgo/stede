@@ -157,6 +157,13 @@ public nonisolated struct CommunityClient: Sendable {
             .order("starts_at").execute().value
     }
 
+    /// Vergangene Termine einer Community, neueste zuerst.
+    public func pastEvents(communityID: UUID, before: Date, limit: Int = 50) async throws -> [CommunityEvent] {
+        try await client.from("community_events").select(Self.eventColumns)
+            .eq("community_id", value: communityID).lt("starts_at", value: before.ISO8601Format())
+            .order("starts_at", ascending: false).limit(limit).execute().value
+    }
+
     /// Termine aller eigenen Communities in einem Zeitraum — für den Kalender-Tab.
     public func events(communityIDs: [UUID], from: Date, to: Date) async throws -> [CommunityEvent] {
         guard !communityIDs.isEmpty else { return [] }

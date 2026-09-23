@@ -80,6 +80,8 @@ fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: ()
 private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit) {
     val tint = if (e.isCancelled) C.red else C.teal
     val count = helpers ?: 0
+    // Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
+    val isPast = (e.ends ?: e.starts).isBefore(Town.now())
     Column(Modifier.padding(CardPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
             CommunityAvatar(e.logoUrl, e.community)
@@ -88,7 +90,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                     textDecoration = if (e.isCancelled) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Pill(timeLabel(e), tint)
-                    if (e.isCancelled) Pill("abgesagt", C.red)
+                    if (e.isCancelled) Pill("abgesagt", C.red) else if (isPast) Pill("vorbei", C.mudflat)
                     if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
             }
@@ -100,7 +102,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
             SmallLabel(Icons.Default.Groups, e.community, tint)
         }
         e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
-        if (!e.isCancelled) {
+        if (!e.isCancelled && !isPast) {
             if (Session.signedIn) ParticipationRow(e, helpers)
             else ColorChip("Anmelden, um zuzusagen", C.ink, icon = Icons.Default.AccountCircle) { onSignIn() }
         }

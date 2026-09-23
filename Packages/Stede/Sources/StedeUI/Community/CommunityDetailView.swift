@@ -154,17 +154,31 @@ struct CommunityDetailView: View {
 
     @ViewBuilder private var eventsSection: some View {
         if model.events.isEmpty { InfoCard { Text("Noch keine anstehenden Termine.").foregroundStyle(.secondary) } }
-        ForEach(model.events) { event in
-            CommunityEventCard(
-                info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
-                participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
-                onParticipate: { status, helping in
-                    Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
-                },
-                signIn: { showsAccount = true },
-                onOpen: { openedEvent = event }
-            )
+        ForEach(model.events) { event in eventCard(event) }
+        if let past = model.pastEvents {
+            StedeSectionHeader(title: "Vergangen", symbol: "clock.arrow.circlepath")
+            if past.isEmpty { InfoCard { Text("Keine vergangenen Termine.").foregroundStyle(.secondary) } }
+            ForEach(past) { event in eventCard(event) }
+        } else {
+            Button { Task { await model.loadPastEvents() } } label: {
+                StedeColorChip(title: model.loadingPast ? "Lade …" : "Vergangene Termine", symbol: "clock.arrow.circlepath", color: StedeTheme.ink)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(StedeCardButtonStyle())
+            .disabled(model.loadingPast)
         }
+    }
+
+    private func eventCard(_ event: CommunityEvent) -> some View {
+        CommunityEventCard(
+            info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
+            participation: model.myParticipations[event.id], isSignedIn: auth.isSignedIn,
+            onParticipate: { status, helping in
+                Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
+            },
+            signIn: { showsAccount = true },
+            onOpen: { openedEvent = event }
+        )
     }
 
     private func canEdit(_ event: CommunityEvent) -> Bool { isAdmin || event.createdBy == auth.userID }
