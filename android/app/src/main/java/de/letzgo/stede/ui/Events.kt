@@ -201,14 +201,14 @@ fun jpeg(context: android.content.Context, uri: Uri, maxSide: Int = 1600): ByteA
 fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val start0 = existing?.starts?.withZoneSameInstant(Town.zone) ?: Town.now().plusDays(1).withHour(18).withMinute(0).withSecond(0).withNano(0)
+    val start0 = existing?.starts?.withZoneSameInstant(Town.zone) ?: Town.now().plusHours(1).withMinute(0).withSecond(0).withNano(0) // nächste volle Stunde
     var title by remember { mutableStateOf(existing?.title ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var location by remember { mutableStateOf(existing?.location ?: "") }
     var day by remember { mutableStateOf(start0.toLocalDate()) }
     var time by remember { mutableStateOf(start0.toLocalTime()) }
     var hasEnd by remember { mutableStateOf(existing?.ends != null) }
-    var endTime by remember { mutableStateOf(existing?.ends?.withZoneSameInstant(Town.zone)?.toLocalTime() ?: start0.toLocalTime().plusHours(2)) }
+    var endTime by remember { mutableStateOf(existing?.ends?.withZoneSameInstant(Town.zone)?.toLocalTime() ?: start0.toLocalTime().plusHours(1)) }
     var helpers by remember { mutableIntStateOf(existing?.helpersNeeded ?: 0) }
     var isPublic by remember { mutableStateOf(existing?.isPublic ?: false) }
     var imagePath by remember { mutableStateOf(existing?.imageUrl?.substringAfter("/event-photos/")) }
@@ -275,7 +275,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
     }
     when (picker) {
         "day" -> DatePickDialog(day, { picker = null }) { day = it; picker = null }
-        "start" -> TimePickDialog(time, { picker = null }) { time = it; if (endTime <= it) endTime = it.plusHours(2); picker = null }
+        "start" -> TimePickDialog(time, { picker = null }) { time = it; if (endTime <= it) endTime = it.plusHours(1); picker = null }
         "end" -> TimePickDialog(endTime, { picker = null }) { endTime = it; picker = null }
     }
     if (confirmCancel && existing != null) AlertDialog(onDismissRequest = { confirmCancel = false },

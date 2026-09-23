@@ -369,9 +369,9 @@ struct EventEditorView: View {
     @State private var title = ""
     @State private var description = ""
     @State private var location = ""
-    @State private var startsAt = Date().addingTimeInterval(3600)
+    @State private var startsAt = EventEditorView.nextFullHour
     @State private var hasEnd = false
-    @State private var endsAt = Date().addingTimeInterval(7200)
+    @State private var endsAt = EventEditorView.nextFullHour.addingTimeInterval(3600)
     @State private var isPublic = false
     @State private var wantsHelpers = false
     @State private var helpersNeeded = 3
@@ -381,6 +381,13 @@ struct EventEditorView: View {
     @State private var existingImagePath: String?
     @State private var removePhoto = false
     @State private var error: String?
+
+    /// Neue Termine beginnen zur nächsten vollen Stunde (10:23 → 11:00), nicht zur aktuellen Minute.
+    static var nextFullHour: Date {
+        let cal = IslandTime.calendar
+        let hour = cal.dateInterval(of: .hour, for: Date())?.start ?? Date()
+        return cal.date(byAdding: .hour, value: 1, to: hour) ?? hour
+    }
 
     var body: some View {
         NavigationStack {
