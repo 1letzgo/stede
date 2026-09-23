@@ -246,14 +246,7 @@ struct EventPhoto: View {
     let height: CGFloat
 
     var body: some View {
-        AsyncImage(url: url) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFill()
-            default:
-                Rectangle().fill(StedeTheme.seaTeal.opacity(0.12))
-            }
-        }
+        RemoteImage(url: url) { Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)) }
         .frame(maxWidth: .infinity)
         .frame(height: height)
         .clipped()

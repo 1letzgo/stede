@@ -14,13 +14,7 @@ struct PersonAvatar: View {
         let edge = side ?? size
         Group {
             if let url {
-                AsyncImage(url: url) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().scaledToFill()
-                    } else {
-                        initials
-                    }
-                }
+                RemoteImage(url: url) { initials }
             } else {
                 initials
             }

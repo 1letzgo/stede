@@ -11,13 +11,7 @@ struct CommunityAvatar: View {
 
     var body: some View {
         if let logoURL {
-            AsyncImage(url: logoURL) { phase in
-                if case .success(let image) = phase {
-                    image.resizable().scaledToFill()
-                } else {
-                    initialsTile
-                }
-            }
+            RemoteImage(url: logoURL) { initialsTile }
             .frame(width: side ?? size, height: side ?? size)
             .clipShape(StedeTheme.chipShape)
             .accessibilityHidden(true)
