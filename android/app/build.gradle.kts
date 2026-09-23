@@ -43,6 +43,9 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    // pdfbox zieht BouncyCastle mit; dessen Post-Quanten-Tabellen (~8 MB) braucht
+    // das Lesen des Abfuhr-PDFs nicht.
+    packaging { resources { excludes += "org/bouncycastle/pqc/**" } }
 }
 
 dependencies {
