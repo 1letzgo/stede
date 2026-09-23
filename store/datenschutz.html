@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stede – Datenschutz</title>
+<style>
+  :root {
+    --bg: #F4F3EC; --surface: #FFFFFF; --text: #1A1A1A; --muted: #5C5C5C;
+    --bar: #284050; --accent: #1F6F80; --line: rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101A1F; --surface: #1B2A32; --text: #F2F2F2; --muted: #A8B3B8;
+      --bar: #1C2E3A; --accent: #6FC3D6; --line: rgba(255,255,255,.1);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101A1F; --surface: #1B2A32; --text: #F2F2F2; --muted: #A8B3B8;
+    --bar: #1C2E3A; --accent: #6FC3D6; --line: rgba(255,255,255,.1);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--bar); color: #fff; padding: 28px 16px; }
+  header div, main { max-width: 760px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 4px 0 0; opacity: .8; }
+  main { padding: 16px 16px 48px; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px 20px; margin: 12px 0; }
+  h2 { font-size: 18px; margin: 4px 0 8px; }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); font-size: 14px; }
+  a { color: var(--accent); }
+  ul { padding-left: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  td, th { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .todo { background: #FFF3C4; color: #5A4500; padding: 0 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header><div>
+  <h1>Datenschutzerklärung</h1>
+  <p>App „stede“ für Westerstede · iOS und Android · Stand: 23. September 2026</p>
+</div></header>
+<main>
+
+<section>
+  <h2>1. Verantwortlicher</h2>
+  <p><span class="todo">[Vor- und Nachname]</span><br>
+     <span class="todo">[Straße Hausnummer]</span><br>
+     <span class="todo">[PLZ Ort]</span><br>
+     E-Mail: <span class="todo">[Kontakt-E-Mail]</span></p>
+  <p class="muted">stede ist ein privates Projekt und keine offizielle App der Stadt Westerstede.</p>
+</section>
+
+<section>
+  <h2>2. Grundsatz</h2>
+  <p>Die App lässt sich ohne Konto nutzen. Sie enthält keine Werbung, kein Tracking und keine Analyse-Werkzeuge. Personenbezogene Daten speichern wir nur, wenn du freiwillig ein Konto für die Communities anlegst.</p>
+</section>
+
+<section>
+  <h2>3. Nutzung ohne Konto</h2>
+  <p>Damit Abfahrten, Wetter und Termine erscheinen, ruft die App öffentliche Datenquellen direkt ab. Dabei erhält der jeweilige Server technisch bedingt die IP-Adresse deines Geräts und die angefragten Daten (z. B. Haltestelle, Straße, Datum). Wir selbst speichern dabei nichts.</p>
+  <table>
+    <tr><th>Quelle</th><th>Wofür</th></tr>
+    <tr><td>api.brightsky.dev (Daten des Deutschen Wetterdienstes)</td><td>Wetter</td></tr>
+    <tr><td>luftdaten.umweltbundesamt.de</td><td>Luftqualität</td></tr>
+    <tr><td>dbf.finalrewind.org (DB IRIS)</td><td>Bahn-Abfahrten</td></tr>
+    <tr><td>fahrplaner.vbn.de (Verkehrsverbund Bremen/Niedersachsen)</td><td>Bus-Abfahrten</td></tr>
+    <tr><td>www.appfuhr.de</td><td>Abfuhrkalender deiner Straße</td></tr>
+    <tr><td>www.westerstede.de</td><td>Veranstaltungen (Ersatzweg)</td></tr>
+    <tr><td>Supabase (siehe Abschnitt 5)</td><td>Veranstaltungen, Orte, Community-Termine</td></tr>
+  </table>
+  <p>Die Stadtkarte ist in der App enthalten und lädt keine Kacheln aus dem Netz. Links zu Websites von Gaststätten, Praxen usw. öffnen die jeweilige Seite im Browser; dort gilt deren Datenschutzerklärung.</p>
+  <p>Auf deinem Gerät speichert die App deine Auswahl (Straße, Haltestelle, Bahnrichtung, Favoriten) und Zwischenspeicher der geladenen Daten. Diese Daten verlassen das Gerät nicht und werden beim Deinstallieren gelöscht.</p>
+  <p class="muted">Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (Bereitstellung der angefragten Inhalte).</p>
+</section>
+
+<section>
+  <h2>4. Konto und Communities (freiwillig)</h2>
+  <p>Für Communities brauchst du ein Konto. Dabei verarbeiten wir:</p>
+  <ul>
+    <li><b>E-Mail-Adresse</b> – für die Anmeldung per Link; sie ist für andere Nutzer nicht sichtbar.</li>
+    <li><b>Anzeigename und Profilbild</b> (optional) – sichtbar für Mitglieder der Communities, in denen du Mitglied bist.</li>
+    <li><b>Mitgliedschaften, Rollen, Zusagen und Helfer-Einträge</b> – sichtbar für Mitglieder derselben Community; Ersteller und Admins eines Termins sehen, wer zu- oder abgesagt hat.</li>
+    <li><b>Inhalte, die du anlegst</b>: Communities (Name, Beschreibung, Logo) und Termine (Titel, Zeit, Ort, Beschreibung, Foto). Als „öffentlich“ markierte Termine sieht jeder Nutzer der App, mit Community-Name, aber ohne Teilnehmerliste.</li>
+    <li><b>Kalender-Abo-Link</b> – ein geheimer Link, über den dein Kalenderprogramm deine Termine abruft. Du kannst ihn in der App jederzeit erneuern.</li>
+  </ul>
+  <p>Fotos, Logos und Profilbilder liegen unter einer zufälligen Adresse. Wer die Adresse kennt, kann das Bild abrufen; sie wird nur in der App an berechtigte Nutzer ausgeliefert.</p>
+  <p>Der App-Admin der Gemeinde gibt neue Communities frei. Er sieht dabei Name und Beschreibung, aber keine internen Termine oder Mitglieder, solange er nicht selbst Mitglied ist.</p>
+  <p class="muted">Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Nutzungsvertrag über die Community-Funktionen).</p>
+</section>
+
+<section>
+  <h2>5. Hosting</h2>
+  <p>Konten, Community-Inhalte und die Stadtinhalte liegen bei Supabase Inc., Rechenzentrum in der EU (Irland, Amazon Web Services). Mit Supabase besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO <span class="todo">[DPA im Supabase-Dashboard abschließen, dann diesen Hinweis entfernen]</span>; für eventuelle Zugriffe aus Drittländern gelten die EU-Standardvertragsklauseln. Die Anmelde-E-Mails verschickt Supabase in unserem Auftrag.</p>
+</section>
+
+<section id="konto-loeschen">
+  <h2>6. Speicherdauer und Konto löschen</h2>
+  <p>Deine Kontodaten speichern wir, bis du das Konto löschst. Das geht jederzeit in der App: <b>Community → Konto → Konto löschen</b>. Dabei werden E-Mail-Adresse, Profil, Profilbild, Mitgliedschaften, Zusagen und dein Kalender-Abo-Link sofort gelöscht. Termine, die du für eine Community angelegt hast, bleiben ohne Bezug zu dir erhalten. Communities, deren einzige Leitung du warst, werden archiviert.</p>
+  <p>Ohne Zugriff auf die App kannst du die Löschung auch per E-Mail an <span class="todo">[Kontakt-E-Mail]</span> beantragen, mit der Adresse, mit der du angemeldet bist. Wir löschen das Konto dann innerhalb von 30 Tagen.</p>
+</section>
+
+<section>
+  <h2>7. Deine Rechte</h2>
+  <p>Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Wende dich dafür an die oben genannte Adresse.</p>
+  <p>Du kannst dich außerdem bei einer Aufsichtsbehörde beschweren, zum Beispiel bei der Landesbeauftragten für den Datenschutz Niedersachsen, Prinzenstraße 5, 30159 Hannover.</p>
+</section>
+
+<section>
+  <h2>8. Kinder</h2>
+  <p>Die Community-Funktionen richten sich an Personen ab 16 Jahren. Jüngere Nutzer brauchen die Zustimmung ihrer Eltern.</p>
+</section>
+
+<section>
+  <h2>9. Änderungen</h2>
+  <p>Wenn sich die App ändert, passen wir diese Erklärung an. Es gilt die jeweils hier veröffentlichte Fassung.</p>
+</section>
+
+</main>
+</body>
+</html>

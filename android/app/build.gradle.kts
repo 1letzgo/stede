@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,16 +9,33 @@ plugins {
 
 android {
     namespace = "de.letzgo.stede"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "de.letzgo.stede"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
+    // Upload-Schlüssel liegt außerhalb von Repo und iCloud; ohne die Datei
+    // entsteht ein unsignierter Release-Build.
+    val signingFile = file("${System.getProperty("user.home")}/Library/Application Support/stede-signing/keystore.properties")
+    signingConfigs {
+        if (signingFile.exists()) create("upload") {
+            val props = Properties().apply { signingFile.inputStream().use { load(it) } }
+            storeFile = file(props.getProperty("storeFile"))
+            storePassword = props.getProperty("storePassword")
+            keyAlias = props.getProperty("keyAlias")
+            keyPassword = props.getProperty("keyPassword")
+        }
+    }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfigs.findByName("upload")?.let { signingConfig = it }
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
