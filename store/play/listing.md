@@ -49,7 +49,7 @@ stede ist ein privates Projekt und keine offizielle App der Stadt Westerstede. F
 - Smartphone-Screenshots: `screenshots/01-start.png` … `07-abfuhr.png` (1080 × 2160)
 
 ## Kontakt (Pflichtfeld)
-- E-Mail: [Kontakt-E-Mail eintragen]
+- E-Mail: goletz@gmail.com
 - Datenschutzerklärung: [öffentliche URL von `datenschutz.html`]
 
 ## Einstufung / App-Inhalte (Antworten für die Play Console)
