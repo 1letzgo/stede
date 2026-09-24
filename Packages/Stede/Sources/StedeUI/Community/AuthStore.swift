@@ -131,6 +131,21 @@ final class AuthStore {
         }
     }
 
+    /// Anmeldung mit Passwort — für Konten, die im Supabase-Dashboard mit Passwort
+    /// angelegt wurden (Prüfkonten von Apple und Google). Normale Nutzer nehmen den Link.
+    func signIn(email: String, password: String) async -> Bool {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            try await Backend.client.auth.signIn(email: email, password: password)
+            lastError = nil
+            return true
+        } catch {
+            lastError = "Anmeldung fehlgeschlagen. E-Mail oder Passwort stimmen nicht."
+            return false
+        }
+    }
+
     /// Rückkehr per Deep-Link (`stede://auth-callback?...`).
     func handle(url: URL) async {
         do { try await Backend.client.auth.session(from: url) } catch { lastError = error.localizedDescription }

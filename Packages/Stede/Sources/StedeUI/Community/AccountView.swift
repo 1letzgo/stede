@@ -9,6 +9,8 @@ struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
     @State private var magicLinkSent = false
+    @State private var usesPassword = false
+    @State private var password = ""
     @State private var name = ""
     @State private var calendarToken: String?
     @State private var photoItem: PhotosPickerItem?
@@ -67,10 +69,26 @@ struct AccountView: View {
                 .textInputAutocapitalization(.never)
                 #endif
                 .autocorrectionDisabled()
-            Button(magicLinkSent ? "Link gesendet – bitte E-Mail öffnen" : "Anmeldelink schicken") {
-                Task { magicLinkSent = await auth.sendMagicLink(email: email.trimmingCharacters(in: .whitespaces)) }
+            if usesPassword {
+                SecureField("Passwort", text: $password)
+                    .textContentType(.password)
+                Button("Anmelden") {
+                    Task { _ = await auth.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password) }
+                }
+                .disabled(email.isEmpty || password.isEmpty || auth.isLoading)
+            } else {
+                Button(magicLinkSent ? "Link gesendet – bitte E-Mail öffnen" : "Anmeldelink schicken") {
+                    Task { magicLinkSent = await auth.sendMagicLink(email: email.trimmingCharacters(in: .whitespaces)) }
+                }
+                .disabled(email.isEmpty || auth.isLoading || magicLinkSent)
             }
-            .disabled(email.isEmpty || auth.isLoading || magicLinkSent)
+        }
+        Section {
+            // Für Konten mit Passwort (z. B. Prüfkonten von Apple und Google).
+            Button(usesPassword ? "Stattdessen Anmeldelink schicken" : "Mit Passwort anmelden") {
+                withAnimation { usesPassword.toggle(); password = "" }
+            }
+            .font(.footnote)
         }
     }
 

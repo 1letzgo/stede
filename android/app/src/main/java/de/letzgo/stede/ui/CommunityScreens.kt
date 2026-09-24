@@ -449,6 +449,8 @@ fun AccountSheet(onDismiss: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     var email by remember { mutableStateOf("") }
     var sent by remember { mutableStateOf(false) }
+    var usesPassword by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
     var name by remember(Session.profile) { mutableStateOf(Session.profile?.displayName ?: "") }
     var token by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -467,8 +469,22 @@ fun AccountSheet(onDismiss: () -> Unit) {
                         Text("Anmelden", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
                         Text("Wir schicken dir einen Link per E-Mail. Öffne ihn auf diesem Gerät.", color = C.secondary, fontSize = 14.sp, modifier = Modifier.padding(vertical = 6.dp))
                         OutlinedTextField(email, { email = it.trim(); sent = false }, label = { Text("E-Mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                        ColorChip(if (sent) "Link gesendet" else "Link senden", C.teal, Modifier.fillMaxWidth().padding(top = 8.dp), icon = Icons.Default.Email, prominent = true, enabled = email.contains("@") && !sent) {
-                            scope.launch { sent = Session.sendMagicLink(email) }
+                        if (usesPassword) {
+                            OutlinedTextField(password, { password = it }, label = { Text("Passwort") }, singleLine = true,
+                                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                            ColorChip("Anmelden", C.teal, Modifier.fillMaxWidth().padding(top = 8.dp), icon = Icons.Default.Login, prominent = true, enabled = email.contains("@") && password.isNotEmpty()) {
+                                scope.launch { Session.signIn(email, password) }
+                            }
+                        } else {
+                            ColorChip(if (sent) "Link gesendet" else "Link senden", C.teal, Modifier.fillMaxWidth().padding(top = 8.dp), icon = Icons.Default.Email, prominent = true, enabled = email.contains("@") && !sent) {
+                                scope.launch { sent = Session.sendMagicLink(email) }
+                            }
+                        }
+                        // Für Konten mit Passwort (z. B. Prüfkonten von Apple und Google).
+                        TextButton(onClick = { usesPassword = !usesPassword; password = "" }, modifier = Modifier.padding(top = 4.dp)) {
+                            Text(if (usesPassword) "Stattdessen Anmeldelink schicken" else "Mit Passwort anmelden", color = C.ink, fontSize = 13.sp)
                         }
                         Session.error?.let { Text(it, color = C.red, fontSize = 13.sp) }
                     }

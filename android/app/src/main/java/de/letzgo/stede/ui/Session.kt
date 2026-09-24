@@ -60,6 +60,11 @@ object Session {
         Backend.supabase.auth.signInWith(OTP, redirectUrl = "stede://auth-callback") { this.email = email }
     }.onFailure { error = it.message }.isSuccess
 
+    /** Anmeldung mit Passwort — für Konten mit Passwort (Prüfkonten von Apple und Google). */
+    suspend fun signIn(email: String, password: String): Boolean = runCatching {
+        Backend.supabase.auth.signInWith(io.github.jan.supabase.auth.providers.builtin.Email) { this.email = email; this.password = password }
+    }.onSuccess { error = null }.onFailure { error = "Anmeldung fehlgeschlagen. E-Mail oder Passwort stimmen nicht." }.isSuccess
+
     suspend fun setName(name: String) { val id = userId ?: return; runCatching { CommunityApi.setDisplayName(id, name); profile = CommunityApi.profile(id) }.onFailure { error = it.message } }
     /** Neues Profilbild (JPEG) setzen oder mit null entfernen; das alte Bild wird gelöscht. */
     suspend fun updateAvatar(jpeg: ByteArray?) {
