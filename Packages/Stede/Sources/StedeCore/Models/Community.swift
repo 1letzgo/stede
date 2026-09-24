@@ -65,6 +65,27 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
     public var logoURL: URL? { logoPath.map(Backend.communityLogoURL) }
 }
 
+/// Standardbild einer Community — als Termin-Kopfbild wählbar statt eines eigenen Fotos.
+/// Die Datei liegt in `event-photos/<community>/defaults/`; Termine verweisen nur darauf.
+public nonisolated struct CommunityHeaderImage: Codable, Hashable, Sendable, Identifiable {
+    public let id: UUID
+    public let communityId: UUID
+    public let path: String
+    public var label: String
+    public var sortOrder: Int
+
+    public var url: URL { Backend.eventPhotoURL(path: path) }
+
+    /// Pfade von Standardbildern dürfen beim Foto-Wechsel eines Termins nicht gelöscht werden.
+    public static func isDefault(path: String) -> Bool { path.contains("/defaults/") }
+
+    enum CodingKeys: String, CodingKey {
+        case id, path, label
+        case communityId = "community_id"
+        case sortOrder = "sort_order"
+    }
+}
+
 public nonisolated struct CommunityMember: Codable, Hashable, Sendable, Identifiable {
     public var id: String { "\(communityId)|\(userId)" }
     public let communityId: UUID

@@ -81,6 +81,10 @@ struct CommunityEventCard: View {
         .contentShape(StedeTheme.cardShape)
         .onTapGesture { onOpen?() }
         .accessibilityAction(named: "Details öffnen") { onOpen?() }
+        // Langes Drücken: teilen wie in der Detailansicht.
+        .contextMenu {
+            EventShareButton(info: info) { Label("Teilen", systemImage: "square.and.arrow.up") }
+        }
     }
 }
 
@@ -198,6 +202,10 @@ struct CommunityEventDetailView: View {
             .toolbar {
                 if let onEdit {
                     ToolbarItem(placement: .cancellationAction) { Button("Bearbeiten") { onEdit() } }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    EventShareButton(info: info) { Image(systemName: "square.and.arrow.up") }
+                        .accessibilityLabel("Teilen")
                 }
                 ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }

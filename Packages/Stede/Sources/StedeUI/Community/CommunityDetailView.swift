@@ -281,6 +281,10 @@ struct CommunityDetailView: View {
         }
         .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
 
+        if isAdmin, let userID = auth.userID {
+            HeaderImagesManager(communityID: model.community.id, userID: userID)
+        }
+
         if !isOwner {
             Button { confirmLeave = true } label: {
                 StedeColorChip(title: "Community verlassen", symbol: "rectangle.portrait.and.arrow.right", color: StedeTheme.harborRed)
@@ -396,8 +400,11 @@ struct EventEditorView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var photoData: Data?
     @State private var existingImagePath: String?
+    /// Foto beim Öffnen — wird nach dem Sichern gelöscht, wenn ersetzt (Standardbilder nie).
+    @State private var originalImagePath: String?
     @State private var removePhoto = false
     @State private var error: String?
+    @State private var headerImages: [CommunityHeaderImage] = []
 
     /// Neue Termine beginnen zur nächsten vollen Stunde (10:23 → 11:00), nicht zur aktuellen Minute.
     static var nextFullHour: Date {
@@ -419,8 +426,14 @@ struct EventEditorView: View {
                             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12))
                             .listRowInsets(EdgeInsets())
                     }
+                    if !headerImages.isEmpty {
+                        HeaderImagePicker(images: headerImages, selectedPath: photoData == nil && !removePhoto ? existingImagePath : nil) { image in
+                            existingImagePath = image.path; photoData = nil; photoItem = nil; removePhoto = false
+                        }
+                        .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
+                    }
                     PhotosPicker(selection: $photoItem, matching: .images) {
-                        Label(photoData == nil && (existingImagePath == nil || removePhoto) ? "Foto auswählen" : "Anderes Foto", systemImage: "photo")
+                        Label(photoData == nil && (existingImagePath == nil || removePhoto) ? "Eigenes Foto auswählen" : "Anderes eigenes Foto", systemImage: "photo")
                     }
                     if photoData != nil || (existingImagePath != nil && !removePhoto) {
                         Button("Foto entfernen", role: .destructive) { photoData = nil; photoItem = nil; removePhoto = true }
@@ -461,6 +474,7 @@ struct EventEditorView: View {
                     }
                 }
             }
+            .task { headerImages = (try? await CommunityClient().headerImages(communityID: communityID)) ?? [] }
             .navigationTitle(existing == nil ? "Neuer Termin" : "Termin bearbeiten")
             .stedeSheetForm()
             .toolbar {
@@ -475,6 +489,7 @@ struct EventEditorView: View {
                     startsAt = existing.startsAt; hasEnd = existing.endsAt != nil; endsAt = existing.endsAt ?? existing.startsAt.addingTimeInterval(3600)
                     isPublic = existing.visibility == .public
                     existingImagePath = existing.imagePath
+                    originalImagePath = existing.imagePath
                     wantsHelpers = existing.helpersNeeded > 0
                     helpersNeeded = max(existing.helpersNeeded, 1)
                 }
@@ -503,8 +518,129 @@ struct EventEditorView: View {
         )
         if await onSave(draft) {
             // Altes Foto räumen, wenn ersetzt oder entfernt.
-            if let old = existingImagePath, old != imagePath { try? await client.deleteEventPhoto(path: old) }
+            if let old = originalImagePath, old != imagePath { try? await client.deleteEventPhoto(path: old) }
             dismiss()
         }
+    }
+}
+
+/// Standardbilder der Community als waagerechte Reihe: antippen setzt das Kopfbild.
+struct HeaderImagePicker: View {
+    let images: [CommunityHeaderImage]
+    let selectedPath: String?
+    let onSelect: (CommunityHeaderImage) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Standardbild").font(.subheadline.weight(.semibold)).padding(.horizontal, 16)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(images) { image in
+                        Button { onSelect(image) } label: {
+                            VStack(spacing: 4) {
+                                RemoteImage(url: image.url) { Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)) }
+                                    .frame(width: 96, height: 64)
+                                    .clipShape(StedeTheme.chipShape)
+                                    .overlay {
+                                        if image.path == selectedPath {
+                                            StedeTheme.chipShape.strokeBorder(StedeTheme.ink, lineWidth: 3)
+                                        }
+                                    }
+                                Text(image.label).font(.caption2).foregroundStyle(.secondary).lineLimit(1).frame(width: 96)
+                            }
+                        }
+                        .buttonStyle(StedeCardButtonStyle())
+                        .accessibilityLabel("Standardbild \(image.label)")
+                        .accessibilityAddTraits(image.path == selectedPath ? .isSelected : [])
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+}
+
+/// Standardbilder verwalten (Leitung und Admins): Raster, hinzufügen mit Namen, löschen per Kontextmenü.
+struct HeaderImagesManager: View {
+    let communityID: UUID
+    let userID: UUID
+    @State private var images: [CommunityHeaderImage] = []
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var pendingData: Data?
+    @State private var label = ""
+    @State private var askLabel = false
+    @State private var busy = false
+    @State private var error: String?
+    private let client = CommunityClient()
+    private let columns = [GridItem(.adaptive(minimum: 96), spacing: 10)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            StedeSectionHeader(title: "Standardbilder", symbol: "photo.on.rectangle")
+            Text("Mitglieder können sie beim Anlegen eines Termins als Kopfbild wählen.")
+                .font(.footnote).foregroundStyle(.secondary)
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(images) { image in
+                    VStack(spacing: 4) {
+                        RemoteImage(url: image.url) { Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)) }
+                            .frame(height: 64).frame(maxWidth: .infinity)
+                            .clipShape(StedeTheme.chipShape)
+                        Text(image.label).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    .contextMenu {
+                        Button("Löschen", systemImage: "trash", role: .destructive) { Task { await delete(image) } }
+                    }
+                }
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    VStack(spacing: 4) {
+                        Image(systemName: busy ? "hourglass" : "plus").font(.title3.weight(.semibold))
+                            .frame(height: 64).frame(maxWidth: .infinity)
+                            .background(StedeTheme.seaTeal.opacity(0.12), in: StedeTheme.chipShape)
+                            .foregroundStyle(StedeTheme.ink)
+                        Text("Hinzufügen").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(busy)
+            }
+            if !images.isEmpty {
+                Text("Zum Löschen lange auf ein Bild drücken.").font(.caption2).foregroundStyle(.tertiary)
+            }
+            if let error { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
+        }
+        .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
+        .task { await load() }
+        .onChange(of: pickerItem) {
+            Task {
+                guard let item = pickerItem, let raw = try? await item.loadTransferable(type: Data.self) else { return }
+                pendingData = EventPhotoResizer.jpeg(from: raw, maxSide: 1600)
+                pickerItem = nil
+                label = ""
+                askLabel = pendingData != nil
+            }
+        }
+        .alert("Name des Bildes", isPresented: $askLabel) {
+            TextField("z. B. Rathaus", text: $label)
+            Button("Abbrechen", role: .cancel) { pendingData = nil }
+            Button("Hinzufügen") { Task { await add() } }
+        }
+    }
+
+    private func load() async {
+        images = (try? await client.headerImages(communityID: communityID)) ?? []
+    }
+
+    private func add() async {
+        guard let data = pendingData else { return }
+        busy = true; defer { busy = false; pendingData = nil }
+        do {
+            let name = label.trimmingCharacters(in: .whitespaces)
+            try await client.addHeaderImage(data, label: name.isEmpty ? "Bild \(images.count + 1)" : name,
+                                            communityID: communityID, userID: userID, sortOrder: (images.map(\.sortOrder).max() ?? 0) + 1)
+            await load()
+        } catch { self.error = error.localizedDescription }
+    }
+
+    private func delete(_ image: CommunityHeaderImage) async {
+        do { try await client.deleteHeaderImage(image); await load() } catch { self.error = error.localizedDescription }
     }
 }

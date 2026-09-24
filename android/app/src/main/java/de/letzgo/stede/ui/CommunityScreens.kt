@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package de.letzgo.stede.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -6,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
@@ -271,6 +274,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (isAdmin) community.inviteCode?.let { code -> item { InviteRow(community.name, code) } }
                     }
                     CommunityTab.Settings -> {
+                        if (isAdmin) item { HeaderImagesManager(id) }
                         item {
                             StedeCard {
                                 CommunityHead(community, null)
@@ -570,4 +574,69 @@ fun AccountSheet(onDismiss: () -> Unit) {
         text = { Text("Dein Konto und deine Teilnahmen werden gelöscht. Communities, die nur du leitest, werden archiviert.") },
         confirmButton = { TextButton({ confirmDelete = false; scope.launch { if (Session.deleteAccount()) onDismiss() } }) { Text("Löschen", color = C.red) } },
         dismissButton = { TextButton({ confirmDelete = false }) { Text("Abbrechen") } })
+}
+
+/** Standardbilder verwalten (Leitung und Admins): Raster, hinzufügen mit Namen, löschen per langem Druck. */
+@Composable
+private fun HeaderImagesManager(communityId: String) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var images by remember { mutableStateOf<List<HeaderImage>>(emptyList()) }
+    var pending by remember { mutableStateOf<ByteArray?>(null) }
+    var label by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf<HeaderImage?>(null) }
+    suspend fun load() { images = runCatching { CommunityApi.headerImages(communityId) }.getOrDefault(emptyList()) }
+    LaunchedEffect(communityId) { load() }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { pending = jpeg(context, it, 1600); label = "" }
+    }
+    StedeCard {
+        SectionHeader("Standardbilder", Icons.Default.Collections)
+        Text("Mitglieder können sie beim Anlegen eines Termins als Kopfbild wählen.", color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(vertical = 6.dp))
+        val rows = (images.map { it as HeaderImage? } + listOf(null)).chunked(3)
+        rows.forEach { row ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { img ->
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (img != null) {
+                            AsyncImage(img.url, img.label, Modifier.fillMaxWidth().height(64.dp).clip(ChipShape)
+                                .combinedClickable(onClick = {}, onLongClick = { confirmDelete = img }), contentScale = ContentScale.Crop)
+                            Text(img.label, fontSize = 11.sp, color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        } else {
+                            Box(Modifier.fillMaxWidth().height(64.dp).clip(ChipShape).background(C.teal.copy(alpha = 0.12f))
+                                .clickable(enabled = !busy) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                contentAlignment = Alignment.Center) { Icon(if (busy) Icons.Default.HourglassTop else Icons.Default.Add, "Hinzufügen", tint = C.ink) }
+                            Text("Hinzufügen", fontSize = 11.sp, color = C.secondary)
+                        }
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+        if (images.isNotEmpty()) Text("Zum Löschen lange auf ein Bild drücken.", fontSize = 11.sp, color = C.tertiary)
+        error?.let { Text(it, color = C.red, fontSize = 13.sp) }
+    }
+    pending?.let { data ->
+        AlertDialog(onDismissRequest = { pending = null }, title = { Text("Name des Bildes") },
+            text = { OutlinedTextField(label, { label = it }, placeholder = { Text("z. B. Rathaus") }, singleLine = true) },
+            confirmButton = { TextButton({
+                pending = null
+                scope.launch {
+                    busy = true
+                    runCatching {
+                        CommunityApi.addHeaderImage(data, label.trim().ifBlank { "Bild ${images.size + 1}" }, communityId, Session.userId!!, (images.maxOfOrNull { it.sortOrder } ?: 0) + 1)
+                    }.onFailure { error = it.message }
+                    load(); busy = false
+                }
+            }) { Text("Hinzufügen") } },
+            dismissButton = { TextButton({ pending = null }) { Text("Abbrechen") } })
+    }
+    confirmDelete?.let { img ->
+        AlertDialog(onDismissRequest = { confirmDelete = null }, title = { Text("„${img.label}“ löschen?") },
+            text = { Text("Termine, die dieses Bild nutzen, verlieren ihr Kopfbild.") },
+            confirmButton = { TextButton({ confirmDelete = null; scope.launch { runCatching { CommunityApi.deleteHeaderImage(img) }.onFailure { error = it.message }; load() } }) { Text("Löschen", color = C.red) } },
+            dismissButton = { TextButton({ confirmDelete = null }) { Text("Abbrechen") } })
+    }
 }

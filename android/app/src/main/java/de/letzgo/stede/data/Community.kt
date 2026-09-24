@@ -60,6 +60,15 @@ object Tenants {
     val location: String? = null, @SerialName("image_path") val imagePath: String? = null, @SerialName("helpers_needed") val helpersNeeded: Int = 0,
 )
 
+/** Standardbild einer Community — als Termin-Kopfbild wählbar; liegt in event-photos/<community>/defaults/. */
+@Serializable data class HeaderImage(
+    val id: String, @SerialName("community_id") val communityId: String, val path: String,
+    val label: String = "", @SerialName("sort_order") val sortOrder: Int = 0,
+) {
+    val url get() = Backend.photoUrl(path)!!
+    companion object { fun isDefault(path: String) = path.contains("/defaults/") }
+}
+
 @Serializable data class Participation(
     @SerialName("event_id") val eventId: String, @SerialName("user_id") val userId: String, val status: String, val helping: Boolean = false,
     @SerialName("profiles") val profile: Profile? = null,
@@ -166,7 +175,29 @@ object CommunityApi {
     suspend fun setAvatar(userId: String, path: String?) {
         db.from("profiles").update(buildJsonObject { put("avatar_url", path) }) { filter { eq("user_id", userId) } }
     }
-    suspend fun deletePhoto(bucket: String, path: String) { runCatching { db.storage.from(bucket).delete(path) } }
+    suspend fun deletePhoto(bucket: String, path: String) {
+        if (bucket == "event-photos" && HeaderImage.isDefault(path)) return // Standardbilder nie mit einem Termin löschen
+        runCatching { db.storage.from(bucket).delete(path) }
+    }
+
+    suspend fun headerImages(communityId: String) = db.from("community_header_images").select(Columns.raw("id,community_id,path,label,sort_order")) {
+        filter { eq("community_id", communityId) }; order("sort_order", Order.ASCENDING); order("created_at", Order.ASCENDING)
+    }.decodeList<HeaderImage>()
+
+    suspend fun addHeaderImage(jpeg: ByteArray, label: String, communityId: String, userId: String, sortOrder: Int) {
+        val path = "${communityId.lowercase()}/defaults/${UUID.randomUUID().toString().lowercase()}.jpg"
+        db.storage.from("event-photos").upload(path, jpeg) { upsert = false; contentType = ContentType.Image.JPEG }
+        db.from("community_header_images").insert(buildJsonObject {
+            put("community_id", communityId); put("path", path); put("label", label); put("sort_order", sortOrder); put("created_by", userId)
+        })
+    }
+
+    /** Entfernt Eintrag und Datei; Termine, die das Bild nutzen, verlieren ihr Kopfbild. */
+    suspend fun deleteHeaderImage(image: HeaderImage) {
+        db.from("community_header_images").delete { filter { eq("id", image.id) } }
+        runCatching { db.from("community_events").update(buildJsonObject { put("image_path", null as String?) }) { filter { eq("community_id", image.communityId); eq("image_path", image.path) } } }
+        runCatching { db.storage.from("event-photos").delete(image.path) }
+    }
 
     @Serializable private data class TokenRow(val token: String)
     suspend fun calendarToken(userId: String): String {

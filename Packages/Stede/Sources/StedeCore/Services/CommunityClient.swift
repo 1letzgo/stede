@@ -200,7 +200,31 @@ public nonisolated struct CommunityClient: Sendable {
     }
 
     public func deleteEventPhoto(path: String) async throws {
+        guard !CommunityHeaderImage.isDefault(path: path) else { return }
         _ = try await client.storage.from("event-photos").remove(paths: [path])
+    }
+
+    // MARK: Standardbilder
+
+    public func headerImages(communityID: UUID) async throws -> [CommunityHeaderImage] {
+        try await client.from("community_header_images").select("id, community_id, path, label, sort_order")
+            .eq("community_id", value: communityID).order("sort_order").order("created_at").execute().value
+    }
+
+    public func addHeaderImage(_ data: Data, label: String, communityID: UUID, userID: UUID, sortOrder: Int) async throws {
+        let path = "\(communityID.uuidString.lowercased())/defaults/\(UUID().uuidString.lowercased()).jpg"
+        try await client.storage.from("event-photos").upload(path, data: data, options: FileOptions(contentType: "image/jpeg"))
+        struct Row: Encodable { let community_id: UUID; let path: String; let label: String; let sort_order: Int; let created_by: UUID }
+        try await client.from("community_header_images")
+            .insert(Row(community_id: communityID, path: path, label: label, sort_order: sortOrder, created_by: userID)).execute()
+    }
+
+    /// Entfernt Eintrag und Datei. Termine, die das Bild nutzen, verlieren ihr Kopfbild.
+    public func deleteHeaderImage(_ image: CommunityHeaderImage) async throws {
+        try await client.from("community_header_images").delete().eq("id", value: image.id).execute()
+        try? await client.from("community_events").update(["image_path": String?.none])
+            .eq("community_id", value: image.communityId).eq("image_path", value: image.path).execute()
+        _ = try? await client.storage.from("event-photos").remove(paths: [image.path])
     }
 
     // MARK: Teilnahme

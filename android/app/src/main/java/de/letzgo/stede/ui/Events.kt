@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package de.letzgo.stede.ui
 
 import android.graphics.Bitmap
@@ -9,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -70,7 +73,11 @@ fun canEdit(e: EventInfo) = Session.userId != null && (e.createdBy == Session.us
 @Composable
 fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: () -> Unit) {
     val going = MyParticipation.byEvent[e.id]?.status == "going"
-    Column(Modifier.cardSurface(onClick = onOpen).goingOutline(going)) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Tippen öffnet die Details, langes Drücken teilt (wie das Kontextmenü in iOS).
+    Column(Modifier.cardSurface().goingOutline(going)
+        .combinedClickable(onClick = onOpen, onLongClick = { scope.launch { EventShare.share(context, e) } })) {
         e.imageUrl?.let { EventPhoto(it, 170.dp) }
         EventBody(e, helpers, compact = true, onSignIn = onSignIn)
     }
@@ -150,6 +157,8 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
         return
     }
     val going = MyParticipation.byEvent[e.id]?.status == "going"
+    val shareContext = LocalContext.current
+    val shareScope = rememberCoroutineScope()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader("Termin", leading = if (showsPeople && e.communityId != null) "Bearbeiten" to { editing = true } else null, trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -157,6 +166,9 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
                 Column(Modifier.cardSurface().goingOutline(going)) {
                     e.imageUrl?.let { EventPhoto(it, 220.dp) }
                     EventBody(e, helpers, compact = false, onSignIn = onSignIn)
+                }
+                ColorChip("Teilen", C.ink, Modifier.fillMaxWidth().padding(top = Spacing), icon = Icons.Default.Share) {
+                    shareScope.launch { EventShare.share(shareContext, e) }
                 }
             }
             if (showsPeople) {
@@ -212,8 +224,12 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
     var endTime by remember { mutableStateOf(existing?.ends?.withZoneSameInstant(Town.zone)?.toLocalTime() ?: start0.toLocalTime().plusHours(1)) }
     var helpers by remember { mutableIntStateOf(existing?.helpersNeeded ?: 0) }
     var isPublic by remember { mutableStateOf(existing?.isPublic ?: false) }
-    var imagePath by remember { mutableStateOf(existing?.imageUrl?.substringAfter("/event-photos/")) }
+    // Foto beim Öffnen: wird nach dem Sichern gelöscht, wenn ersetzt (Standardbilder nie).
+    val originalPath = remember { existing?.imageUrl?.substringAfter("/event-photos/") }
+    var imagePath by remember { mutableStateOf(originalPath) }
     var newImage by remember { mutableStateOf<ByteArray?>(null) }
+    var headerImages by remember { mutableStateOf<List<HeaderImage>>(emptyList()) }
+    LaunchedEffect(communityId) { headerImages = runCatching { CommunityApi.headerImages(communityId) }.getOrDefault(emptyList()) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var picker by remember { mutableStateOf<String?>(null) }
@@ -231,6 +247,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             val draft = EventDraft(communityId, title.trim(), description.trim(), starts.toOffsetDateTime().toString(), ends?.toOffsetDateTime()?.toString(),
                 location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user)
             if (existing == null) CommunityApi.createEvent(draft) else CommunityApi.updateEvent(existing.id, draft)
+            if (originalPath != null && originalPath != path) CommunityApi.deletePhoto("event-photos", originalPath)
         }.onSuccess { Changes.bump(); onDismiss() }.onFailure { error = it.message }
         saving = false
     }
@@ -243,8 +260,12 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             val shown: Any? = newImage ?: imagePath?.let { Backend.photoUrl(it) }
             Column(Modifier.fillMaxWidth().clip(CardShape).background(C.surface)) {
                 if (shown != null) AsyncImage(shown, null, Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                if (headerImages.isNotEmpty()) {
+                    Text("Standardbild", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = C.text, modifier = Modifier.padding(start = 12.dp, top = 12.dp))
+                    HeaderImageRow(headerImages, if (newImage == null) imagePath else null) { imagePath = it.path; newImage = null }
+                }
                 Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ColorChip(if (shown == null) "Foto hinzufügen" else "Foto ändern", C.teal, icon = Icons.Default.Photo) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    ColorChip(if (shown == null) "Eigenes Foto" else "Eigenes Foto ändern", C.teal, icon = Icons.Default.Photo) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                     if (shown != null) ColorChip("Entfernen", C.red, icon = Icons.Default.Delete) { newImage = null; imagePath = null }
                 }
             }
@@ -313,3 +334,19 @@ fun TimePickDialog(time: LocalTime, onDismiss: () -> Unit, onPick: (LocalTime) -
 @Composable
 fun Modifier.goingOutline(isGoing: Boolean): Modifier =
     if (isGoing) border(1.5.dp, C.green.copy(alpha = 0.55f), CardShape) else this
+
+/** Standardbilder der Community als waagerechte Reihe; antippen setzt das Kopfbild. */
+@Composable
+fun HeaderImageRow(images: List<HeaderImage>, selectedPath: String?, onSelect: (HeaderImage) -> Unit) {
+    androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        items(images.size) { i ->
+            val img = images[i]
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp).clickable { onSelect(img) }) {
+                AsyncImage(img.url, img.label, Modifier.size(96.dp, 64.dp).clip(ChipShape)
+                    .then(if (img.path == selectedPath) Modifier.border(3.dp, C.ink, ChipShape) else Modifier),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                Text(img.label, fontSize = 11.sp, color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
