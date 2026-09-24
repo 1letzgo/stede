@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -69,7 +70,7 @@ fun canEdit(e: EventInfo) = Session.userId != null && (e.createdBy == Session.us
 @Composable
 fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: () -> Unit) {
     val going = MyParticipation.byEvent[e.id]?.status == "going"
-    Column(Modifier.cardSurface(highlighted = going, onClick = onOpen)) {
+    Column(Modifier.cardSurface(onClick = onOpen).goingOutline(going)) {
         e.imageUrl?.let { EventPhoto(it, 170.dp) }
         EventBody(e, helpers, compact = true, onSignIn = onSignIn)
     }
@@ -153,7 +154,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
         SheetHeader("Termin", leading = if (showsPeople && e.communityId != null) "Bearbeiten" to { editing = true } else null, trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
-                Column(Modifier.cardSurface(highlighted = going)) {
+                Column(Modifier.cardSurface().goingOutline(going)) {
                     e.imageUrl?.let { EventPhoto(it, 220.dp) }
                     EventBody(e, helpers, compact = false, onSignIn = onSignIn)
                 }
@@ -307,3 +308,8 @@ fun TimePickDialog(time: LocalTime, onDismiss: () -> Unit, onPick: (LocalTime) -
     AlertDialog(onDismissRequest = onDismiss, confirmButton = { TextButton({ onPick(LocalTime.of(state.hour, state.minute)) }) { Text("OK") } },
         dismissButton = { TextButton(onDismiss) { Text("Abbrechen") } }, text = { TimePicker(state) })
 }
+
+/** Zugesagte Termine dezent markieren: weiße Karte, feiner grüner Rahmen statt Türkis-Fläche. */
+@Composable
+fun Modifier.goingOutline(isGoing: Boolean): Modifier =
+    if (isGoing) border(1.5.dp, C.green.copy(alpha = 0.55f), CardShape) else this

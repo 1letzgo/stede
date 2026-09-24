@@ -75,7 +75,8 @@ struct CommunityEventCard: View {
                 .padding(StedeTheme.cardPadding)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .stedeCard(highlighted: participation?.status == .going)
+        .stedeCard()
+        .goingOutline(participation?.status == .going)
         // Karte öffnet die Details; Chips bleiben eigene Ziele.
         .contentShape(StedeTheme.cardShape)
         .onTapGesture { onOpen?() }
@@ -182,7 +183,8 @@ struct CommunityEventDetailView: View {
                             .padding(StedeTheme.cardPadding)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .stedeCard(highlighted: participation?.status == .going)
+                    .stedeCard()
+        .goingOutline(participation?.status == .going)
 
                     if showsParticipants {
                         participantSections
@@ -300,5 +302,19 @@ struct ParticipationRow: View {
         .buttonStyle(StedeCardButtonStyle())
         .accessibilityLabel(label)
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+extension View {
+    /// Zugesagte Termine dezent markieren: weiße Karte, feiner grüner Rahmen
+    /// im Ton des „Ich komme“-Knopfs statt der vollen Türkis-Fläche.
+    func goingOutline(_ isGoing: Bool) -> some View {
+        overlay {
+            if isGoing {
+                StedeTheme.cardShape
+                    .strokeBorder(StedeTheme.duneGreen.opacity(0.55), lineWidth: 1.5)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 }
