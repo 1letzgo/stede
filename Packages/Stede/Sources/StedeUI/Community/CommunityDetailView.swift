@@ -6,11 +6,12 @@ import SwiftUI
 /// wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt.
 struct CommunityDetailView: View {
     private enum Section: CaseIterable, Hashable {
-        case events, members, settings
+        case events, archive, members, settings
 
         var title: String {
             switch self {
             case .events: "Termine"
+            case .archive: "Archiv"
             case .members: "Mitglieder"
             case .settings: "Einstellungen"
             }
@@ -54,6 +55,7 @@ struct CommunityDetailView: View {
                         } else {
                             switch section {
                             case .events: eventsSection
+                            case .archive: archiveSection
                             case .members: membersSection
                             case .settings: settingsSection
                             }
@@ -155,17 +157,24 @@ struct CommunityDetailView: View {
     @ViewBuilder private var eventsSection: some View {
         if model.events.isEmpty { InfoCard { Text("Noch keine anstehenden Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in eventCard(event) }
+    }
+
+    // MARK: Archiv
+
+    /// Vergangene Termine, neueste zuerst; weitere Seiten laden, sobald die letzte Karte erscheint.
+    @ViewBuilder private var archiveSection: some View {
         if let past = model.pastEvents {
-            StedeSectionHeader(title: "Vergangen", symbol: "clock.arrow.circlepath")
             if past.isEmpty { InfoCard { Text("Keine vergangenen Termine.").foregroundStyle(.secondary) } }
-            ForEach(past) { event in eventCard(event) }
-        } else {
-            Button { Task { await model.loadPastEvents() } } label: {
-                StedeColorChip(title: model.loadingPast ? "Lade …" : "Vergangene Termine", symbol: "clock.arrow.circlepath", color: StedeTheme.ink)
-                    .frame(maxWidth: .infinity)
+            ForEach(past) { event in
+                eventCard(event)
+                    .onAppear {
+                        if event.id == past.last?.id { Task { await model.loadMorePastEvents() } }
+                    }
             }
-            .buttonStyle(StedeCardButtonStyle())
-            .disabled(model.loadingPast)
+            if model.loadingPast { ProgressView().frame(maxWidth: .infinity).padding(.vertical, 8) }
+        } else {
+            ProgressView().frame(maxWidth: .infinity).padding(.vertical, 24)
+                .task { await model.loadPastEvents() }
         }
     }
 
@@ -298,11 +307,19 @@ struct CommunityDetailView: View {
                     Button {
                         selection = item
                     } label: {
-                        Text(item.title)
-                            .frame(maxWidth: .infinity)
-                            .stedeSelectionChip(isSelected: selection == item)
+                        // Einstellungen als schmales Zahnrad, die Reiter teilen sich den Rest.
+                        if item == .settings {
+                            Image(systemName: "gearshape.fill")
+                                .frame(width: StedeTheme.chipHeight)
+                                .stedeSelectionChip(isSelected: selection == item)
+                        } else {
+                            Text(item.title)
+                                .frame(maxWidth: .infinity)
+                                .stedeSelectionChip(isSelected: selection == item)
+                        }
                     }
                     .buttonStyle(StedeCardButtonStyle())
+                    .accessibilityLabel(item.title)
                     .accessibilityAddTraits(selection == item ? .isSelected : [])
                 }
             }

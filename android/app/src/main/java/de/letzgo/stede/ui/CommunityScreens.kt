@@ -4,6 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -134,7 +138,22 @@ private fun CommunityPills(c: Community, m: Member?, showsPolicy: Boolean) {
     }
 }
 
-enum class CommunityTab(val title: String) { Events("Termine"), Members("Mitglieder"), Settings("Einstellungen") }
+enum class CommunityTab(val title: String) { Events("Termine"), Archive("Archiv"), Members("Mitglieder"), Settings("Einstellungen") }
+
+/** Reiter wie SectionSwitcher in iOS: drei gleich breite Chips, Einstellungen als schmales Zahnrad. */
+@Composable
+private fun CommunityTabs(selected: CommunityTab, onSelect: (CommunityTab) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        CommunityTab.entries.forEach { t ->
+            if (t == CommunityTab.Settings) {
+                Box(Modifier.heightIn(min = ChipHeight).width(56.dp).clip(RoundedCornerShape(50))
+                    .background(if (selected == t) C.deep else C.surface).clickable { onSelect(t) }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Settings, t.title, tint = if (selected == t) Color.White else C.ink, modifier = Modifier.size(20.dp))
+                }
+            } else SelectionChip(t.title, selected == t, Modifier.weight(1f), compact = true) { onSelect(t) }
+        }
+    }
+}
 
 /** Eine Community wie CommunityDetailView: Umschalter Termine · Mitglieder · Einstellungen wie bei der Bahn;
  *  wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
@@ -146,7 +165,8 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var members by remember { mutableStateOf<List<Member>?>(null) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var past by remember { mutableStateOf<List<EventInfo>?>(null) }
-    var showsPast by remember { mutableStateOf(false) }
+    var hasMorePast by remember { mutableStateOf(true) }
+    var loadingPast by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(CommunityTab.Events) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
@@ -166,15 +186,22 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             MyParticipation.load()
         }
     }
-    // Vergangene Termine erst auf Wunsch laden; nach Änderungen mit auffrischen.
-    LaunchedEffect(id, showsPast, Changes.version) {
-        if (!showsPast || !isMember) return@LaunchedEffect
+    // Archiv: erst beim Öffnen des Reiters laden, seitenweise (20) beim Scrollen.
+    suspend fun loadPast(offset: Long) {
+        if (loadingPast) return
+        loadingPast = true
         val before = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
-        runCatching { CommunityApi.pastEvents(id, before) }.onSuccess { list ->
-            past = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
-            val counts = runCatching { CommunityApi.helperCounts(list.filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
+        runCatching { CommunityApi.pastEvents(id, before, offset) }.onSuccess { page ->
+            val infos = page.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
+            past = if (offset == 0L) infos else past.orEmpty() + infos
+            hasMorePast = page.size == 20
+            val counts = runCatching { CommunityApi.helperCounts(page.filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             helpers = helpers + counts
-        }.onFailure { past = emptyList() }
+        }.onFailure { if (past == null) past = emptyList() }
+        loadingPast = false
+    }
+    LaunchedEffect(id, tab, Changes.version) {
+        if (tab == CommunityTab.Archive && isMember) loadPast(0)
     }
     val community = c
     Scaffold(topBar = {
@@ -184,7 +211,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     }, containerColor = C.sand) { pad ->
         if (community == null) { Box(Modifier.padding(pad)) { Loading() }; return@Scaffold }
         Column(Modifier.padding(pad).fillMaxSize()) {
-            if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { Switcher(CommunityTab.entries, tab, { it.title }) { tab = it } }
+            if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { CommunityTabs(tab) { tab = it } }
             LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (isMember) 0.dp else 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                 if (!isMember) {
                     item {
@@ -211,15 +238,17 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (events == null) item { Loading() }
                         else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
                         items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
-                        if (!showsPast) item {
-                            ColorChip("Vergangene Termine", C.ink, Modifier.fillMaxWidth(), icon = Icons.Default.History) { showsPast = true }
-                        } else {
-                            item { SectionHeader("Vergangen", Icons.Default.History) }
-                            val list = past
-                            if (list == null) item { Loading() }
-                            else if (list.isEmpty()) item { InfoCard("Keine vergangenen Termine.") }
-                            else items(list, key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                    }
+                    CommunityTab.Archive -> {
+                        val list = past
+                        if (list == null) item { Loading() }
+                        else if (list.isEmpty()) item { InfoCard("Keine vergangenen Termine.") }
+                        else items(list, key = { "past${it.id}" }) { e ->
+                            EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e }
+                            // Letzte Karte sichtbar: nächste Seite nachladen.
+                            if (e.id == list.last().id && hasMorePast) LaunchedEffect(list.size) { loadPast(list.size.toLong()) }
                         }
+                        if (loadingPast && list != null) item { Loading() }
                     }
                     CommunityTab.Members -> {
                         val all = members.orEmpty()

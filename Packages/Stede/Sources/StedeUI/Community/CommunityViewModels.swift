@@ -26,9 +26,11 @@ final class CommunityDetailModel {
     var community: Community
     var members: [CommunityMember] = []
     var events: [CommunityEvent] = []
-    /// Erst nach Tipp auf „Vergangene Termine“ geladen; nil = nicht geladen.
+    /// Archiv: erst beim Öffnen des Reiters geladen, seitenweise (20) beim Scrollen; nil = nicht geladen.
     var pastEvents: [CommunityEvent]?
     var loadingPast = false
+    var hasMorePast = true
+    private static let pastPageSize = 20
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
     var state: LoadState = .idle
@@ -64,14 +66,27 @@ final class CommunityDetailModel {
         }
     }
 
+    /// Erste Seite des Archivs (oder neu laden, z. B. nach Bearbeiten).
     func loadPastEvents() async {
+        await loadPast(offset: 0)
+    }
+
+    /// Nächste Seite, wenn das Ende der Liste sichtbar wird.
+    func loadMorePastEvents() async {
+        guard hasMorePast, !loadingPast, let count = pastEvents?.count else { return }
+        await loadPast(offset: count)
+    }
+
+    private func loadPast(offset: Int) async {
         loadingPast = true
         defer { loadingPast = false }
         do {
-            let past = try await client.pastEvents(communityID: community.id, before: IslandTime.startOfDay(Date()))
-            let counts = try await client.helperCounts(eventIDs: past.filter { $0.helpersNeeded > 0 }.map(\.id))
+            let page = try await client.pastEvents(communityID: community.id, before: IslandTime.startOfDay(Date()),
+                                                   offset: offset, limit: Self.pastPageSize)
+            let counts = try await client.helperCounts(eventIDs: page.filter { $0.helpersNeeded > 0 }.map(\.id))
             helperCounts.merge(counts) { _, new in new }
-            pastEvents = past
+            hasMorePast = page.count == Self.pastPageSize
+            pastEvents = offset == 0 ? page : (pastEvents ?? []) + page
         } catch {
             lastError = error.localizedDescription
         }
