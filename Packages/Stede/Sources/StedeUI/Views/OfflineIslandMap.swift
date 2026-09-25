@@ -31,6 +31,7 @@ struct OfflineIslandMap: UIViewRepresentable {
         map.cameraZoomRange = MKMapView.CameraZoomRange(minCenterCoordinateDistance: 150, maxCenterCoordinateDistance: 45000)
         context.coordinator.addBaseLayers(to: map)
         context.coordinator.update(map, pins: pins, selectedID: selectedID, animated: false)
+        context.coordinator.updateDetail(map)
         return map
     }
 
@@ -44,6 +45,11 @@ struct OfflineIslandMap: UIViewRepresentable {
         private var pinIDs: [String] = []
         private var selectedID: String?
         private var styles: [ObjectIdentifier: LayerStyle] = [:]
+        /// Feine Ebenen (Fußwege), die nur beim Hineinzoomen auf der Karte liegen.
+        private var detail: [MKOverlay] = []
+        private var showsDetail = false
+        /// Ab dieser Ausschnittshöhe (Grad) werden Fußwege gezeigt.
+        private static let detailSpan: CLLocationDegrees = 0.035
 
         init(select: @escaping (String) -> Void) {
             self.select = select
@@ -53,7 +59,9 @@ struct OfflineIslandMap: UIViewRepresentable {
 
         func addBaseLayers(to map: MKMapView) {
             // Leere Kacheln ersetzen die Apple-Karte — nichts wird nachgeladen.
-            let blank = BlankTileOverlay()
+            // Deckend in der Grundfarbe: sonst zeigt MapKit dort, wo keine Daten liegen,
+            // sein Karo-Raster für fehlende Kacheln.
+            let blank = BlankTileOverlay(color: UIColor(StedeTheme.sand).resolvedColor(with: map.traitCollection))
             blank.canReplaceMapContent = true
             map.addOverlay(blank, level: .aboveLabels)
 
@@ -68,7 +76,7 @@ struct OfflineIslandMap: UIViewRepresentable {
             ], count: 4)
             add(ground, style: .fill(StedeTheme.mudflat, 0.12), to: map)
             add(multiPolygon(data.land), style: .fill(StedeTheme.sand, 1), to: map)
-            add(multiPolygon(data.polygons["settlement"]), style: .fill(StedeTheme.mudflat, 0.08), to: map)
+            add(multiPolygon(data.polygons["settlement"]), style: .fill(StedeTheme.mudflat, 0.16), to: map)
             add(multiPolygon(data.polygons["sand"]), style: .fill(StedeTheme.sunAmber, 0.20), to: map)
             add(multiPolygon(data.polygons["green"]), style: .fill(StedeTheme.duneGreen, 0.16), to: map)
             add(multiPolygon(data.polygons["dune"]), style: .fill(StedeTheme.duneGreen, 0.28), to: map)
@@ -77,8 +85,11 @@ struct OfflineIslandMap: UIViewRepresentable {
             add(multiPolygon(data.polygons["water"]), style: .fill(StedeTheme.seaTeal, 0.45), to: map)
             add(multiPolyline(data.lines["stream"]), style: .line(StedeTheme.seaTeal, 0.55, width: 1.2, dashed: false), to: map)
             add(multiPolyline(data.lines["groyne"]), style: .line(StedeTheme.mudflat, 0.6, width: 2, dashed: false), to: map)
-            add(multiPolygon(data.buildings), style: .building, to: map)
-            add(multiPolyline(data.lines["path"]), style: .line(StedeTheme.ink, 0.28, width: 1, dashed: true), to: map)
+            // Keine Einzelgebäude: die Siedlungsfläche reicht, und die 11.000 Umrisse kosteten
+            // beim Herauszoomen Sekunden. Fußwege nur nah heran (siehe `regionDidChangeAnimated`).
+            if let paths = multiPolyline(data.lines["path"]) {
+                styles[ObjectIdentifier(paths)] = .line(StedeTheme.ink, 0.28, width: 1, dashed: true); detail.append(paths)
+            }
             add(multiPolyline(data.lines["road"]), style: .line(StedeTheme.ink, 0.38, width: 2.5, dashed: false), to: map)
             add(multiPolyline(data.lines["rail"]), style: .line(StedeTheme.harborRed, 0.6, width: 1.5, dashed: true), to: map)
         }
@@ -170,6 +181,26 @@ struct OfflineIslandMap: UIViewRepresentable {
             }
         }
 
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            updateDetail(mapView)
+        }
+
+        /// Fußwege unter die Straßen legen, sobald nah genug gezoomt ist.
+        func updateDetail(_ map: MKMapView) {
+            let wanted = map.region.span.latitudeDelta < Self.detailSpan
+            guard wanted != showsDetail, !detail.isEmpty else { return }
+            showsDetail = wanted
+            if wanted {
+                // Unter die Straßen (letzte Grundebene vor den Straßen ist das Gewässernetz).
+                let roads = map.overlays.first { styles[ObjectIdentifier($0)].map { if case .line(_, _, 2.5, _) = $0 { true } else { false } } ?? false }
+                for overlay in detail {
+                    if let roads { map.insertOverlay(overlay, below: roads) } else { map.addOverlay(overlay, level: .aboveLabels) }
+                }
+            } else {
+                map.removeOverlays(detail)
+            }
+        }
+
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
             guard let pin = annotation as? PinAnnotation else { return nil }
             let view = (mapView.dequeueReusableAnnotationView(withIdentifier: PinAnnotationView.reuseID) as? PinAnnotationView)
@@ -197,12 +228,18 @@ private enum LayerStyle {
 /// Liefert leere Kacheln: Mit `canReplaceMapContent` zeichnet MapKit dann
 /// nur noch unsere eigenen Flächen und Linien.
 private final class BlankTileOverlay: MKTileOverlay {
-    private static let empty: Data = {
-        UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1)).pngData { _ in }
-    }()
+    private let tile: Data
+
+    init(color: UIColor) {
+        tile = UIGraphicsImageRenderer(size: CGSize(width: 256, height: 256)).pngData { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 256, height: 256))
+        }
+        super.init(urlTemplate: nil)
+    }
 
     override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
-        result(Self.empty, nil)
+        result(tile, nil)
     }
 }
 

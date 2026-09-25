@@ -72,7 +72,8 @@ object MapData {
         val land = root["land"]!!.jsonArray
         val lons = land.flatMap { r -> r.jsonArray.map { it.jsonArray[0].jsonPrimitive.double } }
         val lats = land.flatMap { r -> r.jsonArray.map { it.jsonArray[1].jsonPrimitive.double } }
-        Layers(polys, lines, rings(root["buildings"]!!.jsonArray, true), rings(land, true),
+        // Keine Einzelgebäude: die Siedlungsfläche reicht (spart Laden und Zeichnen der 11.000 Umrisse).
+        Layers(polys, lines, Path(), rings(land, true),
             floatArrayOf(x(lons.min()), y(lats.max()), x(lons.max()), y(lats.min()))).also { loaded = it }
     }
 }
@@ -138,12 +139,11 @@ fun OfflineMap(pins: List<MapPin>, selectedId: String?, modifier: Modifier = Mod
                         })
                     }
                     fill(l.land, sand)
-                    fill(l.polygons["settlement"], mud.copy(alpha = 0.08f))
+                    fill(l.polygons["settlement"], mud.copy(alpha = 0.16f))
                     fill(l.polygons["green"], green.copy(alpha = 0.16f))
                     fill(l.polygons["wood"], green.copy(alpha = 0.40f))
                     fill(l.polygons["water"], teal.copy(alpha = 0.45f))
                     line(l.lines["stream"], teal.copy(alpha = 0.55f), 1.2f)
-                    if (scale > size.width / 6000f) fill(l.buildings, ink.copy(alpha = 0.16f))
                     if (scale > size.width / 5000f) line(l.lines["path"], ink.copy(alpha = 0.28f), 1f, dashed = true)
                     line(l.lines["road"], ink.copy(alpha = 0.38f), 2.2f)
                     line(l.lines["rail"], red.copy(alpha = 0.6f), 1.5f, dashed = true)
