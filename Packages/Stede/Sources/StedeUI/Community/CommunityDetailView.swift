@@ -395,6 +395,7 @@ struct EventEditorView: View {
     @State private var endsAt = EventEditorView.nextFullHour.addingTimeInterval(3600)
     @State private var isPublic = false
     @State private var wantsHelpers = false
+    @State private var commentsEnabled = false
     @State private var helpersNeeded = 3
     @State private var saving = false
     @State private var photoItem: PhotosPickerItem?
@@ -456,8 +457,17 @@ struct EventEditorView: View {
                     Text("Mitglieder und – bei öffentlichen Terminen – alle Nutzer können sich als Helfer eintragen, bis die Zahl erreicht ist.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                Section("Kommentare") {
+                    Toggle("Kommentare erlauben", isOn: $commentsEnabled)
+                        .disabled(isPublic)
+                    Text(isPublic
+                         ? "Kommentare gibt es nur bei internen Terminen."
+                         : "Mitglieder der Gruppe können unter dem Termin Fragen stellen und sich abstimmen.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section {
                     Toggle("Öffentlich im Kalender der Gemeinde", isOn: $isPublic)
+                        .onChange(of: isPublic) { if isPublic { commentsEnabled = false } }
                     Text("Öffentlich zeigt Titel, Zeit, Ort und Gruppenname allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
@@ -492,6 +502,7 @@ struct EventEditorView: View {
                     originalImagePath = existing.imagePath
                     wantsHelpers = existing.helpersNeeded > 0
                     helpersNeeded = max(existing.helpersNeeded, 1)
+                    commentsEnabled = existing.commentsEnabled
                 }
             }
         }
@@ -514,7 +525,7 @@ struct EventEditorView: View {
         let draft = CommunityEventDraft(
             communityId: communityID, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
+            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled && !isPublic, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
         )
         if await onSave(draft) {
             // Altes Foto räumen, wenn ersetzt oder entfernt.

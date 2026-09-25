@@ -149,7 +149,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -225,6 +225,22 @@ public nonisolated struct CommunityClient: Sendable {
         try? await client.from("community_events").update(["image_path": String?.none])
             .eq("community_id", value: image.communityId).eq("image_path", value: image.path).execute()
         _ = try? await client.storage.from("event-photos").remove(paths: [image.path])
+    }
+
+    // MARK: Kommentare
+
+    public func comments(eventID: UUID) async throws -> [EventComment] {
+        try await client.from("event_comments").select("id, event_id, user_id, body, created_at, profiles(user_id, display_name, avatar_url)")
+            .eq("event_id", value: eventID).order("created_at").execute().value
+    }
+
+    public func addComment(eventID: UUID, userID: UUID, body: String) async throws {
+        struct Row: Encodable { let event_id: UUID; let user_id: UUID; let body: String }
+        try await client.from("event_comments").insert(Row(event_id: eventID, user_id: userID, body: body)).execute()
+    }
+
+    public func deleteComment(id: UUID) async throws {
+        try await client.from("event_comments").delete().eq("id", value: id).execute()
     }
 
     // MARK: Teilnahme

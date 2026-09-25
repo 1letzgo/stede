@@ -116,6 +116,8 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var imagePath: String?
     /// 0 = keine Helfer gesucht.
     public var helpersNeeded: Int
+    /// Kommentare der Mitglieder — nur bei internen Terminen, vom Ersteller eingeschaltet.
+    public var commentsEnabled: Bool
     public var visibility: EventVisibility
     public var publishedAt: Date?
     public var cancelledAt: Date?
@@ -145,6 +147,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case communityId = "community_id"
         case imagePath = "image_path"
         case helpersNeeded = "helpers_needed"
+        case commentsEnabled = "comments_enabled"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case publishedAt = "published_at"
@@ -158,6 +161,28 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var communityLogoURL: URL? { community?.logoPath.map(Backend.communityLogoURL) }
     public var isPublic: Bool { visibility == .public && publishedAt != nil }
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        communityId = try c.decode(UUID.self, forKey: .communityId)
+        title = try c.decode(String.self, forKey: .title)
+        description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
+        startsAt = try c.decode(Date.self, forKey: .startsAt)
+        endsAt = try c.decodeIfPresent(Date.self, forKey: .endsAt)
+        location = try c.decodeIfPresent(String.self, forKey: .location)
+        imagePath = try c.decodeIfPresent(String.self, forKey: .imagePath)
+        helpersNeeded = try c.decodeIfPresent(Int.self, forKey: .helpersNeeded) ?? 0
+        // Ältere Zwischenspeicher kennen das Feld noch nicht.
+        commentsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commentsEnabled) ?? false
+        visibility = try c.decode(EventVisibility.self, forKey: .visibility)
+        publishedAt = try c.decodeIfPresent(Date.self, forKey: .publishedAt)
+        cancelledAt = try c.decodeIfPresent(Date.self, forKey: .cancelledAt)
+        version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        createdBy = try c.decodeIfPresent(UUID.self, forKey: .createdBy)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        community = try c.decodeIfPresent(CommunityName.self, forKey: .community)
+    }
 }
 
 /// Öffentlicher Termin aus `v_public_events` — ohne Community-Interna.
@@ -225,10 +250,11 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     public var location: String?
     public var imagePath: String?
     public var helpersNeeded: Int
+    public var commentsEnabled: Bool
     public var visibility: EventVisibility
     public var createdBy: UUID
 
-    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, visibility: EventVisibility, createdBy: UUID) {
+    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, commentsEnabled: Bool = false, visibility: EventVisibility, createdBy: UUID) {
         self.communityId = communityId
         self.title = title
         self.description = description
@@ -237,6 +263,8 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         self.location = location
         self.imagePath = imagePath
         self.helpersNeeded = helpersNeeded
+        // Kommentare gibt es nur bei internen Terminen.
+        self.commentsEnabled = commentsEnabled && visibility == .members
         self.visibility = visibility
         self.createdBy = createdBy
     }
@@ -246,8 +274,27 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         case communityId = "community_id"
         case imagePath = "image_path"
         case helpersNeeded = "helpers_needed"
+        case commentsEnabled = "comments_enabled"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case createdBy = "created_by"
+    }
+}
+
+/// Kommentar zu einem internen Gruppen-Termin (Tabelle `event_comments`).
+public nonisolated struct EventComment: Codable, Hashable, Sendable, Identifiable {
+    public let id: UUID
+    public let eventId: UUID
+    public let userId: UUID
+    public let body: String
+    public let createdAt: Date
+    public var profile: Profile?
+
+    enum CodingKeys: String, CodingKey {
+        case id, body
+        case eventId = "event_id"
+        case userId = "user_id"
+        case createdAt = "created_at"
+        case profile = "profiles"
     }
 }

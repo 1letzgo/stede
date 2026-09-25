@@ -16,6 +16,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
     let isPublic: Bool
     let isCancelled: Bool
     let helpersNeeded: Int
+    /// Kommentare eingeschaltet (nur interne Termine).
+    let commentsEnabled: Bool
     let createdBy: UUID?
     let communityId: UUID?
 
@@ -24,6 +26,7 @@ struct CommunityEventInfo: Identifiable, Hashable {
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = event.isPublic; isCancelled = event.cancelledAt != nil
         helpersNeeded = event.helpersNeeded; createdBy = event.createdBy; communityId = event.communityId
+        commentsEnabled = event.commentsEnabled && !event.isPublic
     }
 
     init(_ event: PublicEvent) {
@@ -31,6 +34,7 @@ struct CommunityEventInfo: Identifiable, Hashable {
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = true; isCancelled = false
         helpersNeeded = event.helpersNeeded; createdBy = nil; communityId = nil
+        commentsEnabled = false
     }
 
     static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
@@ -195,6 +199,10 @@ struct CommunityEventDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .stedeCard()
         .goingOutline(participation?.status == .going)
+
+                    if info.commentsEnabled, isSignedIn {
+                        EventCommentsSection(eventID: info.id, canModerate: showsParticipants)
+                    }
 
                     if showsParticipants {
                         participantSections
@@ -378,6 +386,122 @@ extension View {
                     .strokeBorder(StedeTheme.duneGreen.opacity(0.55), lineWidth: 1.5)
                     .allowsHitTesting(false)
             }
+        }
+    }
+}
+
+/// Kommentare unter einem internen Termin: Liste plus Eingabezeile. Löschen per langem
+/// Druck — eigene Kommentare immer, fremde nur für Ersteller und Admins (RLS prüft mit).
+struct EventCommentsSection: View {
+    let eventID: UUID
+    let canModerate: Bool
+    @Environment(AuthStore.self) private var auth
+    @State private var comments: [EventComment] = []
+    @State private var draft = ""
+    @State private var sending = false
+    @State private var loading = true
+    @State private var failed = false
+    private let client = CommunityClient()
+
+    private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+        .day().month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+            StedeSectionHeader(title: comments.isEmpty ? "Kommentare" : "Kommentare \(comments.count)", symbol: "bubble.left.and.bubble.right.fill")
+            if comments.isEmpty {
+                InfoCard {
+                    Text(loading ? "Lade …" : "Noch keine Kommentare – schreib den ersten.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ForEach(comments) { comment in
+                commentRow(comment)
+            }
+            HStack(spacing: 8) {
+                TextField("Kommentar schreiben", text: $draft, axis: .vertical)
+                    .lineLimit(1 ... 5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(StedeTheme.sand, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                Button {
+                    Task { await send() }
+                } label: {
+                    Image(systemName: sending ? "ellipsis" : "paperplane.fill")
+                        .font(.subheadline.weight(.bold))
+                        .frame(width: 40, height: 40)
+                        .background(canSend ? AnyShapeStyle(StedeTheme.seaTeal) : AnyShapeStyle(StedeTheme.seaTeal.opacity(0.3)), in: Circle())
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(StedeCardButtonStyle())
+                .disabled(!canSend)
+                .accessibilityLabel("Senden")
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity)
+            .stedeCard()
+            if failed {
+                Text("Das hat nicht geklappt. Bitte versuche es noch einmal.")
+                    .font(.footnote).foregroundStyle(StedeTheme.harborRed)
+            }
+        }
+        .task(id: eventID) { await load() }
+    }
+
+    private var canSend: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending }
+
+    private func commentRow(_ comment: EventComment) -> some View {
+        let name = comment.profile?.displayName ?? "Mitglied"
+        return HStack(alignment: .top, spacing: 12) {
+            PersonAvatar(url: comment.profile?.avatarURL, name: name, side: 36)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(name).font(.subheadline.weight(.semibold)).fontDesign(.rounded)
+                    Spacer(minLength: 8)
+                    Text(comment.createdAt.formatted(Self.timeFormat)).font(.caption).foregroundStyle(.secondary)
+                }
+                Text(comment.body).font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .stedeRowCard()
+        .contextMenu {
+            if comment.userId == auth.userID || canModerate {
+                Button("Kommentar löschen", systemImage: "trash", role: .destructive) {
+                    Task { await delete(comment) }
+                }
+            }
+        }
+    }
+
+    private func load() async {
+        loading = true
+        comments = (try? await client.comments(eventID: eventID)) ?? comments
+        loading = false
+    }
+
+    private func send() async {
+        guard let userID = auth.userID else { return }
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        sending = true
+        failed = false
+        do {
+            try await client.addComment(eventID: eventID, userID: userID, body: String(text.prefix(1000)))
+            draft = ""
+            await load()
+        } catch {
+            failed = true
+        }
+        sending = false
+    }
+
+    private func delete(_ comment: EventComment) async {
+        do {
+            try await client.deleteComment(id: comment.id)
+            withAnimation { comments.removeAll { $0.id == comment.id } }
+        } catch {
+            failed = true
         }
     }
 }

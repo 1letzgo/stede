@@ -49,6 +49,7 @@ object Tenants {
     val id: String, @SerialName("community_id") val communityId: String, val title: String, val description: String = "",
     @SerialName("starts_at") val startsAt: String, @SerialName("ends_at") val endsAt: String? = null, val location: String? = null,
     @SerialName("image_path") val imagePath: String? = null, @SerialName("helpers_needed") val helpersNeeded: Int = 0,
+    @SerialName("comments_enabled") val commentsEnabled: Boolean = false,
     val visibility: String = "members", @SerialName("published_at") val publishedAt: String? = null,
     @SerialName("cancelled_at") val cancelledAt: String? = null, @SerialName("created_by") val createdBy: String? = null,
     @SerialName("communities") val community: CommunityRef? = null,
@@ -74,17 +75,25 @@ object Tenants {
     @SerialName("profiles") val profile: Profile? = null,
 )
 
+/** Kommentar zu einem internen Gruppen-Termin (`event_comments`). */
+@Serializable data class EventComment(
+    val id: String, @SerialName("event_id") val eventId: String, @SerialName("user_id") val userId: String, val body: String,
+    @SerialName("created_at") val createdAt: String, @SerialName("profiles") val profile: Profile? = null,
+)
+
 /** Was Karte und Detail über einen Community-Termin brauchen — aus beiden Quellen gebaut. */
 data class EventInfo(
     val id: String, val title: String, val community: String, val logoUrl: String?, val starts: ZonedDateTime, val ends: ZonedDateTime?,
     val location: String?, val description: String, val imageUrl: String?, val isPublic: Boolean, val isCancelled: Boolean,
     val helpersNeeded: Int, val createdBy: String?, val communityId: String?,
+    /** Kommentare eingeschaltet — nur bei internen Terminen. */
+    val commentsEnabled: Boolean = false,
 ) {
     companion object {
         fun of(e: CommunityEvent, fallbackName: String = "", fallbackLogo: String? = null) = EventInfo(
             e.id, e.title, e.community?.name?.ifBlank { null } ?: fallbackName, Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
-            e.helpersNeeded, e.createdBy, e.communityId,
+            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled && !e.isPublic,
         )
         fun of(e: PublicEvent) = EventInfo(
             e.id, e.title, e.communityName, Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,
@@ -98,13 +107,14 @@ data class EventInfo(
     @SerialName("starts_at") val startsAt: String, @SerialName("ends_at") val endsAt: String?, val location: String?,
     @SerialName("image_path") val imagePath: String?, @SerialName("helpers_needed") val helpersNeeded: Int,
     val visibility: String, @SerialName("created_by") val createdBy: String,
+    @SerialName("comments_enabled") val commentsEnabled: Boolean = false,
 )
 
 /** Alle Zugriffe auf den Community-Teil; RLS entscheidet, was sichtbar ist. */
 object CommunityApi {
     private val db get() = Backend.supabase
     private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count"
-    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
+    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()
@@ -148,6 +158,14 @@ object CommunityApi {
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }
     suspend fun updateEvent(id: String, d: EventDraft) { db.from("community_events").update(d) { filter { eq("id", id) } } }
     suspend fun cancelEvent(id: String) { db.from("community_events").update({ set("cancelled_at", java.time.Instant.now().toString()) }) { filter { eq("id", id) } } }
+
+    suspend fun comments(eventId: String) = db.from("event_comments").select(Columns.raw("id,event_id,user_id,body,created_at,profiles(user_id,display_name,avatar_url)")) {
+        filter { eq("event_id", eventId) }; order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+    }.decodeList<EventComment>()
+    suspend fun addComment(eventId: String, userId: String, body: String) {
+        db.from("event_comments").insert(buildJsonObject { put("event_id", eventId); put("user_id", userId); put("body", body) })
+    }
+    suspend fun deleteComment(id: String) { db.from("event_comments").delete { filter { eq("id", id) } } }
 
     suspend fun myParticipations(userId: String) = db.from("event_participations").select(Columns.raw("event_id,user_id,status,helping")) { filter { eq("user_id", userId) } }.decodeList<Participation>()
     suspend fun participations(eventId: String) = db.from("event_participations").select(Columns.raw("event_id,user_id,status,helping,profiles(user_id,display_name,avatar_url)")) { filter { eq("event_id", eventId) } }.decodeList<Participation>()

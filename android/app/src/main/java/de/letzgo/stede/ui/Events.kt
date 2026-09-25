@@ -12,6 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -187,6 +189,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
                     shareScope.launch { EventShare.share(shareContext, e) }
                 }
             }
+            if (e.commentsEnabled && Session.signedIn) item { EventComments(e.id, canModerate = showsPeople) }
             if (showsPeople) {
                 val list = people.orEmpty()
                 val loading = people == null
@@ -240,6 +243,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
     var endTime by remember { mutableStateOf(existing?.ends?.withZoneSameInstant(Town.zone)?.toLocalTime() ?: start0.toLocalTime().plusHours(1)) }
     var helpers by remember { mutableIntStateOf(existing?.helpersNeeded ?: 0) }
     var isPublic by remember { mutableStateOf(existing?.isPublic ?: false) }
+    var comments by remember { mutableStateOf(existing?.commentsEnabled ?: false) }
     // Foto beim Öffnen: wird nach dem Sichern gelöscht, wenn ersetzt (Standardbilder nie).
     val originalPath = remember { existing?.imageUrl?.substringAfter("/event-photos/") }
     var imagePath by remember { mutableStateOf(originalPath) }
@@ -261,7 +265,8 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             var ends = if (hasEnd) ZonedDateTime.of(day, endTime, Town.zone) else null
             if (ends != null && !ends.isAfter(starts)) ends = ends.plusDays(1)
             val draft = EventDraft(communityId, title.trim(), description.trim(), starts.toOffsetDateTime().toString(), ends?.toOffsetDateTime()?.toString(),
-                location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user)
+                location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user,
+                commentsEnabled = comments && !isPublic)
             if (existing == null) CommunityApi.createEvent(draft) else CommunityApi.updateEvent(existing.id, draft)
             if (originalPath != null && originalPath != path) CommunityApi.deletePhoto("event-photos", originalPath)
         }.onSuccess { Changes.bump(); onDismiss() }.onFailure { error = it.message }
@@ -304,7 +309,14 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Öffentlich", color = C.text); Text("Erscheint im Stadtkalender für alle", color = C.secondary, fontSize = 13.sp) }
-                    Switch(isPublic, { isPublic = it })
+                    Switch(isPublic, { isPublic = it; if (it) comments = false })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Kommentare erlauben", color = if (isPublic) C.tertiary else C.text)
+                        Text(if (isPublic) "Nur bei internen Terminen" else "Mitglieder können unter dem Termin schreiben", color = C.secondary, fontSize = 13.sp)
+                    }
+                    Switch(comments, { comments = it }, enabled = !isPublic)
                 }
             }
             error?.let { Text(it, color = C.red) }
@@ -373,5 +385,58 @@ fun LocationLine(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
         Text(text, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Kommentare unter einem internen Termin — wie EventCommentsSection auf iOS. Lange drücken löscht
+ *  (eigene immer, fremde nur für Ersteller und Admins; RLS prüft mit). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun EventComments(eventId: String, canModerate: Boolean) {
+    val scope = rememberCoroutineScope()
+    var comments by remember { mutableStateOf<List<EventComment>?>(null) }
+    var draft by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf<EventComment?>(null) }
+    suspend fun load() { comments = runCatching { CommunityApi.comments(eventId) }.getOrDefault(comments ?: emptyList()) }
+    LaunchedEffect(eventId) { load() }
+    val list = comments.orEmpty()
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing)) {
+        SectionHeader(if (list.isEmpty()) "Kommentare" else "Kommentare ${list.size}", Icons.Default.Forum)
+        if (list.isEmpty()) InfoCard(if (comments == null) "Lade …" else "Noch keine Kommentare – schreib den ersten.")
+        list.forEach { c ->
+            val name = c.profile?.displayName ?: "Mitglied"
+            val time = Town.parse(c.createdAt)?.format(Town.fmt("d. MMM, HH:mm")) ?: ""
+            val mayDelete = c.userId == Session.userId || canModerate
+            RowCard(Modifier.fillMaxWidth().combinedClickable(onClick = {}, onLongClick = { if (mayDelete) confirmDelete = c })) {
+                PersonAvatar(c.profile?.avatar, name, size = 36.dp)
+                Column(Modifier.weight(1f)) {
+                    Row { Text(name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = C.text, modifier = Modifier.weight(1f)); Text(time, fontSize = 12.sp, color = C.secondary) }
+                    Text(c.body, fontSize = 15.sp, color = C.text)
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().cardSurface().padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StedeTextField(draft, { draft = it.take(1000) }, "Kommentar schreiben", Modifier.weight(1f))
+            val canSend = draft.isNotBlank() && !sending
+            IconButton(onClick = {
+                val user = Session.userId ?: return@IconButton
+                sending = true; failed = false
+                scope.launch {
+                    runCatching { CommunityApi.addComment(eventId, user, draft.trim()) }
+                        .onSuccess { draft = ""; load() }.onFailure { failed = true }
+                    sending = false
+                }
+            }, enabled = canSend, modifier = Modifier.size(40.dp).background(if (canSend) C.teal else C.teal.copy(alpha = 0.3f), CircleShape)) {
+                Icon(Icons.AutoMirrored.Filled.Send, "Senden", tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+        }
+        if (failed) Text("Das hat nicht geklappt. Bitte versuche es noch einmal.", color = C.red, fontSize = 13.sp)
+    }
+    confirmDelete?.let { c ->
+        AlertDialog(onDismissRequest = { confirmDelete = null }, title = { Text("Kommentar löschen?") },
+            confirmButton = { TextButton({ confirmDelete = null; scope.launch { runCatching { CommunityApi.deleteComment(c.id) }.onFailure { failed = true }; load() } }) { Text("Löschen", color = C.red) } },
+            dismissButton = { TextButton({ confirmDelete = null }) { Text("Abbrechen") } })
     }
 }
