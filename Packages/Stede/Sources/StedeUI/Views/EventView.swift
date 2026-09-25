@@ -1,8 +1,9 @@
 import StedeCore
 import SwiftUI
 
-/// Kalender als Wochenliste: Filter-Reiter oben, ein Abschnitt je Tag,
-/// Stadt-Termine und Community-Termine in einer Reihenfolge.
+/// Kalender als fortlaufende Liste ab heute: Filter-Reiter oben, ein Abschnitt je Tag
+/// mit Terminen, Stadt- und Gruppen-Termine gemischt. Nach unten lädt sie von selbst
+/// weiter, frühere Termine auf Tipp; „Heute“ in der Leiste springt zurück.
 struct EventView: View {
     private enum Filter: String, CaseIterable {
         case all, city, communities, mine
@@ -26,10 +27,11 @@ struct EventView: View {
         }
     }
 
-    @Environment(SelectedDateStore.self) private var dateStore
     @Environment(AuthStore.self) private var auth
     @AppStorage("calendar.filter") private var filterRaw = Filter.all.rawValue
-    @State private var model = WeekEventViewModel()
+    @State private var model = CalendarFeedModel()
+    @State private var scrollTarget: String?
+    @State private var didScrollToToday = false
     @State private var community = CommunityCalendarModel()
     @State private var showsAccount = false
     @State private var openedEvent: CommunityEventInfo?
@@ -38,23 +40,24 @@ struct EventView: View {
     private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
 
     var body: some View {
-        TabScreen(title: "Kalender", weekNavigator: true) {
-            await model.load(weekStart: dateStore.weekStart, force: true)
+        TabScreen(title: "Kalender", showsDateNavigator: false) {
+            await model.load(force: true)
             await loadCommunity()
         } content: {
             VStack(spacing: 0) {
                 filterRow
                     .padding(.top)
                     .padding(.bottom, StedeTheme.cardSpacing)
-                LoadStateView(state: listState, emptyMessage: emptyMessage) {
+                LoadStateView(state: listState, emptyMessage: "Keine Termine gefunden.") {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                                earlierButton
                                 ForEach(days, id: \.date) { day in
                                     StedeSectionHeader(title: day.title, symbol: day.isToday ? "sun.max.fill" : nil)
-                                        .id("day-\(IslandTime.isoDate(day.date))")
+                                        .id(dayID(day.date))
                                     if day.entries.isEmpty {
-                                        Text("Keine Termine").font(.subheadline).foregroundStyle(.tertiary).padding(.horizontal, 4)
+                                        Text("Heute keine Termine").font(.subheadline).foregroundStyle(.tertiary).padding(.horizontal, 4)
                                     }
                                     ForEach(day.entries) { entry in
                                         switch entry {
@@ -64,20 +67,31 @@ struct EventView: View {
                                         }
                                     }
                                 }
-                                SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App")
+                                laterFooter
                             }
                             .padding([.horizontal, .bottom])
                         }
-                        .onAppear { scrollToToday(proxy) }
-                        .onChange(of: dateStore.weekStart) { scrollToToday(proxy) }
+                        .onChange(of: scrollTarget) {
+                            scrollToCurrent(scrollTarget, in: proxy)
+                            scrollTarget = nil
+                        }
+                        .onChange(of: model.state, initial: true) {
+                            guard !didScrollToToday, model.state == .loaded || model.state == .empty else { return }
+                            didScrollToToday = true
+                            scrollToCurrent(dayID(IslandTime.startOfDay(Date())), in: proxy)
+                        }
                     }
                 }
             }
         }
-        .task(id: dateStore.weekStart) {
-            await model.load(weekStart: dateStore.weekStart)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Heute") { scrollTarget = dayID(IslandTime.startOfDay(Date())) }
+                    .tint(.white)
+            }
         }
-        .task(id: "\(IslandTime.isoDate(dateStore.weekStart))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
+        .task { await model.load() }
+        .task(id: "\(IslandTime.isoDate(model.start))|\(IslandTime.isoDate(model.end))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())") {
             await loadCommunity()
         }
         .onAppear { Task { await loadCommunity() } }
@@ -124,9 +138,10 @@ struct EventView: View {
                     filterRaw = item.rawValue
                 } label: {
                     Text(item.title)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity)
                         .stedeSelectionChip(isSelected: filter == item)
-                        .minimumScaleFactor(0.8)
                 }
                 .buttonStyle(StedeCardButtonStyle())
                 .accessibilityAddTraits(filter == item ? .isSelected : [])
@@ -144,7 +159,39 @@ struct EventView: View {
     }
 
     private func loadCommunity() async {
-        await community.load(from: dateStore.weekStart, to: dateStore.weekEnd, tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
+        await community.load(from: model.start, to: IslandTime.day(model.end, adding: 1), tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
+    }
+
+    private func dayID(_ date: Date) -> String { "day-\(IslandTime.isoDate(date))" }
+
+    // MARK: Nachladen
+
+    /// Oben: frühere Termine auf Tipp — automatisch würde die Liste beim Einfügen springen.
+    private var earlierButton: some View {
+        Button {
+            Task { await model.loadEarlier() }
+        } label: {
+            HStack(spacing: 6) {
+                if model.isLoadingEarlier { ProgressView().controlSize(.small) } else { Image(systemName: "chevron.up") }
+                Text("Frühere Termine")
+            }
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .stedeSelectionChip(isSelected: false)
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .disabled(model.isLoadingEarlier)
+    }
+
+    /// Unten: sobald sichtbar, die nächsten drei Wochen laden.
+    @ViewBuilder private var laterFooter: some View {
+        if model.canLoadLater {
+            HStack { Spacer(); ProgressView(); Spacer() }
+                .padding(.vertical, 8)
+                .onAppear { Task { await model.loadLater() } }
+                .id("later-\(IslandTime.isoDate(model.end))")
+        }
+        SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App")
     }
 
     private func participate(_ info: CommunityEventInfo, _ status: ParticipationStatus?, _ helping: Bool) {
@@ -178,17 +225,19 @@ struct EventView: View {
         let entries: [CalendarEntry]
     }
 
+    /// Nur Tage mit Terminen — plus heute, damit „Heute“ immer ein Ziel hat.
     private var days: [DayGroup] {
-        let format = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).weekday(.wide).day().month(.abbreviated)
+        let thisYear = IslandTime.calendar.component(.year, from: Date())
+        let short = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone).weekday(.wide).day().month(.abbreviated)
+        let long = short.year()
         let today = IslandTime.startOfDay(Date())
-        return (0 ..< 7).compactMap { offset in
-            guard let date = IslandTime.calendar.date(byAdding: .day, value: offset, to: dateStore.weekStart) else { return nil }
-            let items = entries.filter { entry in
-                guard let time = entry.time else { return false }
-                return IslandTime.isSameDay(time, date)
-            }
+        let byDay = Dictionary(grouping: entries.filter { $0.time != nil }) { IslandTime.startOfDay($0.time!) }
+        var dates = Set(byDay.keys.filter { $0 >= model.start && $0 <= model.end })
+        dates.insert(today)
+        return dates.sorted().map { date in
             let isToday = date == today
-            return DayGroup(date: date, title: (isToday ? "Heute, " : "") + date.formatted(format), isToday: isToday, entries: items)
+            let format = IslandTime.calendar.component(.year, from: date) == thisYear ? short : long
+            return DayGroup(date: date, title: (isToday ? "Heute, " : "") + date.formatted(format), isToday: isToday, entries: byDay[date] ?? [])
         }
     }
 
@@ -196,14 +245,6 @@ struct EventView: View {
         if case .failed(let message) = model.state, entries.isEmpty { return .failed(message) }
         if model.state == .loading, entries.isEmpty { return .loading }
         return .loaded
-    }
-
-    private var emptyMessage: String { "Für diese Woche sind keine Termine eingetragen." }
-
-    private func scrollToToday(_ proxy: ScrollViewProxy) {
-        let today = IslandTime.startOfDay(Date())
-        guard today >= dateStore.weekStart, today < dateStore.weekEnd else { return }
-        scrollToCurrent("day-\(IslandTime.isoDate(today))", in: proxy)
     }
 
     private func communityCard(_ info: CommunityEventInfo) -> some View {

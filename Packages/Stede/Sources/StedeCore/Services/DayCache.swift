@@ -54,6 +54,20 @@ public actor DayCache<Value: Codable & Sendable> {
         cached(for: IslandTime.isoDate(day))?.value
     }
 
+    /// Nur ein noch gültiger Eintrag — für Bereichsabfragen, die sonst neu laden.
+    public func fresh(on day: Date) -> Value? {
+        guard let entry = cached(for: IslandTime.isoDate(day)), !isStale(entry, day: day) else { return nil }
+        return entry.value
+    }
+
+    /// Von außen geholten Wert ablegen (eine Bereichsabfrage füllt viele Tage auf einmal).
+    public func store(_ value: Value, on day: Date) {
+        let key = IslandTime.isoDate(day)
+        let entry = CachedDay(fetchedAt: Date(), value: value)
+        memory[key] = entry
+        try? persist(entry, key: key)
+    }
+
     public func value(
         on day: Date,
         force: Bool,

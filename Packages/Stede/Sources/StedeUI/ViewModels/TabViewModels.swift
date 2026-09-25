@@ -215,39 +215,62 @@ final class WeatherViewModel {
 }
 
 /// Stadt-Termine einer ganzen Woche, tageweise aus dem Cache.
+/// Kalender als fortlaufende Liste: startet eine Woche vor heute bis drei Wochen
+/// danach und wächst in Seiten zu 21 Tagen nach unten (automatisch) und oben (auf Tipp).
 @Observable
-final class WeekEventViewModel {
-    var events: [StedeEvent] = []
-    var state: LoadState = .idle
-    private var loadedWeek: Date?
+final class CalendarFeedModel {
+    static let pageDays = 21
+    /// Weiter als ein Jahr voraus gibt es keine Stadt-Termine mehr.
+    static let horizonDays = 365
 
-    func load(weekStart: Date, force: Bool = false) async {
-        if !force, loadedWeek == weekStart, state == .loaded || state == .empty { return }
-        let days = (0 ..< 7).compactMap { IslandTime.calendar.date(byAdding: .day, value: $0, to: weekStart) }
-        var cached: [StedeEvent] = []
-        var complete = true
-        for day in days {
-            if let hit = await EventStore.cached(on: day) { cached += hit } else { complete = false }
-        }
-        if !cached.isEmpty || complete {
-            events = cached
-            loadedWeek = weekStart
-            state = cached.isEmpty ? .empty : .loaded
-        } else if state != .loaded {
-            state = .loading
-        }
+    private(set) var start = IslandTime.day(Date(), adding: -7)
+    private(set) var end = IslandTime.day(Date(), adding: pageDays - 1)
+    private(set) var events: [StedeEvent] = []
+    private(set) var state: LoadState = .idle
+    private(set) var isLoadingEarlier = false
+    private(set) var isLoadingLater = false
+
+    var canLoadLater: Bool { end < IslandTime.day(Date(), adding: Self.horizonDays) }
+
+    /// Erster Aufruf und Pull-to-Refresh: den ganzen bisher geladenen Bereich.
+    func load(force: Bool = false) async {
+        if !force, state == .loaded || state == .empty { return }
+        if events.isEmpty { state = .loading }
         do {
-            var fresh: [StedeEvent] = []
-            try await withThrowingTaskGroup(of: [StedeEvent].self) { group in
-                for day in days { group.addTask { try await EventStore.events(on: day, force: force) } }
-                for try await part in group { fresh += part }
-            }
-            events = fresh.sorted { ($0.time ?? .distantFuture) < ($1.time ?? .distantFuture) }
-            loadedWeek = weekStart
+            let fresh = try await EventStore.events(from: start, through: end, force: force)
+            events = Self.sorted(fresh)
             state = events.isEmpty ? .empty : .loaded
         } catch {
-            if cached.isEmpty && !complete { state = .failed(error.localizedDescription) }
+            if events.isEmpty { state = .failed(error.localizedDescription) }
         }
+    }
+
+    func loadLater() async {
+        guard !isLoadingLater, canLoadLater, state != .loading else { return }
+        isLoadingLater = true
+        defer { isLoadingLater = false }
+        let from = IslandTime.day(end, adding: 1)
+        let to = IslandTime.day(end, adding: Self.pageDays)
+        let more = (try? await EventStore.events(from: from, through: to)) ?? []
+        end = to
+        events = Self.sorted(events + more)
+        if !events.isEmpty { state = .loaded }
+    }
+
+    func loadEarlier() async {
+        guard !isLoadingEarlier else { return }
+        isLoadingEarlier = true
+        defer { isLoadingEarlier = false }
+        let to = IslandTime.day(start, adding: -1)
+        let from = IslandTime.day(start, adding: -Self.pageDays)
+        let more = (try? await EventStore.events(from: from, through: to)) ?? []
+        start = from
+        events = Self.sorted(more + events)
+        if !events.isEmpty { state = .loaded }
+    }
+
+    private static func sorted(_ events: [StedeEvent]) -> [StedeEvent] {
+        events.sorted { ($0.time ?? .distantFuture) < ($1.time ?? .distantFuture) }
     }
 }
 

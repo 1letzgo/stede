@@ -15,17 +15,19 @@ import java.time.LocalDate
     @SerialName("series_note") val seriesNote: String? = null, @SerialName("detail_url") val detailUrl: String? = null,
 )
 
-/** Stadt-Termine je Woche aus `city_events`, offline aus dem Dateicache. */
+/** Stadt-Termine aus `city_events` für einen Tagesbereich; der Startbereich liegt offline im Dateicache. */
 object CityEvents {
-    fun cached(weekStart: LocalDate): List<CityEvent>? = Store.read("events", "$weekStart.json")?.let { runCatching { Http.json.decodeFromString(ListSerializer(CityEvent.serializer()), it) }.getOrNull() }
+    fun cached(name: String): List<CityEvent>? = Store.read("events", "$name.json")?.let { runCatching { Http.json.decodeFromString(ListSerializer(CityEvent.serializer()), it) }.getOrNull() }
 
-    suspend fun week(weekStart: LocalDate): List<CityEvent> {
+    /** `from` bis einschließlich `through`; mit `cacheAs` wird das Ergebnis für den Offline-Start gemerkt. */
+    suspend fun range(from: LocalDate, through: LocalDate, cacheAs: String? = null): List<CityEvent> {
         val tenant = Tenants.current()
         val rows = Backend.supabase.from("city_events").select(Columns.raw("external_id,title,day,starts_at,ends_at,summary,location,organizer,category,series_note,detail_url")) {
-            filter { eq("tenant_id", tenant.id); gte("day", weekStart.toString()); lt("day", weekStart.plusDays(7).toString()); exact("deleted_at", null) }
+            filter { eq("tenant_id", tenant.id); gte("day", from.toString()); lte("day", through.toString()); exact("deleted_at", null) }
             order("starts_at", Order.ASCENDING)
+            limit(2000)
         }.decodeList<CityEvent>()
-        Store.write("events", "$weekStart.json", Http.json.encodeToString(ListSerializer(CityEvent.serializer()), rows))
+        cacheAs?.let { Store.write("events", "$it.json", Http.json.encodeToString(ListSerializer(CityEvent.serializer()), rows)) }
         return rows
     }
 }

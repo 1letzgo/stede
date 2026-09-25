@@ -20,6 +20,24 @@ public nonisolated enum IslandTime: Sendable {
         calendar.date(byAdding: .day, value: 1, to: startOfDay(date)) ?? date
     }
 
+    /// Tagesanfänge von `start` bis einschließlich `end`.
+    public static func days(from start: Date, through end: Date) -> [Date] {
+        var result: [Date] = []
+        var day = startOfDay(start)
+        let last = startOfDay(end)
+        while day <= last {
+            result.append(day)
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return result
+    }
+
+    /// Tag verschoben um `offset` Tage (Tagesanfang).
+    public static func day(_ date: Date, adding offset: Int) -> Date {
+        calendar.date(byAdding: .day, value: offset, to: startOfDay(date)) ?? startOfDay(date)
+    }
+
     public static func isoDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar

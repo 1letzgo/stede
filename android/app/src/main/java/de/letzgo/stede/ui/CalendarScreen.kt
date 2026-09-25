@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.*
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 enum class CalendarFilter(val title: String) { All("Alle"), City("Öffentlich"), Communities("Gruppen"), Mine("Meine") }
 
@@ -25,38 +26,87 @@ sealed class CalendarEntry {
     data class Community(val e: EventInfo) : CalendarEntry() { override val day: LocalDate = e.starts.withZoneSameInstant(Town.zone).toLocalDate(); override val sortKey = e.starts.toInstant().toString() }
 }
 
-/** Wochenkalender wie EventView: Filterzeile oben, Tage der Woche, schwebende Wochen-Navigation. */
+/** Zeilen der fortlaufenden Liste — flach, damit „Heute“ einen festen Index hat. */
+private sealed class CalendarRow(val key: String) {
+    data object Earlier : CalendarRow("earlier")
+    data class Header(val day: LocalDate) : CalendarRow("h$day")
+    data class NoneToday(val day: LocalDate) : CalendarRow("n$day")
+    data class Entry(val entry: CalendarEntry) : CalendarRow(when (entry) { is CalendarEntry.City -> "c${entry.e.externalId}${entry.e.day}"; is CalendarEntry.Community -> "m${entry.e.id}" })
+    data class Later(val end: LocalDate) : CalendarRow("later$end")
+    data object Footer : CalendarRow("footer")
+}
+
+private const val PAGE_DAYS = 21L
+private const val HORIZON_DAYS = 365L
+
+/** Kalender wie EventView: fortlaufende Liste ab heute, Filterzeile oben, nach unten
+ *  lädt sie selbst weiter, frühere Termine auf Tipp, „Heute“ in der Leiste springt zurück. */
 @Composable
 fun CalendarScreen() {
-    var week by remember { mutableStateOf(Town.weekStart(Town.today())) }
+    val today = Town.today()
+    var start by remember { mutableStateOf(today.minusDays(7)) }
+    var end by remember { mutableStateOf(today.plusDays(PAGE_DAYS - 1)) }
     var filter by remember { mutableStateOf(runCatching { CalendarFilter.valueOf(Store.string("calendar.filter", "All")) }.getOrDefault(CalendarFilter.All)) }
-    var city by remember { mutableStateOf(CityEvents.cached(week)) }
+    var city by remember { mutableStateOf(CityEvents.cached("feed")) }
     var community by remember { mutableStateOf<List<EventInfo>>(emptyList()) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var error by remember { mutableStateOf<String?>(null) }
     var open by remember { mutableStateOf<EventInfo?>(null) }
     var showAccount by remember { mutableStateOf(false) }
+    var loadingEarlier by remember { mutableStateOf(false) }
+    var loadingLater by remember { mutableStateOf(false) }
+    var didScroll by remember { mutableStateOf(false) }
     val openUrl = rememberOpenUrl()
     val userId = Session.userId
     val memberIds = Session.activeCommunityIds
-
+    val scope = rememberCoroutineScope()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    LaunchedEffect(week) { listState.scrollToItem(0) }
-    LaunchedEffect(week, userId, memberIds, Changes.version) {
-        city = CityEvents.cached(week) ?: city?.takeIf { false }
+
+    suspend fun communityRange(from: LocalDate, through: LocalDate): List<EventInfo> {
+        val f = from.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val t = through.plusDays(1).atStartOfDay(Town.zone).toOffsetDateTime().toString()
+        val tenant = Tenants.current()
+        val own = CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) }
+        val ownIds = own.map { it.id }.toSet()
+        return own + CommunityApi.publicEvents(tenant.id, f, t).filter { it.id !in ownIds }.map { EventInfo.of(it) }
+    }
+    suspend fun refreshHelpers() { runCatching { helpers = CommunityApi.helperCounts(community.filter { it.helpersNeeded > 0 }.map { it.id }) } }
+
+    // Ganzer geladener Bereich — beim Start, bei An-/Abmeldung und nach Änderungen.
+    LaunchedEffect(userId, memberIds, Changes.version) {
         error = null
-        runCatching { CityEvents.week(week) }.onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }
-        val from = week.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val to = week.plusDays(7).atStartOfDay(Town.zone).toOffsetDateTime().toString()
-        runCatching {
-            val tenant = Tenants.current()
-            val own = CommunityApi.events(memberIds, from, to).map { EventInfo.of(it) }
-            val ownIds = own.map { it.id }.toSet()
-            val public = CommunityApi.publicEvents(tenant.id, from, to).filter { it.id !in ownIds }.map { EventInfo.of(it) }
-            community = own + public
-            helpers = CommunityApi.helperCounts(community.filter { it.helpersNeeded > 0 }.map { it.id })
-        }
+        runCatching { CityEvents.range(start, end, cacheAs = if (start == today.minusDays(7)) "feed" else null) }
+            .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }
+        runCatching { community = communityRange(start, end) }
+        refreshHelpers()
         MyParticipation.load()
-        if (listState.firstVisibleItemIndex > 0 && !listState.isScrollInProgress) listState.scrollToItem(0)
+    }
+
+    fun loadLater() {
+        if (loadingLater || end >= today.plusDays(HORIZON_DAYS)) return
+        loadingLater = true
+        scope.launch {
+            val from = end.plusDays(1); val to = end.plusDays(PAGE_DAYS)
+            val more = runCatching { CityEvents.range(from, to) }.getOrDefault(emptyList())
+            val moreCommunity = runCatching { communityRange(from, to) }.getOrDefault(emptyList())
+            city = (city.orEmpty() + more).distinctBy { it.externalId + it.day }
+            community = (community + moreCommunity).distinctBy { it.id }
+            end = to; loadingLater = false
+            refreshHelpers()
+        }
+    }
+
+    fun loadEarlier() {
+        if (loadingEarlier) return
+        loadingEarlier = true
+        scope.launch {
+            val to = start.minusDays(1); val from = start.minusDays(PAGE_DAYS)
+            val more = runCatching { CityEvents.range(from, to) }.getOrDefault(emptyList())
+            val moreCommunity = runCatching { communityRange(from, to) }.getOrDefault(emptyList())
+            city = (more + city.orEmpty()).distinctBy { it.externalId + it.day }
+            community = (moreCommunity + community).distinctBy { it.id }
+            start = from; loadingEarlier = false
+            refreshHelpers()
+        }
     }
 
     val entries = buildList {
@@ -68,34 +118,52 @@ fun CalendarScreen() {
         }
     }.sortedBy { it.sortKey }.groupBy { it.day }
 
-    Scaffold(topBar = { StedeTopBar("Kalender") }, containerColor = C.sand) { pad ->
-        Box(Modifier.padding(pad).fillMaxSize()) {
-            Column(Modifier.fillMaxSize()) {
+    // Nur Tage mit Terminen, dazu immer heute.
+    val rows = buildList {
+        add(CalendarRow.Earlier)
+        (entries.keys.filter { !it.isBefore(start) && !it.isAfter(end) } + today).distinct().sorted().forEach { day ->
+            add(CalendarRow.Header(day))
+            val list = entries[day].orEmpty()
+            if (list.isEmpty()) add(CalendarRow.NoneToday(day)) else list.forEach { add(CalendarRow.Entry(it)) }
+        }
+        if (end < today.plusDays(HORIZON_DAYS)) add(CalendarRow.Later(end))
+        add(CalendarRow.Footer)
+    }
+    val todayIndex = rows.indexOfFirst { it is CalendarRow.Header && it.day == today }
+
+    LaunchedEffect(city != null) {
+        if (!didScroll && city != null && todayIndex >= 0) { didScroll = true; listState.scrollToItem(todayIndex) }
+    }
+
+    Scaffold(topBar = {
+        StedeTopBar("Kalender", actions = {
+            TextButton(onClick = { scope.launch { listState.animateScrollToItem(todayIndex.coerceAtLeast(0)) } }) { Text("Heute", color = androidx.compose.ui.graphics.Color.White) }
+        })
+    }, containerColor = C.sand) { pad ->
+        Column(Modifier.padding(pad).fillMaxSize()) {
             Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { Switcher(CalendarFilter.entries, filter, { it.title }) { filter = it; Store.setString("calendar.filter", it.name) } }
-            LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-                if (city == null && error == null && community.isEmpty()) item { Loading() }
-                error?.let { item { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard(it) } } }
-                (0L..6L).map { week.plusDays(it) }.forEach { day ->
-                    val list = entries[day].orEmpty()
-                    item(key = "h$day") {
-                        Box(Modifier.padding(horizontal = 16.dp)) {
-                            SectionHeader((if (day == Town.today()) "Heute, " else "") + day.format(Town.fmt("EEEE, d. MMM")), if (day == Town.today()) Icons.Default.WbSunny else null)
-                        }
-                    }
-                    if (list.isEmpty()) item(key = "e$day") { Text("Keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 20.dp)) }
-                    items(list, key = { when (it) { is CalendarEntry.City -> "c${it.e.externalId}${it.e.day}"; is CalendarEntry.Community -> "m${it.e.id}" } }) { entry ->
-                        Box(Modifier.padding(horizontal = 16.dp)) {
-                            when (entry) {
+            if (city == null && error == null && community.isEmpty()) Loading()
+            error?.let { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard(it) } }
+            LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+                items(rows, key = { it.key }) { row ->
+                    Box(Modifier.padding(horizontal = 16.dp)) {
+                        when (row) {
+                            CalendarRow.Earlier -> SelectionChip(if (loadingEarlier) "Lade …" else "Frühere Termine", false, Modifier.fillMaxWidth(), icon = Icons.Default.KeyboardArrowUp) { loadEarlier() }
+                            is CalendarRow.Header -> SectionHeader((if (row.day == today) "Heute, " else "") + row.day.format(Town.fmt(if (row.day.year == today.year) "EEEE, d. MMM" else "EEEE, d. MMM yyyy")), if (row.day == today) Icons.Default.WbSunny else null)
+                            is CalendarRow.NoneToday -> Text("Heute keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                            is CalendarRow.Entry -> when (val entry = row.entry) {
                                 is CalendarEntry.City -> CityEventRow(entry.e) { entry.e.detailUrl?.let(openUrl) }
                                 is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true }) { open = entry.e }
                             }
+                            is CalendarRow.Later -> {
+                                Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
+                                LaunchedEffect(row.end) { loadLater() }
+                            }
+                            CalendarRow.Footer -> SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen")
                         }
                     }
                 }
-                item { SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen") }
             }
-            }
-            DayBar(week, week = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { week = Town.weekStart(it) }
         }
     }
     open?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { open = null; showAccount = true }) { open = null } }
