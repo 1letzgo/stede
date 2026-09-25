@@ -2,8 +2,8 @@ import SwiftUI
 import StedeCore
 
 public enum StedeTheme {
-    /// Hintergrundblau des App-Icons (RGB 15, 70, 173).
-    public static let iconBlue = Color(red: 31 / 255, green: 111 / 255, blue: 128 / 255)
+    /// Akzent: Rot des App-Icons (#7A0000). Name aus der Inselzeit behalten.
+    public static let iconBlue = Color(red: 122 / 255, green: 0, blue: 0)
 
     /// Insel-Palette: Sandgrund, Kartenfläche, Hafen, Düne, Sonne, Meer.
     static let sand = Color("StedeSand", bundle: .module)

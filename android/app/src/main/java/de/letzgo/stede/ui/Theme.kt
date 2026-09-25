@@ -8,19 +8,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
-/** Westerstede-Palette mit denselben Rollen wie StedeTheme in iOS; hell und dunkel. */
+/** Palette im Rot des App-Icons, mit denselben Rollen wie StedeTheme in iOS; hell und dunkel. */
 object C {
-    val deep = Color(0xFF284050)
+    val deep = Color(0xFF7A0000) // gefüllte Chips: Rot des App-Icons
     val bar = Color(0xFF7A0000) // Leiste: Rot aus dem App-Icon
     val red @Composable @ReadOnlyComposable get() = pick(0xFFD8232F, 0xFFF0566A)
     val green @Composable @ReadOnlyComposable get() = pick(0xFF5C8A12, 0xFF96CD20)
     val amber @Composable @ReadOnlyComposable get() = pick(0xFFE3A11C, 0xFFFAB325)
-    val teal @Composable @ReadOnlyComposable get() = pick(0xFF1F7F8C, 0xFF6FC3D6)
+    val teal @Composable @ReadOnlyComposable get() = pick(0xFF963737, 0xFFE39A9A)
     val heather @Composable @ReadOnlyComposable get() = pick(0xFFC0106E, 0xFFE85CA6)
     val mudflat @Composable @ReadOnlyComposable get() = pick(0xFF8A6A3C, 0xFFD0B48A)
-    val ink @Composable @ReadOnlyComposable get() = pick(0xFF294753, 0xFFA9CBD6)
-    val sand @Composable @ReadOnlyComposable get() = pick(0xFFF4F3EC, 0xFF101A1F)
-    val surface @Composable @ReadOnlyComposable get() = pick(0xFFFFFFFF, 0xFF1B2A32)
+    val ink @Composable @ReadOnlyComposable get() = pick(0xFF7A0000, 0xFFF0B8B8)
+    val sand @Composable @ReadOnlyComposable get() = pick(0xFFF6F1EE, 0xFF171111)
+    val surface @Composable @ReadOnlyComposable get() = pick(0xFFFFFFFF, 0xFF261C1C)
     val text @Composable @ReadOnlyComposable get() = pick(0xFF1A1A1A, 0xFFF2F2F2)
     val secondary @Composable @ReadOnlyComposable get() = text.copy(alpha = 0.62f)
     val tertiary @Composable @ReadOnlyComposable get() = text.copy(alpha = 0.38f)
@@ -31,7 +31,7 @@ object C {
 
 @Composable
 fun StedeTheme(content: @Composable () -> Unit) {
-    val scheme = if (isSystemInDarkTheme()) darkColorScheme(primary = Color(0xFFA9CBD6), background = Color(0xFF101A1F), surface = Color(0xFF1B2A32), onSurface = Color(0xFFF2F2F2), onBackground = Color(0xFFF2F2F2), surfaceContainer = Color(0xFF1B2A32))
-    else lightColorScheme(primary = Color(0xFF294753), background = Color(0xFFF4F3EC), surface = Color.White, onSurface = Color(0xFF1A1A1A), onBackground = Color(0xFF1A1A1A), surfaceContainer = Color.White)
+    val scheme = if (isSystemInDarkTheme()) darkColorScheme(primary = Color(0xFFE39A9A), background = Color(0xFF171111), surface = Color(0xFF261C1C), onSurface = Color(0xFFF2F2F2), onBackground = Color(0xFFF2F2F2), surfaceContainer = Color(0xFF261C1C))
+    else lightColorScheme(primary = Color(0xFF7A0000), background = Color(0xFFF6F1EE), surface = Color.White, onSurface = Color(0xFF1A1A1A), onBackground = Color(0xFF1A1A1A), surfaceContainer = Color.White)
     MaterialTheme(colorScheme = scheme, content = content)
 }
