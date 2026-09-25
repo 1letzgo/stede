@@ -49,9 +49,12 @@ struct AccountView: View {
         .navigationTitle(auth.isSignedIn ? "Konto" : "Anmelden")
         .stedeSheetForm()
         .onAppear { auth.lastError = nil }
+        // Das Profil kommt nach der Anmeldung erst nach der User-ID — Namen nachziehen.
+        .onChange(of: auth.profile?.displayName, initial: true) { _, loaded in
+            name = loaded ?? ""
+        }
         .task(id: auth.userID) {
             auth.lastError = nil
-            name = auth.profile?.displayName ?? ""
             calendarToken = nil
             if let userID = auth.userID {
                 calendarToken = try? await client.calendarToken(userID: userID)
