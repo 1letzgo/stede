@@ -258,19 +258,22 @@ private struct CityEventRow: View {
         Button {
             if let url = event.detailURL { page = BrowserPage(url: url) }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.mudflat)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title).font(.headline).fontDesign(.rounded).multilineTextAlignment(.leading)
-                    HStack(spacing: 6) {
-                        StedeTagPill(text: event.timeLabel ?? "ganztägig", color: StedeTheme.mudflat)
-                        if let category = event.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 12) {
+                    StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.mudflat)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(event.title).font(.headline).fontDesign(.rounded).multilineTextAlignment(.leading)
+                        HStack(spacing: 6) {
+                            StedeTagPill(text: event.timeLabel ?? "ganztägig", color: StedeTheme.mudflat)
+                            if let category = event.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+                        }
                     }
-                    if let location = event.location {
-                        Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                // Ort linksbündig unter der Kopfzeile — wie bei den Gruppen-Terminen.
+                if let location = event.location {
+                    Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
             .padding(StedeTheme.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)

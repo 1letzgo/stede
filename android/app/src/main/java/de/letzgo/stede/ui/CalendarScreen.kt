@@ -113,13 +113,9 @@ private fun CityEventRow(e: CityEvent, onClick: () -> Unit) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(time, C.mudflat); e.category?.let { Pill(it, C.ink) } }
-                e.location?.let {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
-                        Text(it, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
             }
         }
+        // Ort linksbündig unter der Kopfzeile — wie bei den Gruppen-Terminen.
+        e.location?.let { Box(Modifier.padding(top = 10.dp)) { LocationLine(it) } }
     }
 }

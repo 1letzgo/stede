@@ -122,16 +122,16 @@ private struct EventBody: View {
                             }
                         }
                     }
-                    // Ort wie bei den Stadt-Terminen: unter Titel und Pills, grau, einzeilig.
-                    if compact, let location = info.location, !location.isEmpty {
-                        Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    }
                 }
                 Spacer(minLength: 8)
                 if !info.isPublic {
                     Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
                         .accessibilityLabel("Nur für Mitglieder")
                 }
+            }
+            // Karte: Ort linksbündig direkt unter der Kopfzeile, grau, einzeilig — wie bei den Stadt-Terminen.
+            if compact, let location = info.location, !location.isEmpty {
+                Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             if !info.description.isEmpty {
                 Text(info.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(compact ? 4 : nil)

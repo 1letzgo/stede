@@ -101,16 +101,11 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                     if (e.isCancelled) Pill("abgesagt", C.red) else if (isPast) Pill("vorbei", C.mudflat)
                     if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
-                // Ort wie bei den Stadt-Terminen: unter Titel und Pills, grau, einzeilig.
-                if (compact) e.location?.takeIf { it.isNotBlank() }?.let {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
-                        Text(it, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
             }
             if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary, modifier = Modifier.size(14.dp))
         }
+        // Karte: Ort linksbündig direkt unter der Kopfzeile, grau, einzeilig — wie bei den Stadt-Terminen.
+        if (compact) e.location?.takeIf { it.isNotBlank() }?.let { LocationLine(it) }
         if (e.description.isNotBlank()) Text(e.description, color = C.secondary, fontSize = 15.sp, maxLines = if (compact) 4 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
         if (!compact) {
             SmallLabel(Icons.Default.Schedule, longTimeLabel(e), tint)
@@ -355,5 +350,14 @@ fun HeaderImageRow(images: List<HeaderImage>, selectedPath: String?, onSelect: (
                 Text(img.label, fontSize = 11.sp, color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
+    }
+}
+
+/** Ort auf Terminkarten (Stadt und Gruppen): grau, einzeilig, linksbündig unter der Kopfzeile. */
+@Composable
+fun LocationLine(text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
+        Text(text, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
