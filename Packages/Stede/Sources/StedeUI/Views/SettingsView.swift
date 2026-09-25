@@ -39,11 +39,9 @@ struct SettingsView: View {
                         showsStreets = true
                     }
                     if let street, street.needsSection {
-                        SettingsDivider()
                         menuRow("Abschnitt", selection: $sectionID, options: street.sections ?? [])
                     }
                     if let street, street.needsBranchSection {
-                        SettingsDivider()
                         menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
                     }
                 }
@@ -54,7 +52,6 @@ struct SettingsView: View {
                     pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
                         showsStops = true
                     }
-                    SettingsDivider()
                     HStack(spacing: 12) {
                         SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
                         Text("Bahn-Richtung")
@@ -66,7 +63,8 @@ struct SettingsView: View {
                         .pickerStyle(.menu)
                         .tint(StedeTheme.ink)
                     }
-                    .padding(.vertical, 6)
+                    .frame(minHeight: 32)
+            .stedeRowCard()
                 }
 
                 StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
@@ -122,7 +120,8 @@ struct SettingsView: View {
             .pickerStyle(.menu)
             .tint(StedeTheme.ink)
         }
-        .padding(.vertical, 6)
+        .frame(minHeight: 32)
+            .stedeRowCard()
     }
 
     @ViewBuilder private var accountRow: some View {
@@ -153,7 +152,8 @@ struct SettingsView: View {
                 Text(value).foregroundStyle(.secondary).lineLimit(1)
                 SettingsChevron()
             }
-            .padding(.vertical, 6)
+            .frame(minHeight: 32)
+            .stedeRowCard()
             .contentShape(Rectangle())
         }
         .buttonStyle(StedeCardButtonStyle())
@@ -186,14 +186,14 @@ private struct HomeLayoutSettings: View {
                 StedeSectionHeader(title: "Reihenfolge", symbol: "arrow.up.arrow.down")
                 SettingsCard {
                     ForEach(Array(order.enumerated()), id: \.element) { index, section in
-                        if index > 0 { SettingsDivider() }
                         HStack(spacing: 12) {
                             SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
                             Text(section.title)
                             Spacer(minLength: 8)
                             DragHandle()
                         }
-                        .padding(.vertical, 4)
+                        .frame(minHeight: 32)
+                        .stedeRowCard()
                         .reorderable(section.rawValue, dragging: $dragging) { target in
                             moveSection(section, to: target)
                         }
@@ -206,7 +206,6 @@ private struct HomeLayoutSettings: View {
                     StedeSectionHeader(title: section.title, symbol: section.symbol)
                     SettingsCard {
                         ForEach(Array(tiles.enumerated()), id: \.element) { index, tile in
-                            if index > 0 { SettingsDivider() }
                             HStack(spacing: 12) {
                                 SettingsIcon(symbol: tile.symbol, tint: tile.tint)
                                 Text(tile.title).lineLimit(1)
@@ -216,7 +215,8 @@ private struct HomeLayoutSettings: View {
                                     .tint(StedeTheme.ink)
                                 if tiles.count > 1 { DragHandle() }
                             }
-                            .padding(.vertical, 4)
+                            .frame(minHeight: 32)
+                        .stedeRowCard()
                             .reorderable(tile.rawValue, dragging: $dragging) { target in
                                 moveTile(tile, in: section, to: target)
                             }
@@ -322,23 +322,12 @@ private struct ReorderDropDelegate: DropDelegate {
     }
 }
 
-/// Karte mit mehreren Einstellungszeilen — gleiche Form wie alle Karten der App.
+/// Gruppe von Einstellungszeilen — jede Zeile ist eine eigene Karte (`stedeRowCard`).
 private struct SettingsCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) { content() }
-            .padding(.horizontal, StedeTheme.cardPadding)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .stedeCard()
-    }
-}
-
-/// Trennlinie zwischen Zeilen, eingerückt bis hinter das Symbol.
-private struct SettingsDivider: View {
-    var body: some View {
-        Rectangle().fill(.separator).frame(height: 0.5).padding(.leading, 42)
+        VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) { content() }
     }
 }
 
