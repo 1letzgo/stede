@@ -191,11 +191,10 @@ private struct HomeLayoutSettings: View {
                         SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
                         Text(section.title)
                         Spacer(minLength: 8)
-                        DragHandle()
                     }
                     .frame(minHeight: 32)
                 }
-                SettingsFootnote("Zum Verschieben eine Zeile kurz gedrückt halten und ziehen.")
+                SettingsFootnote("Zum Verschieben am Griff ≡ ziehen.")
 
                 ForEach(order) { section in
                     let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
@@ -210,7 +209,6 @@ private struct HomeLayoutSettings: View {
                             Toggle(tile.title, isOn: binding(for: tile))
                                 .labelsHidden()
                                 .tint(StedeTheme.ink)
-                            if tiles.count > 1 { DragHandle() }
                         }
                         .frame(minHeight: 32)
                     }
@@ -252,9 +250,10 @@ private struct HomeLayoutSettings: View {
     }
 }
 
-/// Umsortierbare Kartenliste: Zeile kurz gedrückt halten, sie hebt sich an und folgt dem
-/// Finger, die übrigen rücken live beiseite; beim Loslassen rastet sie am neuen Platz ein.
-/// Eigene Geste statt Drag & Drop — die System-Variante springt und rastet unsauber ein.
+/// Umsortierbare Kartenliste: am Griff ≡ ziehen — die Zeile hebt sich an und folgt dem Finger,
+/// die übrigen rücken live beiseite, beim Loslassen rastet sie am neuen Platz ein. Nur der Griff
+/// trägt die Geste, damit die Seite überall sonst normal scrollt. `@GestureState` setzt sich bei
+/// einem Abbruch durch das System selbst zurück — nichts bleibt „hängen“.
 private struct ReorderableStack<Item: Hashable, Row: View>: View {
     let items: [Item]
     @Binding var isReordering: Bool
@@ -262,72 +261,63 @@ private struct ReorderableStack<Item: Hashable, Row: View>: View {
     let move: (Int, Int) -> Void
     @ViewBuilder let row: (Item) -> Row
 
-    @State private var dragged: Item?
-    @State private var translation: CGFloat = 0
+    private struct Drag: Equatable { let item: Item; var dy: CGFloat }
+    @GestureState private var drag: Drag?
     @State private var rowHeight: CGFloat = 56
 
     private var step: CGFloat { rowHeight + StedeTheme.cardSpacing }
 
-    private var fromIndex: Int? { dragged.flatMap { items.firstIndex(of: $0) } }
-
-    private var targetIndex: Int? {
-        guard let from = fromIndex else { return nil }
-        let shift = Int((translation / step).rounded())
-        return min(max(from + shift, 0), items.count - 1)
+    private func target(from: Int, dy: CGFloat) -> Int {
+        min(max(from + Int((dy / step).rounded()), 0), items.count - 1)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
             ForEach(Array(items.enumerated()), id: \.element) { index, item in
-                let isDragged = item == dragged
-                row(item)
-                    .stedeRowCard()
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { rowHeight = $0 }
-                    .scaleEffect(isDragged ? 1.03 : 1)
-                    .shadow(color: .black.opacity(isDragged ? 0.18 : 0), radius: 12, y: 6)
-                    .offset(y: offset(for: index, isDragged: isDragged))
-                    .zIndex(isDragged ? 1 : 0)
-                    .animation(isDragged ? nil : .snappy(duration: 0.22), value: targetIndex)
-                    .gesture(reorderGesture(for: item), including: items.count > 1 ? .all : .subviews)
-                    .sensoryFeedback(.selection, trigger: isDragged ? targetIndex : nil)
+                let isDragged = drag?.item == item
+                HStack(spacing: 12) {
+                    row(item)
+                    if items.count > 1 {
+                        DragHandle()
+                            .contentShape(Rectangle())
+                            .highPriorityGesture(dragGesture(for: item))
+                            .accessibilityHidden(true)
+                    }
+                }
+                .stedeRowCard()
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { rowHeight = $0 }
+                .scaleEffect(isDragged ? 1.03 : 1)
+                .shadow(color: .black.opacity(isDragged ? 0.18 : 0), radius: 12, y: 6)
+                .offset(y: offset(for: index, isDragged: isDragged))
+                .zIndex(isDragged ? 1 : 0)
+                .animation(isDragged ? nil : .snappy(duration: 0.22), value: drag.map { target(from: items.firstIndex(of: $0.item) ?? 0, dy: $0.dy) })
             }
         }
-        .sensoryFeedback(.impact(weight: .medium), trigger: dragged != nil)
+        .onChange(of: drag != nil) { isReordering = drag != nil }
+        .sensoryFeedback(.impact(weight: .medium), trigger: drag != nil)
     }
 
     private func offset(for index: Int, isDragged: Bool) -> CGFloat {
-        if isDragged { return translation }
-        guard let from = fromIndex, let to = targetIndex else { return 0 }
+        guard let drag, let from = items.firstIndex(of: drag.item) else { return 0 }
+        if isDragged { return drag.dy }
+        let to = target(from: from, dy: drag.dy)
         if from < to, index > from, index <= to { return -step }
         if to < from, index >= to, index < from { return step }
         return 0
     }
 
-    private func reorderGesture(for item: Item) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.25)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
-            .onChanged { value in
-                guard case .second(true, let drag) = value else { return }
-                if dragged == nil {
-                    withAnimation(.snappy(duration: 0.18)) { dragged = item }
-                    isReordering = true
-                }
-                translation = drag?.translation.height ?? 0
+    private func dragGesture(for item: Item) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .updating($drag) { value, state, _ in
+                state = Drag(item: item, dy: value.translation.height)
             }
-            .onEnded { _ in
-                guard let from = fromIndex, let to = targetIndex else { reset(); return }
-                withAnimation(.snappy(duration: 0.25)) {
-                    if from != to { move(from, to) }
-                    dragged = nil
-                    translation = 0
+            .onEnded { value in
+                guard let from = items.firstIndex(of: item) else { return }
+                let to = target(from: from, dy: value.translation.height)
+                if from != to {
+                    withAnimation(.snappy(duration: 0.25)) { move(from, to) }
                 }
-                isReordering = false
             }
-    }
-
-    private func reset() {
-        withAnimation(.snappy) { dragged = nil; translation = 0 }
-        isReordering = false
     }
 }
 
