@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 /** Westerstede-Palette mit denselben Rollen wie StedeTheme in iOS; hell und dunkel. */
 object C {
     val deep = Color(0xFF284050)
-    val bar = Color(0xFF284050)
+    val bar = Color(0xFF7A0000) // Leiste: Rot aus dem App-Icon
     val red @Composable @ReadOnlyComposable get() = pick(0xFFD8232F, 0xFFF0566A)
     val green @Composable @ReadOnlyComposable get() = pick(0xFF5C8A12, 0xFF96CD20)
     val amber @Composable @ReadOnlyComposable get() = pick(0xFFE3A11C, 0xFFFAB325)
