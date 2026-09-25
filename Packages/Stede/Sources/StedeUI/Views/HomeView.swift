@@ -25,6 +25,7 @@ struct HomeView: View {
     @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
     @AppStorage(HomeLayout.orderKey) private var homeOrder = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var homeHidden = ""
+    @AppStorage(HomeLayout.tilesKey) private var homeTiles = ""
 
     @ScaledMetric(relativeTo: .caption) private var gastroRowHeight = 172.0
 
@@ -52,7 +53,7 @@ struct HomeView: View {
                     }
 
                     ForEach(sections) { section in
-                        let tiles = section.tiles.filter { !hiddenTiles.contains($0) }
+                        let tiles = HomeLayout.tiles(in: section, order: homeTiles).filter { !hiddenTiles.contains($0) }
                         if !tiles.isEmpty {
                             StedeSectionHeader(title: section.title, symbol: section.symbol)
                             sectionContent(section, tiles: tiles)
@@ -106,10 +107,9 @@ struct HomeView: View {
             .buttonStyle(StedeCardButtonStyle())
             .foregroundStyle(.primary)
         case .city:
-            // Zwei große Kacheln — Entdecken und Gastro —, darunter die
-            // übrigen Stadtkategorien als kleine Kacheln.
-            let large = tiles.filter { $0 == .discover || $0 == .gastro }
-            let small = tiles.filter { $0 != .discover && $0 != .gastro }
+            // Die ersten beiden Kacheln groß nebeneinander, die übrigen klein darunter.
+            let large = Array(tiles.prefix(2))
+            let small = Array(tiles.dropFirst(2))
             if !large.isEmpty {
                 HStack(spacing: StedeTheme.cardSpacing) {
                     ForEach(large) { tile in

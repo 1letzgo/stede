@@ -31,6 +31,7 @@ fun SettingsScreen() {
     var direction by remember { mutableStateOf(runCatching { TrainDirection.valueOf(Store.string("train.direction", "Oldenburg").replaceFirstChar { it.uppercase() }) }.getOrDefault(TrainDirection.Oldenburg)) }
     var order by remember { mutableStateOf(HomeLayout.order()) }
     var hidden by remember { mutableStateOf(HomeLayout.hidden()) }
+    var tileOrder by remember { mutableStateOf(HomeLayout.tileOrder()) }
     var showAccount by remember { mutableStateOf(false) }
     var showStreets by remember { mutableStateOf(false) }
     var showStops by remember { mutableStateOf(false) }
@@ -104,22 +105,28 @@ fun SettingsScreen() {
                 item(key = "tiles-${section.key}") {
                     StedeCard {
                         Text(section.title, fontSize = 13.sp, color = C.secondary)
-                        section.tiles.forEach { tile ->
-                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        val tiles = tileOrder.filter { it.section == section }
+                        tiles.forEachIndexed { index, tile ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 SmallIcon(tile.icon, tile.color)
-                                Text(tile.title, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
+                                Text(tile.title, Modifier.weight(1f).padding(start = 8.dp), color = C.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (tiles.size > 1) {
+                                    IconButton(onClick = { HomeLayout.moveTile(tile, -1); tileOrder = HomeLayout.tileOrder() }, enabled = index > 0) { Icon(Icons.Default.KeyboardArrowUp, "Nach oben") }
+                                    IconButton(onClick = { HomeLayout.moveTile(tile, 1); tileOrder = HomeLayout.tileOrder() }, enabled = index < tiles.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Nach unten") }
+                                }
                                 Switch(tile !in hidden, { visible ->
                                     hidden = if (visible) hidden - tile else hidden + tile
                                     HomeLayout.setHidden(hidden)
                                 }, colors = SwitchDefaults.colors(checkedTrackColor = C.ink))
                             }
                         }
+                        if (section == HomeSection.City) Text("Die ersten beiden sichtbaren Kacheln erscheinen groß.", fontSize = 12.sp, color = C.secondary, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
             }
             item {
-                TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden() },
-                    enabled = order != HomeSection.entries || hidden.isNotEmpty()) { Text("Standard wiederherstellen") }
+                TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
+                    enabled = order != HomeSection.entries || hidden.isNotEmpty() || tileOrder != HomeTileId.entries) { Text("Standard wiederherstellen") }
             }
 
             item { StedeCard { Row { Text("Version", Modifier.weight(1f), color = C.text); Text(version, color = C.secondary) } } }

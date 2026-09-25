@@ -25,6 +25,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Kacheln in Standardreihenfolge; die gewählte liefert `HomeLayout.tiles(in:order:)`.
     var tiles: [HomeTileID] { HomeTileID.allCases.filter { $0.section == self } }
 }
 
@@ -88,6 +89,7 @@ enum HomeTileID: String, CaseIterable, Identifiable {
 enum HomeLayout {
     static let orderKey = "home.order"
     static let hiddenKey = "home.hidden"
+    static let tilesKey = "home.tiles"
     static let defaultOrder = HomeSection.allCases.map(\.rawValue).joined(separator: ",")
 
     /// Unbekannte Einträge fallen weg, fehlende Bereiche kommen hinten dazu.
@@ -99,6 +101,25 @@ enum HomeLayout {
 
     static func encode(_ order: [HomeSection]) -> String {
         order.map(\.rawValue).joined(separator: ",")
+    }
+
+    /// Reihenfolge aller Kacheln; unbekannte fallen weg, fehlende kommen hinten dazu.
+    static func tileOrder(_ raw: String) -> [HomeTileID] {
+        var tiles = raw.split(separator: ",").compactMap { HomeTileID(rawValue: String($0)) }
+        for tile in HomeTileID.allCases where !tiles.contains(tile) { tiles.append(tile) }
+        return tiles
+    }
+
+    static func tiles(in section: HomeSection, order raw: String) -> [HomeTileID] {
+        tileOrder(raw).filter { $0.section == section }
+    }
+
+    /// Kacheln eines Bereichs verschieben, die anderen Bereiche bleiben unberührt.
+    static func moveTiles(in section: HomeSection, order raw: String, from: IndexSet, to: Int) -> String {
+        var sectionTiles = tiles(in: section, order: raw)
+        sectionTiles.move(fromOffsets: from, toOffset: to)
+        let others = tileOrder(raw).filter { $0.section != section }
+        return (others + sectionTiles).map(\.rawValue).joined(separator: ",")
     }
 
     static func hidden(_ raw: String) -> Set<HomeTileID> {

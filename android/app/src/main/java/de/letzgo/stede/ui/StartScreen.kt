@@ -60,7 +60,7 @@ fun StartScreen(open: (Screen) -> Unit) {
                 }
             }
             for (section in order) {
-                val tiles = section.tiles.filter { it !in hidden }
+                val tiles = HomeLayout.tiles(section).filter { it !in hidden }
                 if (tiles.isEmpty()) continue
                 item(key = section.key) { SectionHeader(section.title, section.icon) }
                 when (section) {
@@ -68,16 +68,18 @@ fun StartScreen(open: (Screen) -> Unit) {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                             fun next(d: TrainDirection) = trains.filter { it.direction == d && !it.cancelled && it.departure.isAfter(now) }.minByOrNull { it.departure }
                             fun label(t: Train?, d: TrainDirection) = t?.let { "${it.scheduled.format(Town.hm)}${if (it.delay > 0) " +${it.delay}" else ""} · ${d.short}" } ?: "kein Zug mehr · ${d.short}"
-                            if (HomeTileId.Train in tiles) {
-                                val o = next(TrainDirection.Oldenburg); val l = next(TrainDirection.Leer)
-                                HomeTile("Bahn", Icons.Default.Train, C.red, Modifier.weight(1f), if (trains.isEmpty()) "–" else if (o == null && l == null) "Feierabend" else label(o, TrainDirection.Oldenburg),
-                                    if (trains.isEmpty()) null else if (o == null && l == null) "Heute keine Abfahrt mehr" else label(l, TrainDirection.Leer)) { open(Screen.Train) }
-                            }
-                            if (HomeTileId.Bus in tiles) {
-                                val b = buses?.filter { !it.cancelled && it.departure.isAfter(now) }?.minByOrNull { it.departure }
-                                HomeTile("Bus", Icons.Default.DirectionsBus, C.teal, Modifier.weight(1f),
-                                    b?.let { "${it.scheduled.format(Town.hm)}${if ((it.delay ?: 0) > 0) " +${it.delay}" else ""} · ${it.line}" } ?: if (buses == null) "–" else "Feierabend",
-                                    b?.let { "${it.destination} ab ${stop.short}" } ?: "Heute kein Bus mehr ab ${stop.short}") { open(Screen.Bus) }
+                            for (t in tiles) {
+                                if (t == HomeTileId.Train) {
+                                    val o = next(TrainDirection.Oldenburg); val l = next(TrainDirection.Leer)
+                                    HomeTile("Bahn", Icons.Default.Train, C.red, Modifier.weight(1f), if (trains.isEmpty()) "–" else if (o == null && l == null) "Feierabend" else label(o, TrainDirection.Oldenburg),
+                                        if (trains.isEmpty()) null else if (o == null && l == null) "Heute keine Abfahrt mehr" else label(l, TrainDirection.Leer)) { open(Screen.Train) }
+                                }
+                                if (t == HomeTileId.Bus) {
+                                    val b = buses?.filter { !it.cancelled && it.departure.isAfter(now) }?.minByOrNull { it.departure }
+                                    HomeTile("Bus", Icons.Default.DirectionsBus, C.teal, Modifier.weight(1f),
+                                        b?.let { "${it.scheduled.format(Town.hm)}${if ((it.delay ?: 0) > 0) " +${it.delay}" else ""} · ${it.line}" } ?: if (buses == null) "–" else "Feierabend",
+                                        b?.let { "${it.destination} ab ${stop.short}" } ?: "Heute kein Bus mehr ab ${stop.short}") { open(Screen.Bus) }
+                                }
                             }
                         }
                     }
@@ -89,8 +91,9 @@ fun StartScreen(open: (Screen) -> Unit) {
                             next?.let { "${it.day.format(Town.dayShort)} · ${it.label}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
                     }
                     HomeSection.City -> {
-                        val large = tiles.filter { it == HomeTileId.Discover || it == HomeTileId.Gastro }.mapNotNull { it.category }
-                        val small = tiles.filter { it != HomeTileId.Discover && it != HomeTileId.Gastro }.mapNotNull { it.category }
+                        // Die ersten beiden Kacheln groß, die übrigen klein darunter.
+                        val large = tiles.take(2).mapNotNull { it.category }
+                        val small = tiles.drop(2).mapNotNull { it.category }
                         if (large.isNotEmpty()) item(key = "city-large") {
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                                 large.forEach { c -> CategoryTile(c, Modifier.weight(1f), 150.dp) { open(Screen.Category(c)) } }

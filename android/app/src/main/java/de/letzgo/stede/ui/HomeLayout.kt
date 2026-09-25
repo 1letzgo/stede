@@ -32,6 +32,7 @@ enum class HomeTileId(val key: String, val section: HomeSection, val category: S
 object HomeLayout {
     private const val ORDER = "home.order"
     private const val HIDDEN = "home.hidden"
+    private const val TILES = "home.tiles"
 
     fun order(): List<HomeSection> {
         val saved = Store.string(ORDER, "").split(",").mapNotNull { k -> HomeSection.entries.firstOrNull { it.key == k } }
@@ -42,5 +43,22 @@ object HomeLayout {
     fun hidden(): Set<HomeTileId> = Store.string(HIDDEN, "").split(",").mapNotNull { k -> HomeTileId.entries.firstOrNull { it.key == k } }.toSet()
     fun setHidden(hidden: Set<HomeTileId>) = Store.setString(HIDDEN, HomeTileId.entries.filter { it in hidden }.joinToString(",") { it.key })
 
-    fun reset() { Store.setString(ORDER, ""); Store.setString(HIDDEN, "") }
+    /** Reihenfolge aller Kacheln; fehlende kommen hinten dazu. */
+    fun tileOrder(): List<HomeTileId> {
+        val saved = Store.string(TILES, "").split(",").mapNotNull { k -> HomeTileId.entries.firstOrNull { it.key == k } }
+        return saved + HomeTileId.entries.filter { it !in saved }
+    }
+    fun tiles(section: HomeSection) = tileOrder().filter { it.section == section }
+
+    /** Kachel innerhalb ihres Bereichs um `delta` Plätze verschieben. */
+    fun moveTile(tile: HomeTileId, delta: Int) {
+        val inSection = tiles(tile.section).toMutableList()
+        val i = inSection.indexOf(tile); val j = i + delta
+        if (j !in inSection.indices) return
+        inSection[i] = inSection[j]; inSection[j] = tile
+        val all = tileOrder().filter { it.section != tile.section } + inSection
+        Store.setString(TILES, all.joinToString(",") { it.key })
+    }
+
+    fun reset() { Store.setString(ORDER, ""); Store.setString(HIDDEN, ""); Store.setString(TILES, "") }
 }

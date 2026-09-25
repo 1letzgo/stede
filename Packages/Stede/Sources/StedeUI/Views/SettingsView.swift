@@ -129,6 +129,7 @@ struct SettingsView: View {
 private struct HomeLayoutSettings: View {
     @AppStorage(HomeLayout.orderKey) private var orderRaw = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = ""
+    @AppStorage(HomeLayout.tilesKey) private var tilesRaw = ""
 
     private var order: [HomeSection] { HomeLayout.order(orderRaw) }
     private var hidden: Set<HomeTileID> { HomeLayout.hidden(hiddenRaw) }
@@ -147,16 +148,23 @@ private struct HomeLayoutSettings: View {
             } header: {
                 Text("Reihenfolge")
             } footer: {
-                Text("Zum Verschieben an den Griffen ziehen.")
+                Text("Bereiche und Kacheln an den Griffen verschieben.")
             }
 
             ForEach(order) { section in
-                Section(section.title) {
-                    ForEach(section.tiles) { tile in
+                Section {
+                    ForEach(HomeLayout.tiles(in: section, order: tilesRaw)) { tile in
                         Toggle(isOn: binding(for: tile)) {
                             Label { Text(tile.title) } icon: { SettingsIcon(symbol: tile.symbol, tint: tile.tint) }
                         }
                     }
+                    .onMove { from, to in
+                        tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: from, to: to)
+                    }
+                } header: {
+                    Text(section.title)
+                } footer: {
+                    if section == .city { Text("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
                 }
             }
 
@@ -164,8 +172,9 @@ private struct HomeLayoutSettings: View {
                 Button("Standard wiederherstellen") {
                     orderRaw = HomeLayout.defaultOrder
                     hiddenRaw = ""
+                    tilesRaw = ""
                 }
-                .disabled(orderRaw == HomeLayout.defaultOrder && hiddenRaw.isEmpty)
+                .disabled(orderRaw == HomeLayout.defaultOrder && hiddenRaw.isEmpty && tilesRaw.isEmpty)
             }
         }
         #if os(iOS)
