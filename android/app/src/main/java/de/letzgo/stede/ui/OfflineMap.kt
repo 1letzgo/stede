@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.Store
+import de.letzgo.stede.data.ContentFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -54,7 +55,7 @@ object MapData {
     @Volatile private var loaded: Layers? = null
 
     suspend fun load(): Layers = loaded ?: withContext(Dispatchers.Default) {
-        val root = Json.parseToJsonElement(Store.asset("inselkarte.json")).jsonObject
+        val root = Json.parseToJsonElement(ContentFiles.text("inselkarte") ?: Store.asset("inselkarte.json")).jsonObject
         fun rings(arr: JsonArray?, close: Boolean): Path {
             val path = Path()
             arr?.forEach { ring ->

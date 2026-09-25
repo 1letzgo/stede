@@ -5,6 +5,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -74,7 +77,19 @@ object Trains {
 
 data class BusStop(val id: String, val name: String) { val short get() = name.replace("Westerstede-", "").replace("Westerstede ", "") }
 
-val busStops = listOf(
+/** Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst die Liste unten. */
+val busStops: List<BusStop> by lazy {
+    ContentFiles.text("bus-stops")?.let { text ->
+        runCatching {
+            Http.json.parseToJsonElement(text).jsonObject["stops"]!!.jsonArray.map {
+                val o = it.jsonObject
+                BusStop(o["id"]!!.jsonPrimitive.content, o["name"]!!.jsonPrimitive.content)
+            }
+        }.getOrNull()
+    }?.takeIf { it.isNotEmpty() } ?: bundledBusStops
+}
+
+private val bundledBusStops = listOf(
     BusStop("009098661", "Westerstede ZOB"), BusStop("009098621", "Westerstede Altenheim"), BusStop("009098630", "Westerstede Am Esch"),
     BusStop("009098623", "Westerstede Ammerland-Klinik"), BusStop("009098624", "Westerstede Amtsgericht"), BusStop("009060998", "Westerstede An der Norderbäke"),
     BusStop("009098628", "Westerstede Brakenhoffschule"), BusStop("009098631", "Westerstede Detershof"), BusStop("009098627", "Westerstede Eichendorffstraße"),

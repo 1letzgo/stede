@@ -23,7 +23,16 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
 
     /// Die Haltestellen im Stadtgebiet mit regelmäßigem Verkehr — ZOB zuerst,
     /// dann alphabetisch; der Bahnhof Ocholt als Umstieg zur Bahn am Ende.
-    public static let all: [BusStop] = [
+    /// Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst die Liste unten.
+    public static let all: [BusStop] = {
+        struct File: Decodable { struct Stop: Decodable { let id: String; let name: String; let latitude: Double; let longitude: Double }; let stops: [Stop] }
+        if let data = ContentFiles.data("bus-stops"), let file = try? JSONDecoder().decode(File.self, from: data), !file.stops.isEmpty {
+            return file.stops.map { BusStop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }
+        }
+        return bundled
+    }()
+
+    private static let bundled: [BusStop] = [
         zob,
         BusStop(id: "009098621", name: "Westerstede Altenheim", latitude: 53.253698, longitude: 7.922877),
         BusStop(id: "009098630", name: "Westerstede Am Esch", latitude: 53.265411, longitude: 7.937394),
@@ -49,7 +58,7 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
     ]
 
     public static func stop(id: String) -> BusStop {
-        all.first { $0.id == id } ?? zob
+        all.first { $0.id == id } ?? all.first ?? zob
     }
 }
 

@@ -25,8 +25,13 @@ enum class WasteKind(val label: String) {
 data class WasteSelection(val street: Int, val section: Int?, val branch: Int?) { val key get() = "$street-${section ?: 0}-${branch ?: 0}" }
 
 object Waste {
-    val source by lazy { Http.json.decodeFromString<WasteStreets>(Store.asset("abfuhr-strassen.json")).source }
-    val streets: List<WasteStreet> by lazy { Http.json.decodeFromString<WasteStreets>(Store.asset("abfuhr-strassen.json")).streets }
+    /** Stand aus dem Backend (`content_files`), sonst das Asset. */
+    private val directory by lazy {
+        ContentFiles.text("abfuhr-strassen")?.let { runCatching { Http.json.decodeFromString<WasteStreets>(it) }.getOrNull() }?.takeIf { it.streets.isNotEmpty() }
+            ?: Http.json.decodeFromString<WasteStreets>(Store.asset("abfuhr-strassen.json"))
+    }
+    val source get() = directory.source
+    val streets: List<WasteStreet> get() = directory.streets
     fun street(id: Int) = streets.firstOrNull { it.id == id }
 
     fun selection(): WasteSelection? {
@@ -48,6 +53,14 @@ object Waste {
 
     private suspend fun year(sel: WasteSelection, year: Int, force: Boolean): List<WasteCollection> {
         if (!force) cachedYear(sel, year)?.let { return it }
+        // Erst der Server (Edge Function `waste-calendar`, PDF 7 Tage zwischengespeichert), dann direkt bei appfuhr.de.
+        val server = runCatching {
+            Http.bytes("${Backend.URL}/functions/v1/waste-calendar?street=${sel.street}&year=$year&section=${sel.section ?: ""}&branch=${sel.branch ?: ""}")
+        }.getOrNull()?.let { pdf -> runCatching { parse(PDDocument.load(pdf).use { PDFTextStripper().getText(it) }, year) }.getOrNull() }
+        if (!server.isNullOrEmpty()) {
+            Store.write("waste", "${sel.key}-$year.json", Http.json.encodeToString(ListSerializer(WasteCollection.serializer()), server))
+            return server
+        }
         val id = UUID.randomUUID().toString().replace("-", "")
         val yy = "%02d".format(year % 100)
         Http.text("https://www.appfuhr.de/api/makekal.php?uid=$id&str=${sel.street}&strgr=${sel.section ?: "null"}&astgr=${sel.branch ?: "null"}&komp=false&vier=false&jahr=$yy&max=999")

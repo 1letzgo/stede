@@ -7,8 +7,23 @@ public nonisolated struct HTTPClient: Sendable {
         self.session = session
     }
 
+    /// Live-Dienste, die zuerst über den Server-Zwischenspeicher (Edge Function `upstream`)
+    /// laufen; fällt der aus, geht die App wie früher direkt zum Dienst.
+    static let proxiedHosts: Set<String> = ["api.brightsky.dev", "luftdaten.umweltbundesamt.de", "dbf.finalrewind.org", "fahrplaner.vbn.de"]
+
     public func data(from url: URL) async throws -> Data {
-        var request = URLRequest(url: url)
+        if let host = url.host, Self.proxiedHosts.contains(host),
+           var components = URLComponents(url: Backend.url.appendingPathComponent("functions/v1/upstream"), resolvingAgainstBaseURL: false) {
+            components.queryItems = [URLQueryItem(name: "url", value: url.absoluteString)]
+            if let proxy = components.url, let data = try? await direct(proxy, timeout: 12) {
+                return data
+            }
+        }
+        return try await direct(url)
+    }
+
+    private func direct(_ url: URL, timeout: TimeInterval = 30) async throws -> Data {
+        var request = URLRequest(url: url, timeoutInterval: timeout)
         request.setValue(
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
             forHTTPHeaderField: "User-Agent"

@@ -40,6 +40,18 @@ object Http {
     val client = HttpClient(OkHttp) { install(HttpTimeout) { requestTimeoutMillis = 30_000 } }
     private const val UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
 
-    suspend fun text(url: String): String = client.get(url) { header("User-Agent", UA) }.bodyAsText()
-    suspend fun bytes(url: String): ByteArray = client.get(url) { header("User-Agent", UA) }.bodyAsBytes()
+    /** Live-Dienste laufen zuerst über den Server-Zwischenspeicher (Edge Function `upstream`), sonst direkt — wie iOS. */
+    private val proxied = setOf("api.brightsky.dev", "luftdaten.umweltbundesamt.de", "dbf.finalrewind.org", "fahrplaner.vbn.de")
+    private fun proxyUrl(url: String): String? {
+        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: return null
+        return if (host in proxied) "${Backend.URL}/functions/v1/upstream?url=${java.net.URLEncoder.encode(url, "UTF-8")}" else null
+    }
+
+    suspend fun text(url: String): String = proxyUrl(url)?.let { p -> runCatching { ok(p).bodyAsText() }.getOrNull() } ?: direct(url)
+    suspend fun bytes(url: String): ByteArray = proxyUrl(url)?.let { p -> runCatching { ok(p).bodyAsBytes() }.getOrNull() } ?: ok(url).bodyAsBytes()
+    suspend fun direct(url: String): String = ok(url).bodyAsText()
+
+    private suspend fun ok(url: String) = client.get(url) { header("User-Agent", UA) }.also {
+        if (it.status.value !in 200..299) error("HTTP ${it.status.value}")
+    }
 }

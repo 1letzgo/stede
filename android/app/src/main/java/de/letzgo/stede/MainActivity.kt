@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import de.letzgo.stede.data.Backend
 import de.letzgo.stede.data.Places
+import de.letzgo.stede.data.ContentFiles
 import de.letzgo.stede.ui.*
 import io.github.jan.supabase.auth.handleDeeplinks
 
@@ -54,6 +55,7 @@ fun StedeApp() {
     LaunchedEffect(Unit) {
         Session.start(scope)
         runCatching { Places.sync() }
+        runCatching { ContentFiles.sync() }
     }
     val stack: SnapshotStateList<Screen> = stacks.getValue(tab)
     BackHandler(enabled = stack.isNotEmpty()) { stack.removeAt(stack.lastIndex) }

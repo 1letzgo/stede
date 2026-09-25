@@ -34,6 +34,11 @@ public nonisolated struct WasteStreetDirectory: Sendable, Decodable {
 public nonisolated enum WasteStreetStore {
     /// Alle Straßen Westerstedes, einmalig von appfuhr.de übernommen (`tbl=str&ort=5`).
     public static let directory: WasteStreetDirectory = {
+        // Stand aus dem Backend (`content_files`), sonst das Bundle.
+        if let data = ContentFiles.data("abfuhr-strassen"),
+           let directory = try? JSONDecoder().decode(WasteStreetDirectory.self, from: data), !directory.streets.isEmpty {
+            return directory
+        }
         guard
             let url = Bundle.module.url(forResource: "abfuhr-strassen", withExtension: "json"),
             let data = try? Data(contentsOf: url),

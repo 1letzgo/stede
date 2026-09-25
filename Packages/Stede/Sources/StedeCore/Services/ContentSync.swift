@@ -105,7 +105,7 @@ public actor ContentSync {
 
     // MARK: Sync
 
-    public static let directories = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes"]
+    public static let directories = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer"]
 
     /// Beim Start und bei Pull-to-Refresh: alle Verzeichnisse nachziehen.
     public func syncAll() async {

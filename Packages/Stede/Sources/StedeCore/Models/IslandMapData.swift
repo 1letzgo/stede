@@ -11,6 +11,10 @@ public nonisolated struct IslandMapData: Decodable, Sendable {
     public let lines: [String: [[[Double]]]]
 
     public static let shared: IslandMapData? = {
+        // Stand aus dem Backend (`content_files`), sonst das Bundle.
+        if let data = ContentFiles.data("inselkarte"), let map = try? JSONDecoder().decode(IslandMapData.self, from: data) {
+            return map
+        }
         guard
             let url = Bundle.module.url(forResource: "inselkarte", withExtension: "json"),
             let data = try? Data(contentsOf: url)

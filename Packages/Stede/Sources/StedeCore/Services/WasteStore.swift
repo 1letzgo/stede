@@ -16,6 +16,32 @@ public nonisolated struct WasteClient: Sendable {
     }
 
     public func collections(for selection: WasteSelection, year: Int) async throws -> [WasteCollection] {
+        // Erst der Server (Edge Function `waste-calendar`, PDF 7 Tage zwischengespeichert),
+        // dann wie früher direkt bei appfuhr.de.
+        if let data = try? await serverPDF(for: selection, year: year),
+           let text = try? Self.text(from: data) {
+            let collections = WastePDFParser.collections(from: text, year: year)
+            if !collections.isEmpty { return collections }
+        }
+        return try await directCollections(for: selection, year: year)
+    }
+
+    private func serverPDF(for selection: WasteSelection, year: Int) async throws -> Data {
+        guard var components = URLComponents(url: Backend.url.appendingPathComponent("functions/v1/waste-calendar"), resolvingAgainstBaseURL: false)
+        else { throw AppError.invalidURL }
+        components.queryItems = [
+            URLQueryItem(name: "street", value: String(selection.streetID)),
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "section", value: selection.sectionID.map(String.init) ?? ""),
+            URLQueryItem(name: "branch", value: selection.branchSectionID.map(String.init) ?? ""),
+        ]
+        guard let url = components.url else { throw AppError.invalidURL }
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 25))
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw AppError.invalidResponse }
+        return data
+    }
+
+    private func directCollections(for selection: WasteSelection, year: Int) async throws -> [WasteCollection] {
         let id = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
         let shortYear = String(format: "%02d", year % 100)
         let section = selection.sectionID.map(String.init) ?? "null"
