@@ -44,7 +44,7 @@ data class Place(
  * Beim Start zieht [sync] alle Verzeichnisse neu — offline bleibt der letzte Stand.
  */
 object Places {
-    val assets = mapOf("gastro" to "gastronomie.json", "health" to "gesundheit.json", "leisure" to "freizeit.json", "sights" to "sehenswuerdigkeiten.json", "playgrounds" to "spielplaetze.json", "trips" to "ausfluege.json", "bikes" to "fahrradverleih.json")
+    val assets = mapOf("gastro" to "gastronomie.json", "health" to "gesundheit.json", "leisure" to "freizeit.json", "sights" to "sehenswuerdigkeiten.json", "playgrounds" to "spielplaetze.json", "trips" to "ausfluege.json", "volunteer" to "ehrenamt.json", "bikes" to "fahrradverleih.json")
     private val cache = mutableMapOf<String, PlaceDirectory>()
 
     fun directory(key: String): PlaceDirectory = cache.getOrPut(key) {

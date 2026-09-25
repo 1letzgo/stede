@@ -21,7 +21,8 @@ enum class HomeTileId(val key: String, val section: HomeSection, val category: S
     Train("train", HomeSection.Transit), Bus("bus", HomeSection.Transit), Waste("waste", HomeSection.Home),
     Discover("discover", HomeSection.City, Catalog.DISCOVER), Gastro("gastro", HomeSection.City, Catalog.GASTRO),
     Shopping("shopping", HomeSection.City, Catalog.SHOPPING), Playgrounds("playgrounds", HomeSection.City, Catalog.PLAYGROUNDS),
-    Trips("trips", HomeSection.City, Catalog.TRIPS), Health("health", HomeSection.City, Catalog.HEALTH);
+    Trips("trips", HomeSection.City, Catalog.TRIPS), Health("health", HomeSection.City, Catalog.HEALTH),
+    Volunteer("volunteer", HomeSection.City, Catalog.VOLUNTEER);
 
     val title get() = when (this) { Train -> "Bahn"; Bus -> "Bus"; Waste -> "Abfuhr"; else -> category!! }
     val icon get() = when (this) { Train -> Icons.Default.Train; Bus -> Icons.Default.DirectionsBus; Waste -> Icons.Default.Delete; else -> Catalog.icon(category!!) }
@@ -40,7 +41,9 @@ object HomeLayout {
     }
     fun setOrder(order: List<HomeSection>) = Store.setString(ORDER, order.joinToString(",") { it.key })
 
-    fun hidden(): Set<HomeTileId> = Store.string(HIDDEN, "").split(",").mapNotNull { k -> HomeTileId.entries.firstOrNull { it.key == k } }.toSet()
+    /** Optionale Kacheln (vorerst Ehrenamt) sind anfangs ausgeblendet. */
+    private val DEFAULT_HIDDEN = HomeTileId.Volunteer.key
+    fun hidden(): Set<HomeTileId> = Store.string(HIDDEN, DEFAULT_HIDDEN).split(",").mapNotNull { k -> HomeTileId.entries.firstOrNull { it.key == k } }.toSet()
     fun setHidden(hidden: Set<HomeTileId>) = Store.setString(HIDDEN, HomeTileId.entries.filter { it in hidden }.joinToString(",") { it.key })
 
     /** Reihenfolge aller Kacheln; fehlende kommen hinten dazu. */
@@ -60,5 +63,5 @@ object HomeLayout {
         Store.setString(TILES, all.joinToString(",") { it.key })
     }
 
-    fun reset() { Store.setString(ORDER, ""); Store.setString(HIDDEN, ""); Store.setString(TILES, "") }
+    fun reset() { Store.setString(ORDER, ""); Store.setString(HIDDEN, DEFAULT_HIDDEN); Store.setString(TILES, "") }
 }

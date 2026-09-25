@@ -106,6 +106,9 @@ public nonisolated enum GastroStore {
     /// Parks, Draisine, Zwischenahner Meer, Radrouten — „Ausflüge".
     public static let trips = load("ausfluege", synced: "trips")
 
+    /// Vergünstigungen der Ehrenamtskarte Niedersachsen/Bremen in Westerstede — „Ehrenamt".
+    public static let volunteer = load("ehrenamt", synced: "volunteer")
+
     /// Die 34 städtischen Spielplätze samt Kinderrat-Bewertung — „Spielplätze".
     public static let playgrounds = load("spielplaetze", synced: "playgrounds")
 

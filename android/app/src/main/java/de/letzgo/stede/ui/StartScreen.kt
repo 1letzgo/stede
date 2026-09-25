@@ -99,9 +99,13 @@ fun StartScreen(open: (Screen) -> Unit) {
                                 large.forEach { c -> CategoryTile(c, Modifier.weight(1f), 150.dp) { open(Screen.Category(c)) } }
                             }
                         }
-                        if (small.isNotEmpty()) item(key = "city-small") {
-                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                                small.forEach { c -> CategoryTile(c, Modifier.weight(1f), 86.dp, small = true) { open(Screen.Category(c)) } }
+                        // Kleine Kacheln in Viererreihen, damit auch fünf und mehr lesbar bleiben.
+                        small.chunked(4).forEachIndexed { i, row ->
+                            item(key = "city-small-$i") {
+                                Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                                    row.forEach { c -> CategoryTile(c, Modifier.weight(1f), 86.dp, small = true) { open(Screen.Category(c)) } }
+                                    if (small.size > 4) repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                                }
                             }
                         }
                     }

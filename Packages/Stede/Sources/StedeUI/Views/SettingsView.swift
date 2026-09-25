@@ -172,7 +172,7 @@ struct SettingsView: View {
 /// Eigene Karten statt `List`: nur so liegen die Griffe mit Abstand innerhalb der Karte.
 private struct HomeLayoutSettings: View {
     @AppStorage(HomeLayout.orderKey) private var orderRaw = HomeLayout.defaultOrder
-    @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = ""
+    @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = HomeLayout.defaultHidden
     @AppStorage(HomeLayout.tilesKey) private var tilesRaw = ""
     /// Gerade gezogene Zeile (`rawValue` eines Bereichs oder einer Kachel).
     @State private var dragging: String?
@@ -228,7 +228,7 @@ private struct HomeLayoutSettings: View {
                 Button {
                     withAnimation {
                         orderRaw = HomeLayout.defaultOrder
-                        hiddenRaw = ""
+                        hiddenRaw = HomeLayout.defaultHidden
                         tilesRaw = ""
                     }
                 } label: {
@@ -237,7 +237,7 @@ private struct HomeLayoutSettings: View {
                         .stedeSelectionChip(isSelected: false)
                 }
                 .buttonStyle(StedeCardButtonStyle())
-                .disabled(orderRaw == HomeLayout.defaultOrder && hiddenRaw.isEmpty && tilesRaw.isEmpty)
+                .disabled(orderRaw == HomeLayout.defaultOrder && hiddenRaw == HomeLayout.defaultHidden && tilesRaw.isEmpty)
                 .padding(.top, 8)
             }
             .padding()

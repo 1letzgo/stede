@@ -17,6 +17,8 @@ import de.letzgo.stede.data.Store
 object Catalog {
     const val DISCOVER = "Entdecken"; const val GASTRO = "Gastro"; const val SHOPPING = "Einkaufen"
     const val PLAYGROUNDS = "Spielplätze"; const val TRIPS = "Ausflüge"; const val HEALTH = "Gesundheit"
+    /** Vergünstigungen der Ehrenamtskarte in Westerstede — optionale Kachel auf Start. */
+    const val VOLUNTEER = "Ehrenamt"
     private val nonGastro = setOf("Einkaufen", "Bäckerei", "Drogerie")
 
     fun places(category: String): List<Place> = when (category) {
@@ -27,6 +29,7 @@ object Catalog {
         PLAYGROUNDS -> Places.directory("playgrounds").places
         TRIPS -> Places.directory("trips").places
         HEALTH -> Places.directory("health").places
+        VOLUNTEER -> Places.directory("volunteer").places
         else -> emptyList()
     }
 
@@ -36,6 +39,7 @@ object Catalog {
         PLAYGROUNDS -> Places.directory("playgrounds").source
         TRIPS -> Places.directory("trips").source
         HEALTH -> Places.directory("health").source
+        VOLUNTEER -> Places.directory("volunteer").source
         else -> Places.directory("gastro").source
     }
 
@@ -50,6 +54,9 @@ object Catalog {
         "Kultur" -> Icons.Default.TheaterComedy; TRIPS, "Park" -> Icons.Default.Park; PLAYGROUNDS, "Spielplatz" -> Icons.Default.Toys
         "Skaterplatz" -> Icons.Default.Skateboarding; "Draisine" -> Icons.Default.PedalBike; "Schifffahrt" -> Icons.Default.DirectionsBoat
         "Radtour" -> Icons.Default.DirectionsBike; GASTRO -> Icons.Default.Restaurant
+        VOLUNTEER -> Icons.Default.VolunteerActivism; "Verwaltung" -> Icons.Default.AccountBalance; "Bildung" -> Icons.Default.MenuBook
+        "Mobilität" -> Icons.Default.DirectionsBus; "Handel" -> Icons.Default.ShoppingBag; "Übernachtung" -> Icons.Default.Cabin
+        "Versicherung" -> Icons.Default.Shield
         else -> Icons.Default.Restaurant
     }
 
@@ -57,6 +64,8 @@ object Catalog {
     fun color(kind: String): Color = when (kind) {
         "Café", "Bäckerei", "Spiel & Familie", PLAYGROUNDS, "Spielplatz", "Draisine", "Therapie & Pflege" -> C.amber
         "Eiscafé", "Drogerie", "Apotheke", TRIPS, "Park" -> C.red
+        VOLUNTEER -> C.green
+        "Verwaltung" -> C.ink; "Mobilität" -> C.teal; "Handel" -> C.amber; "Übernachtung" -> C.red; "Versicherung" -> C.mudflat
         "Imbiss", "Fahrrad", "Sport", "Tierarzt", "Radtour" -> C.green
         "Bar", "Einkaufen", "Zahnarzt" -> C.ink
         "Sehenswürdigkeiten", DISCOVER, "Klinik" -> C.mudflat
@@ -67,6 +76,7 @@ object Catalog {
     fun note(category: String): String? = when (category) {
         TRIPS -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede."
         HEALTH -> "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38."
+        VOLUNTEER -> "Gilt nur mit der Ehrenamtskarte Niedersachsen/Bremen – beim Anbieter vorzeigen. Beantragung und alle Angebote im Land: freiwilligenserver.de/ehrenamtskarte."
         PLAYGROUNDS -> "Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite."
         else -> null
     }

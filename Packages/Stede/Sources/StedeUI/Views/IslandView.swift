@@ -46,6 +46,8 @@ enum IslandCatalog {
     static let leisureCategory = "Freizeit & Sport"
     static let tripsCategory = "Ausflüge"
     static let playgroundsCategory = "Spielplätze"
+    /// Vergünstigungen der Ehrenamtskarte in Westerstede (optionale Kachel auf Start).
+    static let volunteerCategory = "Ehrenamt"
 
 
     /// Versorgung in der Stadt — nicht unter „Gastro", sondern unter „Stadt".
@@ -101,6 +103,9 @@ enum IslandCatalog {
         if category == playgroundsCategory {
             return GastroStore.playgrounds.places.map(IslandPlace.gastro)
         }
+        if category == volunteerCategory {
+            return GastroStore.volunteer.places.map(IslandPlace.gastro)
+        }
         return GastroStore.directory.places(in: category).map(IslandPlace.gastro)
     }
 
@@ -109,7 +114,7 @@ enum IslandCatalog {
         let plural: [String: String] = [
             "Restaurant": "Restaurants", "Café": "Cafés", "Bäckerei": "Bäckereien",
             "Eiscafé": "Eiscafés", "Imbiss": "Imbisse", "Bar": "Bars", "Einkaufen": "Geschäfte",
-            sightsCategory: "Sehenswürdigkeiten", healthCategory: "Einträge", leisureCategory: "Angebote", discoverCategory: "Orte", gastroCategory: "Lokale", tripsCategory: "Ausflüge", playgroundsCategory: "Spielplätze",
+            sightsCategory: "Sehenswürdigkeiten", healthCategory: "Einträge", leisureCategory: "Angebote", discoverCategory: "Orte", gastroCategory: "Lokale", tripsCategory: "Ausflüge", playgroundsCategory: "Spielplätze", volunteerCategory: "Vergünstigungen",
             bikeCategory: "Fahrradläden",
         ]
         let singular = [bikeCategory: "Fahrradladen", sightsCategory: "Sehenswürdigkeit", "Einkaufen": "Geschäft", playgroundsCategory: "Spielplatz"]
@@ -132,6 +137,7 @@ enum IslandCatalog {
         case leisureCategory: GastroStore.leisure.source
         case tripsCategory: GastroStore.trips.source
         case playgroundsCategory: GastroStore.playgrounds.source
+        case volunteerCategory: GastroStore.volunteer.source
         case shoppingCategory: "\(GastroStore.directory.source) · Fahrrad: \(BikeRentalStore.directory.source)"
         default: GastroStore.directory.source
         }
@@ -167,6 +173,13 @@ enum IslandCatalog {
         case "Draisine": "figure.outdoor.cycle"
         case "Schifffahrt": "ferry.fill"
         case "Radtour": "bicycle"
+        case volunteerCategory: "heart.fill"
+        case "Verwaltung": "building.columns.fill"
+        case "Bildung": "book.fill"
+        case "Mobilität": "bus.fill"
+        case "Handel": "bag.fill"
+        case "Übernachtung": "tent.fill"
+        case "Versicherung": "shield.fill"
         default: "fork.knife"
         }
     }
@@ -204,6 +217,13 @@ enum IslandCatalog {
         case "Draisine": StedeTheme.sunAmber
         case "Schifffahrt": StedeTheme.seaTeal
         case "Radtour": StedeTheme.duneGreen
+        case volunteerCategory: StedeTheme.duneGreen
+        case "Verwaltung": StedeTheme.ink
+        case "Bildung": StedeTheme.heather
+        case "Mobilität": StedeTheme.seaTeal
+        case "Handel": StedeTheme.sunAmber
+        case "Übernachtung": StedeTheme.harborRed
+        case "Versicherung": StedeTheme.mudflat
         default: StedeTheme.heather
         }
     }
@@ -273,6 +293,13 @@ struct IslandView: View {
 
                             if category == IslandCatalog.tripsCategory {
                                 Label("Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede.", systemImage: "calendar")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 4)
+                            }
+
+                            if category == IslandCatalog.volunteerCategory {
+                                Label("Gilt nur mit der Ehrenamtskarte Niedersachsen/Bremen – beim Anbieter vorzeigen. Beantragung und alle Angebote im Land: freiwilligenserver.de/ehrenamtskarte.", systemImage: "heart.text.square")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 4)

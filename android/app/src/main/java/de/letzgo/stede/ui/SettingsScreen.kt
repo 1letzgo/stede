@@ -126,7 +126,7 @@ fun SettingsScreen() {
             }
             item {
                 TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
-                    enabled = order != HomeSection.entries || hidden.isNotEmpty() || tileOrder != HomeTileId.entries) { Text("Standard wiederherstellen") }
+                    enabled = order != HomeSection.entries || hidden != setOf(HomeTileId.Volunteer) || tileOrder != HomeTileId.entries) { Text("Standard wiederherstellen") }
             }
 
             item { StedeCard { Row { Text("Version", Modifier.weight(1f), color = C.text); Text(version, color = C.secondary) } } }

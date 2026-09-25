@@ -1,0 +1,120 @@
+{
+ "source": "Ehrenamtskarte Niedersachsen/Bremen · freiwilligenserver.de (Stand 25.09.2026) · Kartendaten © OpenStreetMap",
+ "fetchedAt": "2026-09-25",
+ "places": [
+  {
+   "id": "ehrenamt-stadt-westerstede",
+   "name": "Stadt Westerstede",
+   "category": "Verwaltung",
+   "teaser": "Kostenfreie Beglaubigungen im Bürgerbüro und 100 Freikopien/Drucke pro Jahr.",
+   "street": "Am Markt 2",
+   "phone": "04488 55 0",
+   "email": "buergerbuero@westerstede.de",
+   "website": "https://www.westerstede.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.25768,
+   "longitude": 7.92716
+  },
+  {
+   "id": "ehrenamt-landkreis-ammerland",
+   "name": "Landkreis Ammerland",
+   "category": "Verwaltung",
+   "teaser": "Kostenfreie Beglaubigungen, 100 Freikopien/Drucke pro Jahr und einmal jährlich kostenlose Teilnahme am Fahrsicherheitstraining (Buchung über ammerland.de/fahrsicherheitstraining.php).",
+   "street": "Ammerlandallee 12",
+   "phone": "04488 56-0",
+   "email": "info@ammerland.de",
+   "website": "https://www.ammerland.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.25548,
+   "longitude": 7.93499
+  },
+  {
+   "id": "ehrenamt-kvhs",
+   "name": "kvhs Ammerland",
+   "category": "Bildung",
+   "teaser": "25 % Rabatt auf das gesamte Kursangebot – alle Aus-, Fort- und Weiterbildungen (ausgenommen Langzeitfortbildungen).",
+   "street": "Am Esch 10",
+   "phone": "04488 56-5100",
+   "email": "kvhs@kvhs-ammerland.de",
+   "website": "https://www.kvhs-ammerland.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.26236,
+   "longitude": 7.93145
+  },
+  {
+   "id": "ehrenamt-stadtbuecherei",
+   "name": "Stadtbücherei Westerstede",
+   "category": "Bildung",
+   "teaser": "50 % Rabatt in der Bücherei der Stadt Westerstede.",
+   "street": "Poststraße 7",
+   "phone": "04488 556 70",
+   "email": "info@stadtbuecherei-westerstede.de",
+   "website": "https://www.westerstede.de/leben-in-westerstede/einrichtungen/stadtbuecherei/",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.25612,
+   "longitude": 7.92571
+  },
+  {
+   "id": "ehrenamt-buergerbus",
+   "name": "Bürgerbus Westerstede e.V.",
+   "category": "Mobilität",
+   "teaser": "Kostenlose persönliche ÖPNV-Beratung rund um Bus und Bahn – danach ein Gutschein für eine Freifahrt mit dem Bürgerbus (Linie 359).",
+   "street": "Peterstraße 1",
+   "phone": "04488 555 93",
+   "email": "info@bbwst.de",
+   "website": "http://www.buergerbus-westerstede.de/",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.25684,
+   "longitude": 7.92734
+  },
+  {
+   "id": "ehrenamt-dieler",
+   "name": "Dieler Handel",
+   "category": "Handel",
+   "teaser": "10 % Rabatt auf den Einkauf.",
+   "street": "Peterstraße 10",
+   "website": "https://www.dieler.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.2564,
+   "longitude": 7.92772
+  },
+  {
+   "id": "ehrenamt-gmv",
+   "name": "GMV Ammerland Geräte- und Maschinenverleih",
+   "category": "Handel",
+   "teaser": "10 % Rabatt auf den Rechnungsbetrag.",
+   "street": "Rhododendronstraße 35a",
+   "phone": "04488 7633698",
+   "email": "gmv.ammerland@gmail.com",
+   "website": "https://gmv-ammerland.jimdosite.com/",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.26824,
+   "longitude": 7.92195
+  },
+  {
+   "id": "ehrenamt-camping",
+   "name": "Camping- und Stellplatz Westerstede",
+   "category": "Übernachtung",
+   "teaser": "10 % auf den Übernachtungspreis auf dem Campingplatz (Wohnmobilstellplatz ausgenommen, nicht mit anderen Aktionen kombinierbar).",
+   "street": "Süderstraße 2",
+   "phone": "04488 78 234",
+   "email": "info@camping-westerstede.de",
+   "website": "https://www.camping-westerstede.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.24999,
+   "longitude": 7.93461
+  },
+  {
+   "id": "ehrenamt-devk",
+   "name": "DEVK-Berater Thomas Möller",
+   "category": "Versicherung",
+   "teaser": "Bis zu 15 % günstigere Beiträge bei Kfz-, Haftpflicht-, Rechtsschutz-, Hausrat-, Unfall-, Gebäude- und Glasversicherung.",
+   "street": "Am Röttgen 35",
+   "phone": "04488 525370",
+   "email": "Thomas.Moeller@vtp.devk.de",
+   "seasonNote": "Nur mit der Ehrenamtskarte Niedersachsen/Bremen · Angaben ohne Gewähr",
+   "latitude": 53.26178,
+   "longitude": 7.93076
+  }
+ ]
+}

@@ -24,7 +24,7 @@ struct HomeView: View {
     @AppStorage("waste.section") private var wasteSectionID: Int = 0
     @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
     @AppStorage(HomeLayout.orderKey) private var homeOrder = HomeLayout.defaultOrder
-    @AppStorage(HomeLayout.hiddenKey) private var homeHidden = ""
+    @AppStorage(HomeLayout.hiddenKey) private var homeHidden = HomeLayout.defaultHidden
     @AppStorage(HomeLayout.tilesKey) private var homeTiles = ""
 
     @ScaledMetric(relativeTo: .caption) private var gastroRowHeight = 172.0
@@ -118,7 +118,15 @@ struct HomeView: View {
                 }
                 .frame(height: gastroRowHeight)
             }
-            if !small.isEmpty {
+            if small.count > 4 {
+                // Mehr als vier kleine Kacheln: Raster mit vier Spalten, gleich breit.
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: 4),
+                          spacing: StedeTheme.cardSpacing) {
+                    ForEach(small) { tile in
+                        if let category = tile.category { islandTile(category) }
+                    }
+                }
+            } else if !small.isEmpty {
                 HStack(spacing: StedeTheme.cardSpacing) {
                     ForEach(small) { tile in
                         if let category = tile.category { islandTile(category) }

@@ -31,7 +31,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
 
 /// Einzelne Kachel der Startseite, ein- und ausblendbar.
 enum HomeTileID: String, CaseIterable, Identifiable {
-    case train, bus, waste, discover, gastro, shopping, playgrounds, trips, health
+    case train, bus, waste, discover, gastro, shopping, playgrounds, trips, health, volunteer
 
     var id: String { rawValue }
 
@@ -52,6 +52,7 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .playgrounds: IslandCatalog.playgroundsCategory
         case .trips: IslandCatalog.tripsCategory
         case .health: IslandCatalog.healthCategory
+        case .volunteer: IslandCatalog.volunteerCategory
         default: nil
         }
     }
@@ -90,6 +91,8 @@ enum HomeLayout {
     static let orderKey = "home.order"
     static let hiddenKey = "home.hidden"
     static let tilesKey = "home.tiles"
+    /// Optionale Kacheln (vorerst Ehrenamt) sind anfangs ausgeblendet.
+    static let defaultHidden = HomeTileID.volunteer.rawValue
     static let defaultOrder = HomeSection.allCases.map(\.rawValue).joined(separator: ",")
 
     /// Unbekannte Einträge fallen weg, fehlende Bereiche kommen hinten dazu.
