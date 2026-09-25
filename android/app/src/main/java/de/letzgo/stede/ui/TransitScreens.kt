@@ -73,11 +73,10 @@ private fun TrainCard(t: Train, isNext: Boolean, isPast: Boolean) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusScreen(onBack: () -> Unit) {
-    var stopId by remember { mutableStateOf(Store.string("bus.stop", busStops.first().id)) }
+    val stopId = remember { Store.string("bus.stop", busStops.first().id) }
     var day by remember { mutableStateOf(Town.today()) }
     var buses by remember { mutableStateOf<List<Bus>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var showsStops by remember { mutableStateOf(false) }
     val stop = busStop(stopId)
     LaunchedEffect(stopId, day) {
         buses = Buses.cached(stop, day)
@@ -86,12 +85,10 @@ fun BusScreen(onBack: () -> Unit) {
     val now = Town.now()
     val visible = (buses ?: emptyList()).filter { day != Town.today() || !it.departure.isBefore(now) }
     val nextId = visible.firstOrNull { !it.cancelled }?.id.takeIf { day == Town.today() }
-    Scaffold(topBar = { StedeTopBar("Bus", onBack) }, containerColor = C.sand) { pad ->
+    Scaffold(topBar = { StedeTopBar("Bus", onBack, subtitle = "ab ${stop.short}") }, containerColor = C.sand) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             Column {
-                Spacer(Modifier.height(16.dp))
-                SelectionChip(stop.short, true, Modifier.padding(horizontal = 16.dp).fillMaxWidth(), icon = Icons.Default.DirectionsBus) { showsStops = true }
-                LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+                LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                     when {
                         buses == null && error == null -> item { Loading() }
                         visible.isEmpty() -> item { InfoCard(error ?: if (day == Town.today()) "Heute fährt hier kein Bus mehr." else "Für diesen Tag stehen hier keine Abfahrten im Fahrplan.") }
@@ -103,7 +100,6 @@ fun BusScreen(onBack: () -> Unit) {
             DayBar(day, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { day = it }
         }
     }
-    if (showsStops) BusStopSheet(stopId, { stopId = it; Store.setString("bus.stop", it) }) { showsStops = false }
 }
 
 /** Haltestellenliste als Sheet — aus Bus und Einstellungen. */
@@ -153,28 +149,27 @@ fun wasteColor(kind: WasteKind) = when (kind) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WasteScreen(onBack: () -> Unit) {
-    var streetId by remember { mutableIntStateOf(Store.int("waste.street")) }
-    var sectionId by remember { mutableIntStateOf(Store.int("waste.section")) }
-    var branchId by remember { mutableIntStateOf(Store.int("waste.branchSection")) }
-    var showsStreets by remember { mutableStateOf(false) }
+fun WasteScreen(onBack: () -> Unit, openSettings: () -> Unit) {
+    val streetId = remember { Store.int("waste.street") }
     var items by remember { mutableStateOf<List<WasteCollection>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val street = Waste.street(streetId)
-    val selection = remember(streetId, sectionId, branchId) { Waste.selection() }
+    val selection = remember { Waste.selection() }
     LaunchedEffect(selection) {
         items = null; error = null
         val sel = selection ?: return@LaunchedEffect
         items = Waste.cachedUpcoming(sel)
         runCatching { Waste.upcoming(sel) }.onSuccess { items = it }.onFailure { if (items == null) error = it.message }
     }
-    Scaffold(topBar = { StedeTopBar("Abfuhr", onBack) }, containerColor = C.sand) { pad ->
+    Scaffold(topBar = { StedeTopBar("Abfuhr", onBack, subtitle = street?.name) }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            item { SelectionChip(street?.name ?: "Straße wählen", true, Modifier.fillMaxWidth(), icon = Icons.Default.Home) { showsStreets = true } }
-            street?.takeIf { it.needsSection }?.let { s -> item { SectionPicker("Abschnitt", s.sections!!, sectionId) { sectionId = it; Store.setInt("waste.section", it) } } }
-            street?.takeIf { it.needsBranch }?.let { s -> item { SectionPicker("Ast- und Strauchwerk", s.branchSections!!, branchId) { branchId = it; Store.setInt("waste.branchSection", it) } } }
             when {
-                selection == null -> item { InfoCard(if (street == null) "Wähle deine Straße, dann erscheinen hier die Abfuhrtermine." else "Wähle den Abschnitt deiner Straße.") }
+                selection == null -> item {
+                    StedeCard {
+                        Text(if (street == null) "Wähle deine Straße in den Einstellungen, dann erscheinen hier die Abfuhrtermine." else "Wähle in den Einstellungen den Abschnitt deiner Straße.", color = C.secondary)
+                        ColorChip("Zu den Einstellungen", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Settings, prominent = true, onClick = openSettings)
+                    }
+                }
                 items == null && error == null -> item { Loading() }
                 error != null -> item { InfoCard(error!!) }
                 else -> {
@@ -188,9 +183,6 @@ fun WasteScreen(onBack: () -> Unit) {
             }
         }
     }
-    if (showsStreets) StreetSheet(streetId, { id ->
-        if (id != streetId) { streetId = id; sectionId = 0; branchId = 0 }
-    }) { showsStreets = false }
 }
 
 /** Suchbare Straßenliste — aus Abfuhr und Einstellungen. Setzt bei neuer Straße die Abschnitte zurück. */

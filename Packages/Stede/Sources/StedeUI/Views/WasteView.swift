@@ -1,14 +1,13 @@
 import StedeCore
 import SwiftUI
 
-/// Abfuhrkalender für die gemerkte Straße: Chip oben wählt die Straße (und
-/// bei geteilten Straßen den Abschnitt), darunter die kommenden Termine.
+/// Abfuhrkalender für die Straße aus den Einstellungen: die kommenden Termine nach Monaten.
 struct WasteView: View {
     @AppStorage("waste.street") private var streetID: Int = 0
     @AppStorage("waste.section") private var sectionID: Int = 0
     @AppStorage("waste.branchSection") private var branchSectionID: Int = 0
     @State private var model = WasteViewModel()
-    @State private var showsStreets = false
+    @Environment(AppNavigation.self) private var navigation
 
     private var street: WasteStreet? { WasteSettings.street(id: streetID) }
     private var selection: WasteSelection? {
@@ -20,26 +19,19 @@ struct WasteView: View {
             await model.load(selection: selection, force: true)
         } content: {
             VStack(spacing: 0) {
-                StreetChip(title: street?.name ?? "Straße wählen", symbol: "house.fill") {
-                    showsStreets = true
-                }
-                .padding(.top)
-                .padding(.bottom, StedeTheme.cardSpacing)
-
-                if let street, street.needsSection {
-                    sectionRow(title: "Abschnitt", sections: street.sections ?? [], selection: $sectionID)
-                }
-                if let street, street.needsBranchSection {
-                    sectionRow(title: "Ast- und Strauchwerk", sections: street.branchSections ?? [], selection: $branchSectionID)
-                }
-
                 if selection == nil {
                     ScrollView {
                         InfoCard {
-                            Text(street == nil
-                                 ? "Wähle deine Straße, dann erscheinen hier die Abfuhrtermine."
-                                 : "Wähle den Abschnitt deiner Straße.")
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(street == nil
+                                     ? "Wähle deine Straße in den Einstellungen, dann erscheinen hier die Abfuhrtermine."
+                                     : "Wähle in den Einstellungen den Abschnitt deiner Straße.")
+                                    .foregroundStyle(.secondary)
+                                Button { navigation.tab = .settings } label: {
+                                    StedeColorChip(title: "Zu den Einstellungen", symbol: "gearshape.fill", color: StedeTheme.ink, prominent: true)
+                                }
+                                .buttonStyle(StedeCardButtonStyle())
+                            }
                         }
                         .padding()
                     }
@@ -55,41 +47,16 @@ struct WasteView: View {
                                 }
                                 SourceFooter(text: "\(WasteStreetStore.directory.source) · appfuhr.de · Angaben ohne Gewähr")
                             }
-                            .padding([.horizontal, .bottom])
+                            .padding()
                         }
                     }
                 }
             }
         }
+        .navigationSubtitle(street?.name ?? "")
         .task(id: selection?.cacheKey ?? "") {
             await model.load(selection: selection)
         }
-        .sheet(isPresented: $showsStreets) {
-            StreetSheet(selection: $streetID) {
-                sectionID = 0
-                branchSectionID = 0
-            }
-        }
-    }
-
-    private func sectionRow(title: String, sections: [WasteSection], selection: Binding<Int>) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: StedeTheme.SelectionRow.spacing) {
-                ForEach(sections) { section in
-                    Button {
-                        selection.wrappedValue = section.id
-                    } label: {
-                        Text(section.label)
-                            .stedeSelectionChip(isSelected: selection.wrappedValue == section.id)
-                    }
-                    .buttonStyle(StedeCardButtonStyle())
-                    .accessibilityLabel("\(title): \(section.label)")
-                    .accessibilityAddTraits(selection.wrappedValue == section.id ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
-        }
-        .padding(.bottom, StedeTheme.cardSpacing)
     }
 
     private var months: [(month: Int, title: String, items: [WasteCollection])] {
@@ -106,31 +73,6 @@ struct WasteView: View {
             let first = groups[key]?.first?.date ?? Date()
             return (key, first.formatted(formatter), groups[key] ?? [])
         }
-    }
-}
-
-/// Voller Chip wie beim Bus — ein Tipp öffnet die Auswahl.
-struct StreetChip: View {
-    let title: String
-    let symbol: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol)
-                Text(title)
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .stedeSelectionChip(isSelected: true)
-        }
-        .buttonStyle(StedeCardButtonStyle())
-        .accessibilityLabel("Straße wählen, \(title)")
-        .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
-        .fixedSize(horizontal: false, vertical: true)
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 }
 

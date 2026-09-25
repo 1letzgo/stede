@@ -83,7 +83,7 @@ fun StedeApp() {
                 Screen.Weather -> WeatherScreen(back)
                 Screen.Train -> TrainScreen(back)
                 Screen.Bus -> BusScreen(back)
-                Screen.Waste -> WasteScreen(back)
+                Screen.Waste -> WasteScreen(back) { stack.clear(); tab = AppTab.Settings }
                 is Screen.Category -> CategoryScreen(top.name, back)
                 is Screen.CommunityDetail -> CommunityDetailScreen(top.id, back)
             }

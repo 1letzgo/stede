@@ -160,9 +160,14 @@ fun EventPhoto(url: String, height: Dp, modifier: Modifier = Modifier) {
 /** Kopfleiste im Petrol der Stadt: Titel mittig, weiße Symbole. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StedeTopBar(title: String, onBack: (() -> Unit)? = null, actions: @Composable RowScope.() -> Unit = {}) {
+fun StedeTopBar(title: String, onBack: (() -> Unit)? = null, subtitle: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
     CenterAlignedTopAppBar(
-        title = { Text(title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        title = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                subtitle?.takeIf { it.isNotBlank() }?.let { Text(it, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            }
+        },
         navigationIcon = { if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück", tint = Color.White) } },
         actions = actions,
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = C.bar, titleContentColor = Color.White, actionIconContentColor = Color.White, navigationIconContentColor = Color.White),

@@ -1,8 +1,7 @@
 import SwiftUI
 import StedeCore
 
-/// Busabfahrten einer Haltestelle; die Haltestelle wählt ein Menü oben und
-/// bleibt über `@AppStorage` gemerkt.
+/// Busabfahrten der Haltestelle aus den Einstellungen (`@AppStorage("bus.stop")`).
 struct BusView: View {
     /// Bleibt über App-Starts gemerkt; die Startseite liest denselben Schlüssel.
     @AppStorage("bus.stop") private var stopID: String = BusStop.zob.id
@@ -16,10 +15,6 @@ struct BusView: View {
             await model.load(stop: stop, day: dateStore.selectedDate, force: true)
         } content: {
             VStack(spacing: 0) {
-                BusStopMenu(selection: $stopID)
-                    .padding(.top)
-                    .padding(.bottom, StedeTheme.cardSpacing)
-
                 LoadStateView(state: model.state, emptyMessage: emptyMessage) {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
@@ -38,11 +33,12 @@ struct BusView: View {
                             }
                             SourceFooter(text: "\(stop.name) · VBN-Fahrplaner, fahrplaner.vbn.de")
                         }
-                        .padding([.horizontal, .bottom])
+                        .padding()
                     }
                 }
             }
         }
+        .navigationSubtitle("ab \(stop.shortName)")
         .task(id: "\(stopID)|\(IslandTime.isoDate(dateStore.selectedDate))") {
             await model.load(stop: stop, day: dateStore.selectedDate)
         }
@@ -64,36 +60,7 @@ struct BusView: View {
     }
 }
 
-/// Chip wie der Richtungsumschalter der Bahn; ein Tipp öffnet die Haltestellenliste
-/// als Sheet. Kein `Menu`/`Picker` — deren Label zeichnet sich spürbar verzögert.
-private struct BusStopMenu: View {
-    @Binding var selection: String
-    @State private var showsList = false
-
-    var body: some View {
-        Button {
-            showsList = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "bus.fill")
-                Text(BusStop.stop(id: selection).shortName)
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .stedeSelectionChip(isSelected: true)
-        }
-        .buttonStyle(StedeCardButtonStyle())
-        .accessibilityLabel("Haltestelle wählen, \(BusStop.stop(id: selection).name)")
-        .padding(.horizontal, StedeTheme.SelectionRow.horizontalInset)
-        .fixedSize(horizontal: false, vertical: true)
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-        .sheet(isPresented: $showsList) {
-            BusStopSheet(selection: $selection)
-        }
-    }
-}
-
+/// Haltestellenliste — nur noch aus den Einstellungen.
 struct BusStopSheet: View {
     @Binding var selection: String
     @Environment(\.dismiss) private var dismiss
