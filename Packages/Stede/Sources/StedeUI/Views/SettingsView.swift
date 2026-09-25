@@ -1,6 +1,5 @@
 import StedeCore
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Tab „Einstellungen“: Konto, Straße und Haltestelle, Aufbau der Startseite.
 /// Alle Werte liegen unter denselben `@AppStorage`-Schlüsseln wie in Start, Bus und Abfuhr.
@@ -174,8 +173,8 @@ private struct HomeLayoutSettings: View {
     @AppStorage(HomeLayout.orderKey) private var orderRaw = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = HomeLayout.defaultHidden
     @AppStorage(HomeLayout.tilesKey) private var tilesRaw = ""
-    /// Gerade gezogene Zeile (`rawValue` eines Bereichs oder einer Kachel).
-    @State private var dragging: String?
+    /// Während eine Zeile gezogen wird, scrollt die Seite nicht mit.
+    @State private var isReordering = false
 
     private var order: [HomeSection] { HomeLayout.order(orderRaw) }
     private var hidden: Set<HomeTileID> { HomeLayout.hidden(hiddenRaw) }
@@ -184,43 +183,37 @@ private struct HomeLayoutSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                 StedeSectionHeader(title: "Reihenfolge", symbol: "arrow.up.arrow.down")
-                SettingsCard {
-                    ForEach(Array(order.enumerated()), id: \.element) { index, section in
-                        HStack(spacing: 12) {
-                            SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
-                            Text(section.title)
-                            Spacer(minLength: 8)
-                            DragHandle()
-                        }
-                        .frame(minHeight: 32)
-                        .stedeRowCard()
-                        .reorderable(section.rawValue, dragging: $dragging) { target in
-                            moveSection(section, to: target)
-                        }
+                ReorderableStack(items: order, isReordering: $isReordering) { from, to in
+                    var sections = order
+                    sections.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+                    orderRaw = HomeLayout.encode(sections)
+                } row: { section in
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
+                        Text(section.title)
+                        Spacer(minLength: 8)
+                        DragHandle()
                     }
+                    .frame(minHeight: 32)
                 }
-                SettingsFootnote("Zum Verschieben eine Zeile gedrückt halten und ziehen.")
+                SettingsFootnote("Zum Verschieben eine Zeile kurz gedrückt halten und ziehen.")
 
                 ForEach(order) { section in
                     let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
                     StedeSectionHeader(title: section.title, symbol: section.symbol)
-                    SettingsCard {
-                        ForEach(Array(tiles.enumerated()), id: \.element) { index, tile in
-                            HStack(spacing: 12) {
-                                SettingsIcon(symbol: tile.symbol, tint: tile.tint)
-                                Text(tile.title).lineLimit(1)
-                                Spacer(minLength: 8)
-                                Toggle(tile.title, isOn: binding(for: tile))
-                                    .labelsHidden()
-                                    .tint(StedeTheme.ink)
-                                if tiles.count > 1 { DragHandle() }
-                            }
-                            .frame(minHeight: 32)
-                        .stedeRowCard()
-                            .reorderable(tile.rawValue, dragging: $dragging) { target in
-                                moveTile(tile, in: section, to: target)
-                            }
+                    ReorderableStack(items: tiles, isReordering: $isReordering) { from, to in
+                        tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: IndexSet(integer: from), to: to > from ? to + 1 : to)
+                    } row: { tile in
+                        HStack(spacing: 12) {
+                            SettingsIcon(symbol: tile.symbol, tint: tile.tint)
+                            Text(tile.title).lineLimit(1)
+                            Spacer(minLength: 8)
+                            Toggle(tile.title, isOn: binding(for: tile))
+                                .labelsHidden()
+                                .tint(StedeTheme.ink)
+                            if tiles.count > 1 { DragHandle() }
                         }
+                        .frame(minHeight: 32)
                     }
                     if section == .city { SettingsFootnote("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
                 }
@@ -242,31 +235,11 @@ private struct HomeLayoutSettings: View {
             }
             .padding()
         }
-        // Loslassen außerhalb einer Zeile beendet das Ziehen ebenfalls.
-        .onDrop(of: [.text], isTargeted: nil) { _ in dragging = nil; return true }
+        .scrollDisabled(isReordering)
         .background(StedeTheme.sand)
         .navigationTitle("Startseite")
         .stedeBar()
         .safeAreaPadding(.bottom, StedeTheme.SelectionRow.height)
-    }
-
-    /// Gezogenen Bereich an die Stelle von `target` setzen.
-    private func moveSection(_ target: HomeSection, to dragged: String) {
-        guard let source = HomeSection(rawValue: dragged), source != target,
-              let from = order.firstIndex(of: source), let to = order.firstIndex(of: target) else { return }
-        var sections = order
-        sections.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
-        withAnimation(.snappy) { orderRaw = HomeLayout.encode(sections) }
-    }
-
-    /// Gezogene Kachel an die Stelle von `target` setzen — nur innerhalb desselben Bereichs.
-    private func moveTile(_ target: HomeTileID, in section: HomeSection, to dragged: String) {
-        guard let source = HomeTileID(rawValue: dragged), source != target, source.section == section else { return }
-        let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
-        guard let from = tiles.firstIndex(of: source), let to = tiles.firstIndex(of: target) else { return }
-        withAnimation(.snappy) {
-            tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: IndexSet(integer: from), to: to > from ? to + 1 : to)
-        }
     }
 
     private func binding(for tile: HomeTileID) -> Binding<Bool> {
@@ -280,6 +253,85 @@ private struct HomeLayoutSettings: View {
     }
 }
 
+/// Umsortierbare Kartenliste: Zeile kurz gedrückt halten, sie hebt sich an und folgt dem
+/// Finger, die übrigen rücken live beiseite; beim Loslassen rastet sie am neuen Platz ein.
+/// Eigene Geste statt Drag & Drop — die System-Variante springt und rastet unsauber ein.
+private struct ReorderableStack<Item: Hashable, Row: View>: View {
+    let items: [Item]
+    @Binding var isReordering: Bool
+    /// Von Index, nach Index (Endposition).
+    let move: (Int, Int) -> Void
+    @ViewBuilder let row: (Item) -> Row
+
+    @State private var dragged: Item?
+    @State private var translation: CGFloat = 0
+    @State private var rowHeight: CGFloat = 56
+
+    private var step: CGFloat { rowHeight + StedeTheme.cardSpacing }
+
+    private var fromIndex: Int? { dragged.flatMap { items.firstIndex(of: $0) } }
+
+    private var targetIndex: Int? {
+        guard let from = fromIndex else { return nil }
+        let shift = Int((translation / step).rounded())
+        return min(max(from + shift, 0), items.count - 1)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+            ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                let isDragged = item == dragged
+                row(item)
+                    .stedeRowCard()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { rowHeight = $0 }
+                    .scaleEffect(isDragged ? 1.03 : 1)
+                    .shadow(color: .black.opacity(isDragged ? 0.18 : 0), radius: 12, y: 6)
+                    .offset(y: offset(for: index, isDragged: isDragged))
+                    .zIndex(isDragged ? 1 : 0)
+                    .animation(isDragged ? nil : .snappy(duration: 0.22), value: targetIndex)
+                    .gesture(reorderGesture(for: item), including: items.count > 1 ? .all : .subviews)
+                    .sensoryFeedback(.selection, trigger: isDragged ? targetIndex : nil)
+            }
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: dragged != nil)
+    }
+
+    private func offset(for index: Int, isDragged: Bool) -> CGFloat {
+        if isDragged { return translation }
+        guard let from = fromIndex, let to = targetIndex else { return 0 }
+        if from < to, index > from, index <= to { return -step }
+        if to < from, index >= to, index < from { return step }
+        return 0
+    }
+
+    private func reorderGesture(for item: Item) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.25)
+            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
+            .onChanged { value in
+                guard case .second(true, let drag) = value else { return }
+                if dragged == nil {
+                    withAnimation(.snappy(duration: 0.18)) { dragged = item }
+                    isReordering = true
+                }
+                translation = drag?.translation.height ?? 0
+            }
+            .onEnded { _ in
+                guard let from = fromIndex, let to = targetIndex else { reset(); return }
+                withAnimation(.snappy(duration: 0.25)) {
+                    if from != to { move(from, to) }
+                    dragged = nil
+                    translation = 0
+                }
+                isReordering = false
+            }
+    }
+
+    private func reset() {
+        withAnimation(.snappy) { dragged = nil; translation = 0 }
+        isReordering = false
+    }
+}
+
 /// Griff ≡ rechts in der Zeile, mit Abstand zur Kartenkante (kommt vom Karten-Padding).
 private struct DragHandle: View {
     var body: some View {
@@ -288,37 +340,6 @@ private struct DragHandle: View {
             .foregroundStyle(.tertiary)
             .frame(width: 28, height: 28)
             .accessibilityHidden(true)
-    }
-}
-
-private extension View {
-    /// Zeile per Drag & Drop umsortierbar: beim Überfahren einer anderen Zeile wird sofort getauscht.
-    func reorderable(_ id: String, dragging: Binding<String?>, moveHere: @escaping (String) -> Void) -> some View {
-        self
-            .contentShape(Rectangle())
-            .onDrag {
-                dragging.wrappedValue = id
-                return NSItemProvider(object: id as NSString)
-            }
-            .onDrop(of: [.text], delegate: ReorderDropDelegate(target: id, dragging: dragging, moveHere: moveHere))
-    }
-}
-
-private struct ReorderDropDelegate: DropDelegate {
-    let target: String
-    @Binding var dragging: String?
-    let moveHere: (String) -> Void
-
-    func dropEntered(info: DropInfo) {
-        guard let dragging, dragging != target else { return }
-        moveHere(dragging)
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
-
-    func performDrop(info: DropInfo) -> Bool {
-        dragging = nil
-        return true
     }
 }
 
