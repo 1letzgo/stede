@@ -204,6 +204,20 @@ struct StedeIconChip: View {
 }
 
 /// Kapitel-Überschrift wie in den Apple-Apps: Systemschrift, keine Sperrung.
+/// `StedeSectionHeader` als Kopf einer `Form`-Section — gleiche Optik wie auf den Seiten
+/// (Symbol + Headline, keine Großbuchstaben), bündig mit der Kartenkante.
+struct StedeFormHeader: View {
+    let title: String
+    var symbol: String?
+
+    var body: some View {
+        StedeSectionHeader(title: title, symbol: symbol)
+            .foregroundStyle(.primary)
+            .textCase(nil)
+            .listRowInsets(EdgeInsets(top: 12, leading: 4, bottom: 8, trailing: 0))
+    }
+}
+
 struct StedeSectionHeader: View {
     let title: String
     var symbol: String?

@@ -77,7 +77,7 @@ struct AccountView: View {
                 .listRowInsets(EdgeInsets())
             }
         }
-        Section(AuthStore.appleSignInAvailable ? "Oder per E-Mail" : "Per E-Mail") {
+        Section {
             TextField("E-Mail-Adresse", text: $email)
                 .textContentType(.emailAddress)
                 #if !os(macOS)
@@ -98,6 +98,8 @@ struct AccountView: View {
                 }
                 .disabled(email.isEmpty || auth.isLoading || magicLinkSent)
             }
+        } header: {
+            StedeFormHeader(title: AuthStore.appleSignInAvailable ? "Oder per E-Mail" : "Per E-Mail", symbol: "envelope.fill")
         }
         Section {
             // Für Konten mit Passwort (z. B. Prüfkonten von Apple und Google).
@@ -148,7 +150,7 @@ struct AccountView: View {
                 }
             }
         } header: {
-            Text("Profil")
+            StedeFormHeader(title: "Profil", symbol: "person.fill")
         } footer: {
             Text("Name und Bild sehen nur Mitglieder deiner Gruppen. Tippe auf das Bild, um es zu ändern.")
         }
@@ -167,7 +169,7 @@ struct AccountView: View {
                 ProgressView()
             }
         } header: {
-            Text("Kalender abonnieren")
+            StedeFormHeader(title: "Kalender abonnieren", symbol: "calendar")
         } footer: {
             Text("Die Termine erscheinen im Kalender deines Geräts und aktualisieren sich von selbst.")
         }

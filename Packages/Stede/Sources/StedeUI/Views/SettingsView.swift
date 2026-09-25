@@ -17,12 +17,14 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Konto") {
+            Section {
                 NavigationLink {
                     AccountView(embedded: true)
                 } label: {
                     accountRow
                 }
+            } header: {
+                StedeFormHeader(title: "Konto", symbol: "person.crop.circle")
             }
 
             Section {
@@ -42,12 +44,12 @@ struct SettingsView: View {
                     }
                 }
             } header: {
-                Text("Zuhause")
+                StedeFormHeader(title: "Zuhause", symbol: "house.fill")
             } footer: {
                 Text("Für den Abfuhrkalender auf der Startseite.")
             }
 
-            Section("Unterwegs") {
+            Section {
                 pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
                     showsStops = true
                 }
@@ -56,6 +58,8 @@ struct SettingsView: View {
                 } label: {
                     Label { Text("Bahn-Richtung") } icon: { SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed) }
                 }
+            } header: {
+                StedeFormHeader(title: "Unterwegs", symbol: "tram.fill")
             }
 
             Section {
@@ -64,12 +68,16 @@ struct SettingsView: View {
                 } label: {
                     Label { Text("Startseite anpassen") } icon: { SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink) }
                 }
+            } header: {
+                StedeFormHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
             } footer: {
-                Text("Reihenfolge der Bereiche und welche Kacheln erscheinen.")
+                Text("Reihenfolge der Bereiche und Kacheln, und welche Kacheln erscheinen.")
             }
 
             Section {
                 LabeledContent("Version", value: Self.version)
+            } header: {
+                StedeFormHeader(title: "App", symbol: "info.circle.fill")
             }
         }
         .navigationTitle("Einstellungen")
@@ -146,7 +154,7 @@ private struct HomeLayoutSettings: View {
                     orderRaw = HomeLayout.encode(sections)
                 }
             } header: {
-                Text("Reihenfolge")
+                StedeFormHeader(title: "Reihenfolge", symbol: "arrow.up.arrow.down")
             } footer: {
                 Text("Bereiche und Kacheln an den Griffen verschieben.")
             }
@@ -162,7 +170,7 @@ private struct HomeLayoutSettings: View {
                         tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: from, to: to)
                     }
                 } header: {
-                    Text(section.title)
+                    StedeFormHeader(title: section.title, symbol: section.symbol)
                 } footer: {
                     if section == .city { Text("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
                 }
