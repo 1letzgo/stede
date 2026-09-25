@@ -518,8 +518,10 @@ private struct HomeCompactTile: View {
         Text(title)
             .font(prominent ? .headline : .caption.weight(.semibold))
             .foregroundStyle(tint)
-            .lineLimit(1)
-            .minimumScaleFactor(0.6)
+            // Gleiche Schrifthöhe in allen Kacheln: lange Namen werden getrennt und stehen
+            // zweizeilig („Spiel-plätze“), statt zu schrumpfen.
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(prominent ? 12 : 10)
             .frame(height: prominent || fillsHeight ? nil : tileHeight)
