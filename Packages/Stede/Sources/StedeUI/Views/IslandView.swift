@@ -39,7 +39,7 @@ enum IslandCatalog {
     static let bikeCategory = "Fahrrad"
 
     static let sightsCategory = "Sehenswürdigkeiten"
-    /// Große Kachel unter „Stadt": Sehenswürdigkeiten plus Bad, Sport,
+    /// Große Kachel unter „Stadt": Sehenswürdigkeiten und Ausflüge plus Bad, Sport,
     /// Spiel & Familie und Kultur in einer Ansicht.
     static let discoverCategory = "Entdecken"
     static let healthCategory = "Gesundheit"
@@ -81,7 +81,12 @@ enum IslandCatalog {
             return gastroKinds.flatMap { directory.places(in: $0) }.map(IslandPlace.gastro)
         }
         if category == discoverCategory {
-            return (GastroStore.sights.places + GastroStore.leisure.places).map(IslandPlace.gastro)
+            // Sehenswürdigkeiten, Freizeit & Sport und Ausflüge in einer Ansicht.
+            // Orte, die auch als Ausflug geführt sind (Rhododendronpark Hobbie), nur einmal — mit dem Ausflugstext.
+            let trips = GastroStore.trips.places
+            let tripNames = Set(trips.map { $0.name.lowercased() })
+            let local = (GastroStore.sights.places + GastroStore.leisure.places).filter { !tripNames.contains($0.name.lowercased()) }
+            return (local + trips).map(IslandPlace.gastro)
         }
         if category == shoppingCategory {
             let directory = GastroStore.directory
@@ -132,7 +137,7 @@ enum IslandCatalog {
         switch category {
         case bikeCategory: BikeRentalStore.directory.source
         case sightsCategory: GastroStore.sights.source
-        case discoverCategory: "\(GastroStore.sights.source) · Freizeit: \(GastroStore.leisure.source)"
+        case discoverCategory: "\(GastroStore.sights.source) · Freizeit: \(GastroStore.leisure.source) · Ausflüge: \(GastroStore.trips.source)"
         case healthCategory: GastroStore.health.source
         case leisureCategory: GastroStore.leisure.source
         case tripsCategory: GastroStore.trips.source
@@ -297,7 +302,7 @@ struct IslandView: View {
                                     .id(place.id)
                             }
 
-                            if category == IslandCatalog.tripsCategory {
+                            if category == IslandCatalog.tripsCategory || category == IslandCatalog.discoverCategory {
                                 Label("Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede.", systemImage: "calendar")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)

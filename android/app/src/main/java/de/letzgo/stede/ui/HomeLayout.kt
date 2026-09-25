@@ -21,7 +21,7 @@ enum class HomeTileId(val key: String, val section: HomeSection, val category: S
     Train("train", HomeSection.Transit), Bus("bus", HomeSection.Transit), Waste("waste", HomeSection.Home),
     Discover("discover", HomeSection.City, Catalog.DISCOVER), Gastro("gastro", HomeSection.City, Catalog.GASTRO),
     Shopping("shopping", HomeSection.City, Catalog.SHOPPING), Playgrounds("playgrounds", HomeSection.City, Catalog.PLAYGROUNDS),
-    Trips("trips", HomeSection.City, Catalog.TRIPS), Health("health", HomeSection.City, Catalog.HEALTH),
+    Health("health", HomeSection.City, Catalog.HEALTH),
     Volunteer("volunteer", HomeSection.City, Catalog.VOLUNTEER);
 
     val title get() = when (this) { Train -> "Bahn"; Bus -> "Bus"; Waste -> "Abfuhr"; else -> category!! }

@@ -22,7 +22,12 @@ object Catalog {
     private val nonGastro = setOf("Einkaufen", "Bäckerei", "Drogerie")
 
     fun places(category: String): List<Place> = when (category) {
-        DISCOVER -> Places.directory("sights").places + Places.directory("leisure").places
+        // Sehenswürdigkeiten, Freizeit & Sport und Ausflüge in einer Ansicht.
+        // Orte, die auch als Ausflug geführt sind (Rhododendronpark Hobbie), nur einmal — mit dem Ausflugstext.
+        DISCOVER -> Places.directory("trips").places.let { trips ->
+            val names = trips.map { it.name.lowercase() }.toSet()
+            (Places.directory("sights").places + Places.directory("leisure").places).filter { it.name.lowercase() !in names } + trips
+        }
         GASTRO -> Places.directory("gastro").places.filter { it.category !in nonGastro }
         SHOPPING -> Places.directory("gastro").places.filter { it.category == "Einkaufen" } + Places.directory("gastro").places.filter { it.category == "Drogerie" } +
             Places.directory("gastro").places.filter { it.category == "Bäckerei" } + Places.directory("bikes").places
@@ -34,7 +39,7 @@ object Catalog {
     }
 
     fun source(category: String): String = when (category) {
-        DISCOVER -> Places.directory("sights").source + " · Freizeit: " + Places.directory("leisure").source
+        DISCOVER -> Places.directory("sights").source + " · Freizeit: " + Places.directory("leisure").source + " · Ausflüge: " + Places.directory("trips").source
         SHOPPING -> Places.directory("gastro").source + " · Fahrrad: " + Places.directory("bikes").source
         PLAYGROUNDS -> Places.directory("playgrounds").source
         TRIPS -> Places.directory("trips").source
@@ -74,7 +79,7 @@ object Catalog {
     }
 
     fun note(category: String): String? = when (category) {
-        TRIPS -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede."
+        TRIPS, DISCOVER -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede."
         HEALTH -> "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38."
         VOLUNTEER -> "Gilt nur mit der Ehrenamtskarte Niedersachsen/Bremen – beim Anbieter vorzeigen. Beantragung und alle Angebote im Land: freiwilligenserver.de/ehrenamtskarte."
         PLAYGROUNDS -> "Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite."

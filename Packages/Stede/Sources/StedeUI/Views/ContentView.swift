@@ -122,7 +122,7 @@ enum LaunchOptions {
         case "bikes": [.island(category: IslandCatalog.bikeCategory)]
         case "sights", "discover": [.island(category: IslandCatalog.discoverCategory)]
         case "shopping": [.island(category: IslandCatalog.shoppingCategory)]
-        case "trips": [.island(category: IslandCatalog.tripsCategory)]
+        case "trips": [.island(category: IslandCatalog.discoverCategory)]
         case "playgrounds": [.island(category: IslandCatalog.playgroundsCategory)]
         case "volunteer": [.island(category: IslandCatalog.volunteerCategory)]
         default: []

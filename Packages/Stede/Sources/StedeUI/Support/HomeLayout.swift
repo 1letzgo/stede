@@ -31,7 +31,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
 
 /// Einzelne Kachel der Startseite, ein- und ausblendbar.
 enum HomeTileID: String, CaseIterable, Identifiable {
-    case train, bus, waste, discover, gastro, shopping, playgrounds, trips, health, volunteer
+    case train, bus, waste, discover, gastro, shopping, playgrounds, health, volunteer
 
     var id: String { rawValue }
 
@@ -50,7 +50,6 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .gastro: IslandCatalog.gastroCategory
         case .shopping: IslandCatalog.shoppingCategory
         case .playgrounds: IslandCatalog.playgroundsCategory
-        case .trips: IslandCatalog.tripsCategory
         case .health: IslandCatalog.healthCategory
         case .volunteer: IslandCatalog.volunteerCategory
         default: nil
