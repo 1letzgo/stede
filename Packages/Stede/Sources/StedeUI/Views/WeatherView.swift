@@ -165,54 +165,67 @@ private struct WeatherHero: View {
     let badge: String
     let overview: WeatherDayOverview
     /// Feste Höhe: beim Wechsel der Stunde soll die Karte nicht springen.
-    @ScaledMetric(relativeTo: .largeTitle) private var heroHeight = 232.0
+    @ScaledMetric(relativeTo: .largeTitle) private var heroHeight = 112.0
 
     var body: some View {
         InfoCard(fill: AnyShapeStyle(WeatherAtmosphere.gradient(for: hour))) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .top) {
+            // Kompakt: Temperatur links, Symbol, Zustand und Tageswerte rechts.
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(badge)
                         .font(.caption.weight(.semibold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background(.white.opacity(0.22), in: Capsule())
                         .contentTransition(.numericText())
-                    Spacer()
-                    // Feste Fläche: Sonne, Wolke und Regen sind unterschiedlich
-                    // hoch, sonst rutscht die Temperatur darunter hin und her.
-                    WeatherSymbol(name: hour.symbolName, base: .white)
-                        .font(.system(size: 52))
-                        .frame(width: 66, height: 58)
-                        .contentTransition(.symbolEffect(.replace))
+                    Text(WeatherFormat.degrees(hour.temperature))
+                        .font(.system(size: 58, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .contentTransition(.numericText())
                 }
-
-                Text(WeatherFormat.degrees(hour.temperature))
-                    .font(.system(size: 76, weight: .semibold, design: .rounded))
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(hour.conditionLabel)
+                            .font(.headline)
+                            .fontDesign(.rounded)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        // Feste Fläche: Sonne, Wolke und Regen sind unterschiedlich hoch.
+                        WeatherSymbol(name: hour.symbolName, base: .white)
+                            .font(.system(size: 34))
+                            .frame(width: 44, height: 40)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    HStack(spacing: 10) {
+                        Label(WeatherFormat.degrees(overview.maxTemperature), systemImage: "arrow.up")
+                        Label(WeatherFormat.degrees(overview.minTemperature), systemImage: "arrow.down")
+                        Label("\(WeatherFormat.number(overview.precipitationSum, digits: 0 ... 1)) mm", systemImage: "drop.fill")
+                    }
+                    .labelStyle(CompactLabelStyle())
+                    .font(.subheadline.weight(.medium))
                     .monospacedDigit()
-                    .contentTransition(.numericText())
-
-                Text(hour.conditionLabel)
-                    .font(.title3.weight(.semibold))
-                    .fontDesign(.rounded)
+                    .foregroundStyle(.white.opacity(0.85))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                HStack(spacing: 14) {
-                    Label(WeatherFormat.degrees(overview.maxTemperature), systemImage: "arrow.up")
-                    Label(WeatherFormat.degrees(overview.minTemperature), systemImage: "arrow.down")
-                    Label("\(WeatherFormat.number(overview.precipitationSum, digits: 0 ... 1)) mm", systemImage: "drop.fill")
+                    .minimumScaleFactor(0.8)
                 }
-                .font(.subheadline.weight(.medium))
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.85))
-                .padding(.top, 6)
-
-                Spacer(minLength: 0)
             }
-            .frame(height: heroHeight, alignment: .top)
+            .frame(height: heroHeight)
         }
         .weatherHeroChrome(true)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Symbol dicht vor dem Wert — spart Breite in der kompakten Kopfkarte.
+private struct CompactLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.icon.font(.caption.weight(.bold))
+            configuration.title
+        }
     }
 }
 
@@ -262,10 +275,12 @@ private struct WeatherHourStrip: View {
                     .font(.headline)
                     .fontDesign(.rounded)
                     .monospacedDigit()
-                Text(rain(hour))
-                    .font(.caption2.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(StedeTheme.seaTeal)
+                if showsRain {
+                    Text(rain(hour))
+                        .font(.caption2.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(StedeTheme.seaTeal)
+                }
             }
             .frame(width: 52)
             .padding(.vertical, 10)
@@ -282,6 +297,9 @@ private struct WeatherHourStrip: View {
         .accessibilityLabel("\(WeatherFormat.hour(hour.timestamp)), \(WeatherFormat.degrees(hour.temperature).replacingOccurrences(of: "°", with: " Grad")), \(hour.conditionLabel)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
+
+    /// Die Regenzeile nur, wenn es an diesem Tag überhaupt regnet — sonst ist sie leerer Platz.
+    private var showsRain: Bool { hours.contains { ($0.precipitation ?? 0) >= 0.1 } }
 
     /// Nur nennenswerter Regen bekommt eine Zahl, sonst bleibt die Zeile leer.
     private func rain(_ hour: WeatherHour) -> String {
