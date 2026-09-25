@@ -144,10 +144,13 @@ struct AccountView: View {
         Section {
             Button("Abmelden") { Task { await auth.signOut(); dismiss() } }
             Button("Konto löschen", role: .destructive) { confirmDelete = true }
-                .confirmationDialog("Konto und alle Mitgliedschaften löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                .alert("Konto löschen?", isPresented: $confirmDelete) {
+                    Button("Abbrechen", role: .cancel) {}
                     Button("Endgültig löschen", role: .destructive) {
                         Task { if await auth.deleteAccount() { dismiss() } }
                     }
+                } message: {
+                    Text("Dein Konto, dein Profilbild und alle Mitgliedschaften werden gelöscht. Das lässt sich nicht rückgängig machen.")
                 }
         }
     }
