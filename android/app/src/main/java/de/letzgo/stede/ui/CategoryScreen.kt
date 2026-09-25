@@ -38,6 +38,8 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val openUrl = rememberOpenUrl(); val openIntent = rememberOpenIntent()
+    // Hinweis „Wer darf das nutzen?“ über der Ehrenamt-Liste; einmal weggeklickt, bleibt er weg (Schlüssel wie iOS).
+    var volunteerInfoHidden by remember { mutableStateOf(Store.bool("volunteer.infoHidden", false)) }
 
     Scaffold(topBar = {
         StedeTopBar(category, onBack) {
@@ -67,6 +69,9 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
                 }
             }
             LazyColumn(state = listState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+                if (category == Catalog.VOLUNTEER && !volunteerInfoHidden) item(key = "volunteer-info") {
+                    VolunteerInfoCard(openUrl) { volunteerInfoHidden = true; Store.setBool("volunteer.infoHidden", true) }
+                }
                 if (visible.isEmpty()) item { InfoCard(if (favoritesOnly) "Noch keine Favoriten — tippe auf den Stern einer Karte." else "Keine Einträge.") }
                 itemsIndexed(visible, key = { _, p -> p.id }) { _, p ->
                     PlaceCard(p, p.id == selectedId, p.id in favorites, { Favorites.toggle(p.id) }, openUrl, openIntent) {
@@ -74,6 +79,10 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
                     }
                 }
                 Catalog.note(category)?.let { item { Text(it, fontSize = 12.sp, color = C.secondary, modifier = Modifier.padding(horizontal = 4.dp)) } }
+                if (category == Catalog.VOLUNTEER && volunteerInfoHidden) item {
+                    Text("Wer darf das nutzen?", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = C.ink,
+                        modifier = Modifier.padding(horizontal = 4.dp).clickable { volunteerInfoHidden = false; Store.setBool("volunteer.infoHidden", false) })
+                }
                 if (visible.any { it.hours != null }) item { Text("Öffnungszeiten ohne Gewähr, saisonal abweichend – im Zweifel vorher anrufen.", fontSize = 12.sp, color = C.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }
                 item { SourceFooter(Catalog.source(category)) }
             }
@@ -115,5 +124,22 @@ fun InfoLine(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(icon, null, tint = C.secondary, modifier = Modifier.size(16.dp).padding(top = 1.dp))
         Text(text, fontSize = 13.sp, color = C.secondary)
+    }
+}
+
+/** Wer die Ehrenamtskarte bekommt und damit die Vergünstigungen nutzen darf — wie VolunteerInfoCard auf iOS. */
+@Composable
+private fun VolunteerInfoCard(openUrl: (String) -> Unit, dismiss: () -> Unit) {
+    StedeCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.VerifiedUser, null, tint = C.green, modifier = Modifier.size(20.dp))
+            Text("Wer darf das nutzen?", Modifier.weight(1f).padding(start = 8.dp), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.green)
+            IconButton(onClick = dismiss, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Close, "Hinweis ausblenden", tint = C.secondary, modifier = Modifier.size(18.dp)) }
+        }
+        Text("Die Angebote gelten für alle mit der Ehrenamtskarte Niedersachsen/Bremen – einfach beim Anbieter vorzeigen.", fontSize = 15.sp, color = C.text, modifier = Modifier.padding(top = 6.dp))
+        Text("Die Karte bekommt, wer sich seit mindestens zwei Jahren mindestens fünf Stunden pro Woche (250 Stunden im Jahr) unbezahlt engagiert. Ebenso Inhaberinnen und Inhaber einer JULEICA sowie Aktive in Freiwilliger Feuerwehr, Katastrophenschutz, Rettungsdienst oder Notfallseelsorge mit Grundausbildung.",
+            fontSize = 14.sp, color = C.secondary, modifier = Modifier.padding(top = 6.dp))
+        Text("Voraussetzungen und Antrag ↗", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = C.ink,
+            modifier = Modifier.padding(top = 8.dp).clickable { openUrl("https://www.freiwilligenserver.de/ehrenamtskarte/faq/voraussetzungen-fuer-den-erhalt") })
     }
 }

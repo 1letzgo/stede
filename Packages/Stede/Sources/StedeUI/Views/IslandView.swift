@@ -234,6 +234,8 @@ enum IslandCatalog {
 /// Die Favoriten-Pill schaltet zwischen allen Einträgen und den gemerkten um.
 struct IslandView: View {
     let category: String
+    /// Info „Wer darf das nutzen?“ über der Ehrenamt-Liste — einmal weggeklickt, bleibt sie weg.
+    @AppStorage("volunteer.infoHidden") private var volunteerInfoHidden = false
     /// Favoriten-Filter und ausgeblendete Arten (etwa „Drogerie" unter
     /// „Einkaufen") — je Kategorie gemerkt, beim nächsten Öffnen wie verlassen.
     @State private var favoritesOnly: Bool
@@ -286,6 +288,10 @@ struct IslandView: View {
                                 }
                             }
 
+                            if category == IslandCatalog.volunteerCategory, !volunteerInfoHidden {
+                                VolunteerInfoCard { withAnimation { volunteerInfoHidden = true } }
+                            }
+
                             ForEach(places) { place in
                                 card(for: place)
                                     .id(place.id)
@@ -303,6 +309,12 @@ struct IslandView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 4)
+                                if volunteerInfoHidden {
+                                    Button("Wer darf das nutzen?") { withAnimation { volunteerInfoHidden = false } }
+                                        .font(.caption.weight(.semibold))
+                                        .tint(StedeTheme.ink)
+                                        .padding(.horizontal, 4)
+                                }
                             }
 
                             if category == IslandCatalog.healthCategory {
@@ -511,7 +523,8 @@ private extension GastroPlace {
 
 private struct GastroCard: View {
     let place: GastroPlace
-    @State private var titleBlockHeight: CGFloat?
+    /// Feste Größe: ein zweizeiliger Name soll das Symbol nicht größer machen.
+    @ScaledMetric(relativeTo: .headline) private var chipSide = 52.0
     let isSelected: Bool
     let showOnMap: () -> Void
     let isFavorite: Bool
@@ -560,7 +573,7 @@ private struct GastroCard: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: place.symbol, color: place.color, side: titleBlockHeight)
+                StedeIconChip(symbol: place.symbol, color: place.color, side: chipSide)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(place.name)
                         .font(.headline)
@@ -568,8 +581,6 @@ private struct GastroCard: View {
                         .multilineTextAlignment(.leading)
                     StedeTagPill(text: place.category, color: place.color)
                 }
-                // Symbol so hoch wie Titel plus Pille — schließt mit der Pille ab.
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleBlockHeight = $0 }
                 Spacer(minLength: 8)
                 FavoriteButton(isFavorite: isFavorite, toggle: toggleFavorite)
             }
@@ -665,7 +676,8 @@ private struct GastroImage: View {
 
 private struct BikeRentalCard: View {
     let provider: BikeRentalProvider
-    @State private var titleBlockHeight: CGFloat?
+    /// Feste Größe: ein zweizeiliger Name soll das Symbol nicht größer machen.
+    @ScaledMetric(relativeTo: .headline) private var chipSide = 52.0
     let isSelected: Bool
     let showOnMap: () -> Void
     let isFavorite: Bool
@@ -675,7 +687,7 @@ private struct BikeRentalCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: "bicycle", color: StedeTheme.duneGreen, side: titleBlockHeight)
+                StedeIconChip(symbol: "bicycle", color: StedeTheme.duneGreen, side: chipSide)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(provider.name)
                         .font(.headline)
@@ -691,8 +703,6 @@ private struct BikeRentalCard: View {
                         }
                     }
                 }
-                // Symbol so hoch wie Titel plus Pille — schließt mit der Pille ab.
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleBlockHeight = $0 }
                 Spacer(minLength: 8)
                 FavoriteButton(isFavorite: isFavorite, toggle: toggleFavorite)
             }
@@ -739,5 +749,45 @@ private struct BikeRentalCard: View {
         .contentShape(StedeTheme.cardShape)
         .onTapGesture(perform: showOnMap)
         .accessibilityAction(named: "Auf Karte zeigen", showOnMap)
+    }
+}
+
+/// Hinweis über der Ehrenamt-Liste: wer die Ehrenamtskarte bekommt und damit die
+/// Vergünstigungen nutzen darf (Stand freiwilligenserver.de, 09/2026). Ausblendbar.
+private struct VolunteerInfoCard: View {
+    let dismiss: () -> Void
+
+    var body: some View {
+        InfoCard {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top) {
+                    Label("Wer darf das nutzen?", systemImage: "person.badge.shield.checkmark.fill")
+                        .font(.headline)
+                        .foregroundStyle(StedeTheme.duneGreen)
+                    Spacer(minLength: 8)
+                    Button(action: dismiss) {
+                        Image(systemName: "xmark")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 28, height: 28)
+                            .background(.secondary.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .accessibilityLabel("Hinweis ausblenden")
+                }
+                Text("Die Angebote gelten für alle mit der Ehrenamtskarte Niedersachsen/Bremen – einfach beim Anbieter vorzeigen.")
+                    .font(.subheadline)
+                Text("Die Karte bekommt, wer sich seit mindestens zwei Jahren mindestens fünf Stunden pro Woche (250 Stunden im Jahr) unbezahlt engagiert. Ebenso Inhaberinnen und Inhaber einer JULEICA sowie Aktive in Freiwilliger Feuerwehr, Katastrophenschutz, Rettungsdienst oder Notfallseelsorge mit Grundausbildung.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if let url = URL(string: "https://www.freiwilligenserver.de/ehrenamtskarte/faq/voraussetzungen-fuer-den-erhalt") {
+                    Link(destination: url) {
+                        Label("Voraussetzungen und Antrag", systemImage: "arrow.up.right.square")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .tint(StedeTheme.ink)
+                }
+            }
+        }
     }
 }
