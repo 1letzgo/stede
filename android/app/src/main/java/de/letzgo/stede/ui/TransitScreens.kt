@@ -129,9 +129,11 @@ private fun BusCard(b: Bus, isNext: Boolean) {
             Spacer(Modifier.weight(1f))
             if (isNext && !b.cancelled) Pill("Nächster", C.teal)
             Text(b.line, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.background(C.deep, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp))
+        }
+        Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("nach ${b.destination}", Modifier.weight(1f), fontSize = 15.sp, color = C.secondary)
             b.platform?.let { Text("Steig $it", fontSize = 12.sp, color = C.secondary) }
         }
-        Text("nach ${b.destination}", fontSize = 15.sp, color = C.secondary, modifier = Modifier.padding(top = 4.dp))
     }
 }
 

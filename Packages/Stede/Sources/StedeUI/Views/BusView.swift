@@ -139,6 +139,13 @@ private struct BusCard: View {
                     .background(StedeTheme.deep, in: Capsule())
                     .foregroundStyle(.white)
                     .fixedSize()
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("nach \(bus.destination)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 8)
                 if let platform = bus.platform {
                     Text("Steig \(platform)")
                         .font(.caption)
@@ -147,10 +154,6 @@ private struct BusCard: View {
                         .fixedSize()
                 }
             }
-            Text("nach \(bus.destination)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
