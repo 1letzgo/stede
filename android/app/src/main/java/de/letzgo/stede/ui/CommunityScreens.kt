@@ -18,7 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,6 +53,7 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     var showNew by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var codeError by remember { mutableStateOf<String?>(null) }
+    var showInvite by remember { mutableStateOf(false) }
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
         runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
     }
@@ -90,21 +93,8 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             }
             if (Session.signedIn) {
                 item { SectionHeader("Mitmachen", Icons.Default.AddCircle) }
-                item {
-                    StedeCard {
-                        Text("Einladungscode erhalten?", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = C.text)
-                        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            StedeTextField(code, { code = it.trim(); codeError = null }, "Code", Modifier.weight(1f))
-                            ColorChip("Öffnen", C.teal, prominent = code.length >= 6, enabled = code.length >= 6) {
-                                scope.launch { runCatching { CommunityApi.byInvite(code) }.getOrNull()?.let { code = ""; open(Screen.CommunityDetail(it.id)) } ?: run { codeError = "Kein Treffer für diesen Code." } }
-                            }
-                        }
-                        codeError?.let { Text(it, color = C.red, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp)) }
-                        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
-                        Text("Verein, Nachbarschaft oder Chor ohne eigene Gruppe? Die Gemeinde gibt neue Gruppen frei.", color = C.secondary, fontSize = 15.sp)
-                        ColorChip("Gruppe gründen", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Add, prominent = true) { showNew = true }
-                    }
-                }
+                item { JoinRow(Icons.Default.Key, C.teal, "Einladungscode eingeben", "Du hast einen Code für eine Gruppe bekommen.") { code = ""; codeError = null; showInvite = true } }
+                item { JoinRow(Icons.Default.Add, C.green, "Gruppe gründen", "Für Verein, Nachbarschaft oder Chor – die Gemeinde gibt sie frei.") { showNew = true } }
             }
             error?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
         }
@@ -112,6 +102,31 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     if (showAccount) AccountSheet { showAccount = false }
     if (showAdmin) AdminSheet { showAdmin = false }
     if (showNew) CommunityEditorSheet(null) { showNew = false }
+    if (showInvite) AlertDialog(onDismissRequest = { showInvite = false }, title = { Text("Einladungscode") },
+        text = {
+            Column {
+                Text("Gib den Code ein, den du von der Gruppe bekommen hast.", color = C.secondary, fontSize = 14.sp)
+                OutlinedTextField(code, { code = it.trim(); codeError = null }, Modifier.padding(top = 10.dp), placeholder = { Text("Code") }, singleLine = true, isError = codeError != null)
+                codeError?.let { Text(it, color = C.red, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp)) }
+            }
+        },
+        confirmButton = { TextButton(enabled = code.length >= 6, onClick = {
+            scope.launch { runCatching { CommunityApi.byInvite(code) }.getOrNull()?.let { code = ""; showInvite = false; open(Screen.CommunityDetail(it.id)) } ?: run { codeError = "Zu diesem Code gibt es keine Gruppe." } }
+        }) { Text("Öffnen") } },
+        dismissButton = { TextButton({ showInvite = false }) { Text("Abbrechen") } })
+}
+
+/** Einzeilige Karte unter „Mitmachen“ wie `JoinRow` auf iOS: Symbol, Titel, Erklärung, Pfeil. */
+@Composable
+private fun JoinRow(icon: ImageVector, color: Color, title: String, detail: String, onClick: () -> Unit) {
+    RowCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        IconChip(icon, color)
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+            Text(detail, color = C.secondary, fontSize = 14.sp)
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = C.tertiary)
+    }
 }
 
 @Composable

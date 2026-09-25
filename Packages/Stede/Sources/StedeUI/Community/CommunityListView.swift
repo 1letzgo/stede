@@ -10,6 +10,8 @@ struct CommunityListView: View {
     @State private var showsEditor = false
     @State private var showsAdmin = false
     @State private var inviteCode = ""
+    @State private var showsInvite = false
+    @State private var inviteFailed = false
 
     var body: some View {
         TabScreen(title: "Gruppen", showsDateNavigator: false) {
@@ -48,25 +50,16 @@ struct CommunityListView: View {
                     }
                     if auth.isSignedIn {
                         StedeSectionHeader(title: "Mitmachen", symbol: "plus.circle.fill")
-                        InfoCard {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Einladungscode erhalten?").font(.subheadline.weight(.semibold))
-                                HStack(spacing: 8) {
-                                    StedeTextField(placeholder: "Code", text: $inviteCode)
-                                    Button { Task { await openInvite() } } label: {
-                                        StedeColorChip(title: "Öffnen", color: StedeTheme.seaTeal, prominent: inviteCode.count >= 6)
-                                    }
-                                    .buttonStyle(StedeCardButtonStyle()).disabled(inviteCode.count < 6)
-                                }
-                                Rectangle().fill(.separator).frame(height: 1)
-                                Text("Verein, Nachbarschaft oder Chor ohne eigene Gruppe? Die Gemeinde gibt neue Gruppen frei.")
-                                    .font(.subheadline).foregroundStyle(.secondary)
-                                Button { showsEditor = true } label: {
-                                    StedeColorChip(title: "Gruppe gründen", symbol: "plus", color: StedeTheme.ink, prominent: true)
-                                }
-                                .buttonStyle(StedeCardButtonStyle())
-                            }
+                        Button { inviteCode = ""; showsInvite = true } label: {
+                            JoinRow(symbol: "key.fill", color: StedeTheme.seaTeal, title: "Einladungscode eingeben",
+                                    detail: "Du hast einen Code für eine Gruppe bekommen.")
                         }
+                        .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
+                        Button { showsEditor = true } label: {
+                            JoinRow(symbol: "plus", color: StedeTheme.duneGreen, title: "Gruppe gründen",
+                                    detail: "Für Verein, Nachbarschaft oder Chor – die Gemeinde gibt sie frei.")
+                        }
+                        .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                     }
                     if case .failed(let message) = model.state { Text(message).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
                 }
@@ -98,6 +91,22 @@ struct CommunityListView: View {
                 .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")
             }
         }
+        .alert("Einladungscode", isPresented: $showsInvite) {
+            TextField("Code", text: $inviteCode)
+                .autocorrectionDisabled()
+                #if !os(macOS)
+                .textInputAutocapitalization(.characters)
+                #endif
+            Button("Abbrechen", role: .cancel) {}
+            Button("Öffnen") { Task { await openInvite() } }
+        } message: {
+            Text("Gib den Code ein, den du von der Gruppe bekommen hast.")
+        }
+        .alert("Code nicht gefunden", isPresented: $inviteFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Zu diesem Einladungscode gibt es keine Gruppe. Bitte prüfe die Schreibweise.")
+        }
         .sheet(isPresented: $showsAccount) { AccountView() }
         .sheet(isPresented: $showsAdmin) { AdminView() }
         .sheet(isPresented: $showsEditor) {
@@ -122,7 +131,32 @@ struct CommunityListView: View {
             if !model.communities.contains(where: { $0.id == community.id }) { model.communities.append(community) }
             inviteCode = ""
             invited = community
+        } else {
+            inviteFailed = true
         }
+    }
+}
+
+/// Einzeilige Karte unter „Mitmachen“: Symbol, Titel, kurze Erklärung, Pfeil.
+private struct JoinRow: View {
+    let symbol: String
+    let color: Color
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            StedeIconChip(symbol: symbol, color: color)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .multilineTextAlignment(.leading)
+        .stedeRowCard()
     }
 }
 
