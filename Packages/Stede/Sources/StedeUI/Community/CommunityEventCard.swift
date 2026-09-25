@@ -148,6 +148,8 @@ private struct EventBody: View {
                     ParticipationRow(
                         participation: participation,
                         showsHelper: info.helpersNeeded > 0 && (helpersOpen || isHelping),
+                        openHelperSlots: max(info.helpersNeeded - helperCount, 0),
+                        helpersNeeded: info.helpersNeeded,
                         onParticipate: onParticipate
                     )
                 } else {
@@ -274,33 +276,63 @@ struct EventPhoto: View {
 struct ParticipationRow: View {
     let participation: MyParticipation?
     let showsHelper: Bool
+    var openHelperSlots = 0
+    var helpersNeeded = 0
     let onParticipate: (ParticipationStatus?, Bool) -> Void
 
     private var status: ParticipationStatus? { participation?.status }
     private var isHelping: Bool { participation?.helping == true }
 
     var body: some View {
-        HStack(spacing: 6) {
-            chip(symbol: "checkmark", label: "Ich komme", color: StedeTheme.duneGreen, selected: status == .going) {
-                onParticipate(status == .going ? nil : .going, isHelping && status != .going)
-            }
-            chip(symbol: "questionmark", label: "Vielleicht", color: StedeTheme.sunAmber, selected: status == .maybe) {
-                onParticipate(status == .maybe ? nil : .maybe, isHelping && status != .maybe)
-            }
-            chip(symbol: "xmark", label: "Absage", color: StedeTheme.harborRed, selected: status == .declined) {
-                onParticipate(status == .declined ? nil : .declined, false)
-            }
-            if showsHelper {
-                chip(symbol: "hands.sparkles.fill", label: isHelping ? "Ich helfe mit" : "Mithelfen", color: StedeTheme.heather, selected: isHelping) {
-                    if isHelping {
-                        onParticipate(status ?? .going, false)
-                    } else {
-                        onParticipate(status == .declined || status == nil ? .going : status, true)
-                    }
+        VStack(alignment: .leading, spacing: 10) {
+            // Helfer eigens erklärt, nicht als vierter Knopf ohne Kontext.
+            if showsHelper { helperBox }
+            HStack(spacing: 6) {
+                chip(symbol: "checkmark", label: "Ich komme", color: StedeTheme.duneGreen, selected: status == .going) {
+                    onParticipate(status == .going ? nil : .going, isHelping && status != .going)
+                }
+                chip(symbol: "questionmark", label: "Vielleicht", color: StedeTheme.sunAmber, selected: status == .maybe) {
+                    onParticipate(status == .maybe ? nil : .maybe, isHelping && status != .maybe)
+                }
+                chip(symbol: "xmark", label: "Absage", color: StedeTheme.harborRed, selected: status == .declined) {
+                    onParticipate(status == .declined ? nil : .declined, false)
                 }
             }
         }
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+
+    private var helperBox: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hands.sparkles.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(StedeTheme.heather)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isHelping ? "Du hilfst mit" : "Hier werden Helfer gesucht")
+                    .font(.subheadline.weight(.semibold))
+                Text(isHelping ? "Danke! Tippe erneut, um dich auszutragen." : slotsText)
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Button {
+                if isHelping {
+                    onParticipate(status ?? .going, false)
+                } else {
+                    onParticipate(status == .declined || status == nil ? .going : status, true)
+                }
+            } label: {
+                StedeColorChip(title: isHelping ? "Eingetragen" : "Mithelfen", symbol: isHelping ? "checkmark" : "hand.raised.fill",
+                               color: StedeTheme.heather, prominent: isHelping)
+            }
+            .buttonStyle(StedeCardButtonStyle())
+            .accessibilityAddTraits(isHelping ? .isSelected : [])
+        }
+        .padding(10)
+        .background(StedeTheme.heather.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var slotsText: String {
+        openHelperSlots == 1 ? "Noch 1 von \(helpersNeeded) Plätzen frei" : "Noch \(openHelperSlots) von \(helpersNeeded) Plätzen frei"
     }
 
     private func chip(symbol: String, label: String, color: Color, selected: Bool, action: @escaping () -> Void) -> some View {

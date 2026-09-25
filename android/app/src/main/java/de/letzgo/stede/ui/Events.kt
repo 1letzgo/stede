@@ -127,7 +127,7 @@ fun SmallLabel(icon: ImageVector, text: String, tint: Color) {
     }
 }
 
-/** Ich komme / Vielleicht / Absage (+ Mithelfen) — nur Symbole, gleich breit, gleich hoch. */
+/** Ich komme / Vielleicht / Absage als Symbole; Helfer darüber in eigenem, erklärtem Kasten. */
 @Composable
 fun ParticipationRow(e: EventInfo, helpers: Int?, onChange: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
@@ -136,12 +136,25 @@ fun ParticipationRow(e: EventInfo, helpers: Int?, onChange: () -> Unit = {}) {
     val helping = mine?.helping == true
     val showHelp = e.helpersNeeded > 0 && (helping || (helpers ?: 0) < e.helpersNeeded)
     fun set(s: String?, help: Boolean) = scope.launch { runCatching { MyParticipation.set(e.id, s, help) }; Changes.bump(); onChange() }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        ColorChip(null, C.green, Modifier.weight(1f), icon = Icons.Default.Check, selected = status == "going") { set(if (status == "going") null else "going", helping && status != "going") }
-        ColorChip(null, C.amber, Modifier.weight(1f), icon = Icons.Default.QuestionMark, selected = status == "maybe") { set(if (status == "maybe") null else "maybe", helping && status != "maybe") }
-        ColorChip(null, C.red, Modifier.weight(1f), icon = Icons.Default.Close, selected = status == "declined") { set(if (status == "declined") null else "declined", false) }
-        if (showHelp) ColorChip(null, C.heather, Modifier.weight(1f), icon = Icons.Default.VolunteerActivism, selected = helping) {
-            if (helping) set(status ?: "going", false) else set(if (status == null || status == "declined") "going" else status, true)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (showHelp) {
+            val open = (e.helpersNeeded - (helpers ?: 0)).coerceAtLeast(0)
+            Row(Modifier.fillMaxWidth().background(C.heather.copy(alpha = 0.1f), RoundedCornerShape(14.dp)).padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Default.VolunteerActivism, null, tint = C.heather, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(if (helping) "Du hilfst mit" else "Hier werden Helfer gesucht", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = C.text)
+                    Text(if (helping) "Danke! Tippe erneut, um dich auszutragen." else "Noch $open von ${e.helpersNeeded} Plätzen frei", fontSize = 12.sp, color = C.secondary)
+                }
+                ColorChip(if (helping) "Eingetragen" else "Mithelfen", C.heather, icon = if (helping) Icons.Default.Check else Icons.Default.PanTool, prominent = helping) {
+                    if (helping) set(status ?: "going", false) else set(if (status == null || status == "declined") "going" else status, true)
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ColorChip(null, C.green, Modifier.weight(1f), icon = Icons.Default.Check, selected = status == "going") { set(if (status == "going") null else "going", helping && status != "going") }
+            ColorChip(null, C.amber, Modifier.weight(1f), icon = Icons.Default.QuestionMark, selected = status == "maybe") { set(if (status == "maybe") null else "maybe", helping && status != "maybe") }
+            ColorChip(null, C.red, Modifier.weight(1f), icon = Icons.Default.Close, selected = status == "declined") { set(if (status == "declined") null else "declined", false) }
         }
     }
 }
