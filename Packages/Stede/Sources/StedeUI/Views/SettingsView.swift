@@ -18,6 +18,21 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
+                NavigationLink {
+                    HomeLayoutSettings()
+                } label: {
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
+                        Text("Startseite anpassen")
+                        Spacer(minLength: 0)
+                        SettingsChevron()
+                    }
+                    .stedeRowCard()
+                }
+                .buttonStyle(StedeCardButtonStyle())
+                .foregroundStyle(.primary)
+
                 StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                 NavigationLink {
                     AccountView(embedded: true)
@@ -65,21 +80,6 @@ struct SettingsView: View {
                     .frame(minHeight: 32)
             .stedeRowCard()
                 }
-
-                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
-                NavigationLink {
-                    HomeLayoutSettings()
-                } label: {
-                    HStack(spacing: 12) {
-                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
-                        Text("Startseite anpassen")
-                        Spacer(minLength: 0)
-                        SettingsChevron()
-                    }
-                    .stedeRowCard()
-                }
-                .buttonStyle(StedeCardButtonStyle())
-                .foregroundStyle(.primary)
 
                 StedeSectionHeader(title: "App", symbol: "info.circle.fill")
                 HStack {
