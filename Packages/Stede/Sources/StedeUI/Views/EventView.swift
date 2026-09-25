@@ -11,7 +11,7 @@ struct EventView: View {
             switch self {
             case .all: "Alle"
             case .city: "Öffentlich"
-            case .communities: "Communities"
+            case .communities: "Gruppen"
             case .mine: "Meine"
             }
         }
@@ -64,7 +64,7 @@ struct EventView: View {
                                         }
                                     }
                                 }
-                                SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Community-Termine aus der App")
+                                SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App")
                             }
                             .padding([.horizontal, .bottom])
                         }

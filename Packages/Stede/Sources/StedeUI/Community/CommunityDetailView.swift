@@ -267,7 +267,7 @@ struct CommunityDetailView: View {
                 Text(model.community.description).font(.subheadline).foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Label(model.community.visibility == .listed ? "In der Community-Liste sichtbar" : "Nur per Einladungscode", systemImage: model.community.visibility == .listed ? "eye" : "eye.slash")
+                Label(model.community.visibility == .listed ? "In der Gruppenliste sichtbar" : "Nur per Einladungscode", systemImage: model.community.visibility == .listed ? "eye" : "eye.slash")
                 Label(model.community.joinPolicy == .open ? "Beitritt sofort" : "Admins bestätigen den Beitritt", systemImage: "person.badge.plus")
                 if let membership { Label("Deine Rolle: \(membership.role == .owner ? "Leitung" : membership.role == .admin ? "Admin" : "Mitglied")", systemImage: "person.text.rectangle") }
             }
@@ -287,7 +287,7 @@ struct CommunityDetailView: View {
 
         if !isOwner {
             Button { confirmLeave = true } label: {
-                StedeColorChip(title: "Community verlassen", symbol: "rectangle.portrait.and.arrow.right", color: StedeTheme.harborRed)
+                StedeColorChip(title: "Gruppe verlassen", symbol: "rectangle.portrait.and.arrow.right", color: StedeTheme.harborRed)
             }
             .buttonStyle(StedeCardButtonStyle()).disabled(busy)
             .confirmationDialog("„\(model.community.name)“ verlassen?", isPresented: $confirmLeave, titleVisibility: .visible) {
@@ -296,7 +296,7 @@ struct CommunityDetailView: View {
                 }
             }
         } else {
-            Text("Als Leitung kannst du die Community nicht verlassen – übergib die Rolle oder archiviere sie.")
+            Text("Als Leitung kannst du die Gruppe nicht verlassen – übergib die Rolle oder archiviere sie.")
                 .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
         }
     }
@@ -458,7 +458,7 @@ struct EventEditorView: View {
                 }
                 Section {
                     Toggle("Öffentlich im Kalender der Gemeinde", isOn: $isPublic)
-                    Text("Öffentlich zeigt Titel, Zeit, Ort und Community-Name allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
+                    Text("Öffentlich zeigt Titel, Zeit, Ort und Gruppenname allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if existing != nil, existing?.cancelledAt == nil, let onCancelEvent {

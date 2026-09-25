@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class AppTab(val title: String, val icon: ImageVector) { Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Community", Icons.Default.Groups) }
+enum class AppTab(val title: String, val icon: ImageVector) { Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups) }
 
 /** Ziele, die auf einen Tab geschoben werden (wie HomeDestination in iOS). */
 sealed class Screen {

@@ -12,7 +12,7 @@ struct CommunityListView: View {
     @State private var inviteCode = ""
 
     var body: some View {
-        TabScreen(title: "Community", showsDateNavigator: false) {
+        TabScreen(title: "Gruppen", showsDateNavigator: false) {
             await model.load(tenantID: auth.tenant?.id)
         } content: {
             ScrollView {
@@ -20,7 +20,7 @@ struct CommunityListView: View {
                     if !auth.isSignedIn {
                         InfoCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Communities sind Gruppen aus \(auth.tenant?.municipality ?? "deiner Gemeinde") mit eigenem Kalender – Verein, Nachbarschaft, Chor.")
+                                Text("Gruppen aus \(auth.tenant?.municipality ?? "deiner Gemeinde") mit eigenem Kalender – Verein, Nachbarschaft, Chor.")
                                     .foregroundStyle(.secondary)
                                 Button { showsAccount = true } label: {
                                     StedeColorChip(title: "Anmelden", symbol: "person.crop.circle", color: StedeTheme.ink, prominent: true)
@@ -30,21 +30,21 @@ struct CommunityListView: View {
                         }
                     }
                     if !mine.isEmpty {
-                        StedeSectionHeader(title: "Meine Communities", symbol: "person.3.fill")
+                        StedeSectionHeader(title: "Meine Gruppen", symbol: "person.3.fill")
                         ForEach(mine) { community in
                             NavigationLink(value: community) { CommunityCard(community: community, membership: auth.membership(for: community.id)) }
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         }
                     }
                     if !others.isEmpty {
-                        StedeSectionHeader(title: mine.isEmpty ? "Communities" : "Weitere", symbol: "person.2.fill")
+                        StedeSectionHeader(title: mine.isEmpty ? "Gruppen" : "Weitere", symbol: "person.2.fill")
                         ForEach(others) { community in
                             NavigationLink(value: community) { CommunityCard(community: community, membership: nil) }
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         }
                     } else if mine.isEmpty, model.state == .loaded || model.state == .empty {
-                        StedeSectionHeader(title: "Communities", symbol: "person.2.fill")
-                        InfoCard { Text("Noch keine Community in \(auth.tenant?.municipality ?? "dieser Gemeinde"). Leg die erste an.").foregroundStyle(.secondary) }
+                        StedeSectionHeader(title: "Gruppen", symbol: "person.2.fill")
+                        InfoCard { Text("Noch keine Gruppe in \(auth.tenant?.municipality ?? "dieser Gemeinde"). Leg die erste an.").foregroundStyle(.secondary) }
                     }
                     if auth.isSignedIn {
                         StedeSectionHeader(title: "Mitmachen", symbol: "plus.circle.fill")
@@ -59,10 +59,10 @@ struct CommunityListView: View {
                                     .buttonStyle(StedeCardButtonStyle()).disabled(inviteCode.count < 6)
                                 }
                                 Rectangle().fill(.separator).frame(height: 1)
-                                Text("Verein, Nachbarschaft oder Chor ohne eigene Community? Die Gemeinde gibt neue Communities frei.")
+                                Text("Verein, Nachbarschaft oder Chor ohne eigene Gruppe? Die Gemeinde gibt neue Gruppen frei.")
                                     .font(.subheadline).foregroundStyle(.secondary)
                                 Button { showsEditor = true } label: {
-                                    StedeColorChip(title: "Neue Community beantragen", symbol: "plus", color: StedeTheme.ink, prominent: true)
+                                    StedeColorChip(title: "Gruppe gründen", symbol: "plus", color: StedeTheme.ink, prominent: true)
                                 }
                                 .buttonStyle(StedeCardButtonStyle())
                             }
@@ -195,7 +195,7 @@ struct CommunityEditorView: View {
                         }
                     }
                 }
-                Section("Community") {
+                Section("Gruppe") {
                     TextField("Name", text: $name)
                     TextField("Beschreibung", text: $description, axis: .vertical).lineLimit(2 ... 5)
                 }
@@ -210,11 +210,11 @@ struct CommunityEditorView: View {
                     }
                 }
                 if existing == nil {
-                    Section { Text("Nach dem Antrag gibt die Gemeinde-App die Community frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
+                    Section { Text("Nach dem Antrag gibt die Gemeinde-App die Gruppe frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
                 }
                 if let error { Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) } }
             }
-            .navigationTitle(existing == nil ? "Neue Community" : "Einstellungen")
+            .navigationTitle(existing == nil ? "Neue Gruppe" : "Einstellungen")
             .stedeSheetForm()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }

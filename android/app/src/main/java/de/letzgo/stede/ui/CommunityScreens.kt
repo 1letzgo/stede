@@ -52,11 +52,11 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     var code by remember { mutableStateOf("") }
     var codeError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
-        runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Communities konnten nicht geladen werden." }
+        runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
     }
     val town = Session.tenant?.municipality ?: "Westerstede"
     Scaffold(topBar = {
-        StedeTopBar("Community", actions = {
+        StedeTopBar("Gruppen", actions = {
             if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
             IconButton(onClick = { showAccount = true }) {
                 val avatar = Session.profile?.avatar
@@ -68,7 +68,7 @@ fun CommunityScreen(open: (Screen) -> Unit) {
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             if (!Session.signedIn) item {
                 StedeCard {
-                    Text("Communities sind Gruppen aus $town mit eigenem Kalender – Verein, Nachbarschaft, Chor.", color = C.secondary)
+                    Text("Gruppen aus $town mit eigenem Kalender – Verein, Nachbarschaft, Chor.", color = C.secondary)
                     ColorChip("Anmelden", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.AccountCircle, prominent = true) { showAccount = true }
                 }
             }
@@ -78,15 +78,15 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             val others = all.filter { it !in mine && it.status == "approved" && it.visibility == "listed" }
             if (list == null && error == null) item { Loading() }
             if (mine.isNotEmpty()) {
-                item { SectionHeader("Meine Communities", Icons.Default.Groups) }
+                item { SectionHeader("Meine Gruppen", Icons.Default.Groups) }
                 items(mine, key = { "m${it.id}" }) { c -> CommunityRow(c, Session.membership(c.id)) { open(Screen.CommunityDetail(c.id)) } }
             }
             if (others.isNotEmpty()) {
-                item { SectionHeader(if (mine.isEmpty()) "Communities" else "Weitere", Icons.Default.People) }
+                item { SectionHeader(if (mine.isEmpty()) "Gruppen" else "Weitere", Icons.Default.People) }
                 items(others, key = { "o${it.id}" }) { c -> CommunityRow(c, null) { open(Screen.CommunityDetail(c.id)) } }
             } else if (mine.isEmpty() && list != null) {
-                item { SectionHeader("Communities", Icons.Default.People) }
-                item { InfoCard("Noch keine Community in $town. Leg die erste an.") }
+                item { SectionHeader("Gruppen", Icons.Default.People) }
+                item { InfoCard("Noch keine Gruppe in $town. Leg die erste an.") }
             }
             if (Session.signedIn) {
                 item { SectionHeader("Mitmachen", Icons.Default.AddCircle) }
@@ -101,8 +101,8 @@ fun CommunityScreen(open: (Screen) -> Unit) {
                         }
                         codeError?.let { Text(it, color = C.red, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp)) }
                         HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
-                        Text("Verein, Nachbarschaft oder Chor ohne eigene Community? Die Gemeinde gibt neue Communities frei.", color = C.secondary, fontSize = 15.sp)
-                        ColorChip("Neue Community beantragen", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Add, prominent = true) { showNew = true }
+                        Text("Verein, Nachbarschaft oder Chor ohne eigene Gruppe? Die Gemeinde gibt neue Gruppen frei.", color = C.secondary, fontSize = 15.sp)
+                        ColorChip("Gruppe gründen", C.ink, Modifier.padding(top = 10.dp), icon = Icons.Default.Add, prominent = true) { showNew = true }
                     }
                 }
             }
@@ -208,7 +208,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     }
     val community = c
     Scaffold(topBar = {
-        StedeTopBar(community?.name ?: "Community", onBack, actions = {
+        StedeTopBar(community?.name ?: "Gruppe", onBack, actions = {
             if (isMember && tab == CommunityTab.Events) IconButton(onClick = { newEvent = true }) { Icon(Icons.Default.Add, "Termin anlegen") }
         })
     }, containerColor = C.sand) { pad ->
@@ -280,7 +280,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                                 CommunityHead(community, null)
                                 Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     SmallLabel(if (community.visibility == "listed") Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                        if (community.visibility == "listed") "In der Community-Liste sichtbar" else "Nur per Einladungscode", C.teal)
+                                        if (community.visibility == "listed") "In der Gruppenliste sichtbar" else "Nur per Einladungscode", C.teal)
                                     SmallLabel(Icons.Default.PersonAdd, if (community.joinPolicy == "open") "Beitritt sofort" else "Admins bestätigen den Beitritt", C.teal)
                                     membership?.let { SmallLabel(Icons.Default.Badge, "Deine Rolle: ${roleLabel(it.role)}", C.teal) }
                                 }
@@ -288,8 +288,8 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                             }
                         }
                         item {
-                            if (membership?.role != "owner") ColorChip("Community verlassen", C.red, icon = Icons.AutoMirrored.Filled.Logout) { confirmLeave = true }
-                            else Text("Als Leitung kannst du die Community nicht verlassen – übergib die Rolle oder archiviere sie.", color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                            if (membership?.role != "owner") ColorChip("Gruppe verlassen", C.red, icon = Icons.AutoMirrored.Filled.Logout) { confirmLeave = true }
+                            else Text("Als Leitung kannst du die Gruppe nicht verlassen – übergib die Rolle oder archiviere sie.", color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
                         }
                     }
                 }
@@ -384,7 +384,7 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
         saving = false
     }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
-        SheetHeader(if (existing == null) "Neue Community" else "Community bearbeiten", leading = "Abbrechen" to onDismiss,
+        SheetHeader(if (existing == null) "Neue Gruppe" else "Gruppe bearbeiten", leading = "Abbrechen" to onDismiss,
             trailing = (if (saving) "…" else "Sichern") to { if (name.isNotBlank() && !saving) save() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             StedeCard {
@@ -411,7 +411,7 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
                     Switch(open, { open = it })
                 }
             }
-            if (existing == null) Text("Neue Communities gibt der App-Admin frei, bevor sie sichtbar werden.", color = C.secondary, fontSize = 13.sp)
+            if (existing == null) Text("Neue Gruppen gibt der App-Admin frei, bevor sie sichtbar werden.", color = C.secondary, fontSize = 13.sp)
             error?.let { Text(it, color = C.red) }
         }
     }
@@ -435,7 +435,7 @@ fun AdminSheet(onDismiss: () -> Unit) {
         SheetHeader("Admin", trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             if (Session.isTenantAdmin) {
-                item { SectionHeader("Neue Communities", Icons.Default.VerifiedUser) }
+                item { SectionHeader("Neue Gruppen", Icons.Default.VerifiedUser) }
                 if (pending.isEmpty()) item { InfoCard("Keine offenen Vorschläge.") }
                 items(pending, key = { it.id }) { c ->
                     StedeCard {
@@ -552,7 +552,7 @@ fun AccountSheet(onDismiss: () -> Unit) {
                     token?.let { t ->
                         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             ColorChip("Meine Zusagen", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.EventAvailable) { openIntent(Backend.webcalUrl(t, "mine")) }
-                            ColorChip("Alle meine Communities", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.Groups) { openIntent(Backend.webcalUrl(t, "communities")) }
+                            ColorChip("Alle meine Gruppen", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.Groups) { openIntent(Backend.webcalUrl(t, "communities")) }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 ColorChip("Link kopieren", C.mudflat, Modifier.weight(1f), icon = Icons.Default.ContentCopy) { clipboard.setText(AnnotatedString(Backend.feedUrl(t, "communities"))) }
                                 ColorChip("Neuer Link", C.amber, Modifier.weight(1f), icon = Icons.Default.Refresh) { scope.launch { Session.userId?.let { token = runCatching { CommunityApi.rotateCalendarToken(it) }.getOrNull() } } }
@@ -571,7 +571,7 @@ fun AccountSheet(onDismiss: () -> Unit) {
         }
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Konto löschen?") },
-        text = { Text("Dein Konto und deine Teilnahmen werden gelöscht. Communities, die nur du leitest, werden archiviert.") },
+        text = { Text("Dein Konto und deine Teilnahmen werden gelöscht. Gruppen, die nur du leitest, werden archiviert.") },
         confirmButton = { TextButton({ confirmDelete = false; scope.launch { if (Session.deleteAccount()) onDismiss() } }) { Text("Löschen", color = C.red) } },
         dismissButton = { TextButton({ confirmDelete = false }) { Text("Abbrechen") } })
 }

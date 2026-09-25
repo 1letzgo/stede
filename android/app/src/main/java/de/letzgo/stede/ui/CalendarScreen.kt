@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.*
 import java.time.LocalDate
 
-enum class CalendarFilter(val title: String) { All("Alle"), City("Öffentlich"), Communities("Communities"), Mine("Meine") }
+enum class CalendarFilter(val title: String) { All("Alle"), City("Öffentlich"), Communities("Gruppen"), Mine("Meine") }
 
 /** Kalender-Eintrag: Stadt-Termin oder Community-Termin. */
 sealed class CalendarEntry {
@@ -92,7 +92,7 @@ fun CalendarScreen() {
                         }
                     }
                 }
-                item { SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Communities") }
+                item { SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen") }
             }
             }
             DayBar(week, week = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { week = Town.weekStart(it) }

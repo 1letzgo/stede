@@ -10,7 +10,7 @@ enum AppTab: Hashable, CaseIterable {
         switch self {
         case .start: "Start"
         case .events: "Kalender"
-        case .community: "Community"
+        case .community: "Gruppen"
         }
     }
 

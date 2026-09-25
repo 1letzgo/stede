@@ -49,7 +49,7 @@ struct AccountView: View {
 
     @ViewBuilder private var signInSections: some View {
         Section {
-            Text("Ein Konto gilt für alle Gemeinde-Apps. Du brauchst es nur für Communities und ihre Termine.")
+            Text("Ein Konto gilt für alle Gemeinde-Apps. Du brauchst es nur für Gruppen und ihre Termine.")
                 .font(.subheadline).foregroundStyle(.secondary)
             if AuthStore.appleSignInAvailable {
                 SignInWithAppleButton(.signIn) { request in
@@ -124,7 +124,7 @@ struct AccountView: View {
             }
             TextField("Anzeigename", text: $name)
                 .onSubmit { Task { await auth.updateDisplayName(name) } }
-            Text("Name und Bild sehen nur Mitglieder deiner Communities.")
+            Text("Name und Bild sehen nur Mitglieder deiner Gruppen.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
         Section("Kalender-Abo") {
@@ -132,7 +132,7 @@ struct AccountView: View {
                 .font(.footnote).foregroundStyle(.secondary)
             if let token = calendarToken {
                 Link("Meine Termine abonnieren", destination: Backend.webcalURL(token: token))
-                Link("Alle Termine meiner Communities abonnieren", destination: Backend.webcalURL(token: token, scope: "communities"))
+                Link("Alle Termine meiner Gruppen abonnieren", destination: Backend.webcalURL(token: token, scope: "communities"))
                 ShareLink("Abo-Link teilen", item: Backend.feedURL(token: token))
                 Button("Link erneuern (alte Abos verlieren den Zugriff)", role: .destructive) {
                     Task { if let userID = auth.userID { calendarToken = try? await client.rotateCalendarToken(userID: userID) } }

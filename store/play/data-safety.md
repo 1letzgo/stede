@@ -6,12 +6,12 @@ Allgemein
 - Nutzer können die Löschung beantragen: **Ja** (in der App: Konto löschen).
 - Unabhängige Sicherheitsprüfung: nein.
 
-Erhobene Daten (nur bei Nutzung der Communities, optional)
+Erhobene Daten (nur bei Nutzung der Gruppen, optional)
 
 | Datentyp | Erhoben | Geteilt | Optional | Zweck |
 |---|---|---|---|---|
 | Persönliche Daten → E-Mail-Adresse | ja | nein | ja | Kontoverwaltung (Anmeldung per E-Mail-Link) |
-| Persönliche Daten → Name (Anzeigename) | ja | nein | ja | App-Funktionen (sichtbar für Mitglieder derselben Community) |
+| Persönliche Daten → Name (Anzeigename) | ja | nein | ja | App-Funktionen (sichtbar für Mitglieder derselben Gruppe) |
 | Persönliche Daten → Nutzer-IDs | ja | nein | ja | Kontoverwaltung |
 | Fotos und Videos → Fotos (Profilbild, Termin-Fotos, Logos) | ja | nein | ja | App-Funktionen |
 | App-Aktivitäten → andere nutzergenerierte Inhalte (Termine, Zusagen, Mitgliedschaften) | ja | nein | ja | App-Funktionen |

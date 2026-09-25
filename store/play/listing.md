@@ -22,7 +22,7 @@ ZUHAUSE
 KALENDER
 • Veranstaltungen der Stadt Westerstede Woche für Woche.
 • Öffentliche Termine von Vereinen und Gruppen aus der App.
-• Filter: Alle, Öffentlich, Communities, Meine.
+• Filter: Alle, Öffentlich, Gruppen, Meine.
 
 STADT
 • Entdecken: Sehenswürdigkeiten, Freizeit und Sport.
@@ -33,11 +33,11 @@ STADT
 WETTER
 • Aktuelles Wetter, stündlicher Verlauf und Details für Westerstede (Daten des Deutschen Wetterdienstes).
 
-COMMUNITIES
-• Vereine, Nachbarschaften und Gruppen bekommen einen eigenen Kalender.
+GRUPPEN
+• Vereine, Nachbarschaften, Chöre und Initiativen bekommen als Gruppe einen eigenen Kalender.
 • Termine mit Foto, Zusage per Tipp (Ich komme, Vielleicht, Absage) und Helfer-Suche.
 • Kalender-Abo für den Systemkalender.
-• Neue Communities gibt die Gemeinde frei; Admins bestätigen neue Mitglieder, wenn gewünscht.
+• Neue Gruppen gibt die Gemeinde frei; Admins bestätigen neue Mitglieder, wenn gewünscht.
 • Anmeldung per E-Mail-Link, ohne Passwort. Das Konto lässt sich in der App jederzeit löschen.
 
 HINWEIS
@@ -53,9 +53,9 @@ stede ist ein privates Projekt und keine offizielle App der Stadt Westerstede. F
 - Datenschutzerklärung: [öffentliche URL von `datenschutz.html`]
 
 ## Einstufung / App-Inhalte (Antworten für die Play Console)
-- Zielgruppe: ab 16 Jahren (Community-Funktionen; passt zur Datenschutzerklärung, nicht für Kinder konzipiert)
+- Zielgruppe: ab 16 Jahren (Gruppen-Funktionen; passt zur Datenschutzerklärung, nicht für Kinder konzipiert)
 - Werbung: nein
-- Nutzergenerierte Inhalte: ja (Community-Termine, Fotos, Logos, Profilbilder). Moderation: Communities werden vor Sichtbarkeit von der Gemeinde freigegeben; Community-Admins verwalten Mitglieder und können Termine absagen.
+- Nutzergenerierte Inhalte: ja (Gruppen-Termine, Fotos, Logos, Profilbilder). Moderation: Gruppen werden vor Sichtbarkeit von der Gemeinde freigegeben; Gruppe-Admins verwalten Mitglieder und können Termine absagen.
 - Behörden-App: nein (Hinweis „keine offizielle App der Stadt“ steht in der Beschreibung)
 - Nachrichten-App: nein
-- Konto löschen: in der App (Community → Konto → Konto löschen). Eine Web-URL zur Kontolöschung verlangt Play zusätzlich → Abschnitt „Konto löschen“ in `datenschutz.html` verlinken.
+- Konto löschen: in der App (Gruppen → Konto → Konto löschen). Eine Web-URL zur Kontolöschung verlangt Play zusätzlich → Abschnitt „Konto löschen“ in `datenschutz.html` verlinken.

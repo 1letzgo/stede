@@ -2,7 +2,7 @@ import StedeCore
 import SwiftUI
 
 /// Admin als Sheet im Stil des Profil-Sheets: Formular mit Abschnitten.
-/// App-Admins sehen Community-Anträge, Community-Admins die Mitgliedsanfragen.
+/// App-Admins sehen Gruppen-Anträge, Community-Admins die Mitgliedsanfragen.
 struct AdminView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
@@ -12,7 +12,7 @@ struct AdminView: View {
         NavigationStack {
             Form {
                 if auth.isTenantAdmin {
-                    Section("Community-Anträge") {
+                    Section("Gruppen-Anträge") {
                         if model.pendingCommunities.isEmpty {
                             Text(model.state == .loading ? "Lade …" : "Keine offenen Anträge.").foregroundStyle(.secondary)
                         }
@@ -72,8 +72,8 @@ struct AdminView: View {
                 }
                 Section {
                     Text(auth.isTenantAdmin
-                         ? "Als App-Admin siehst du nur Anträge – keine Inhalte der Communities, außer du bist selbst Mitglied."
-                         : "Anfragen an die Communities, die du leitest oder verwaltest.")
+                         ? "Als App-Admin siehst du nur Anträge – keine Inhalte der Gruppen, außer du bist selbst Mitglied."
+                         : "Anfragen an die Gruppen, die du leitest oder verwaltest.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if case .failed(let message) = model.state {
