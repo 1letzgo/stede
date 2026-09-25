@@ -310,8 +310,10 @@ struct ParticipationRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(isHelping ? "Du hilfst mit" : "Hier werden Helfer gesucht")
                     .font(.subheadline.weight(.semibold))
-                Text(isHelping ? "Danke! Tippe erneut, um dich auszutragen." : slotsText)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Text(isHelping ? "Danke fürs Mithelfen!" : slotsText)
                     .font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: 8)
             Button {
@@ -321,10 +323,27 @@ struct ParticipationRow: View {
                     onParticipate(status == .declined || status == nil ? .going : status, true)
                 }
             } label: {
-                StedeColorChip(title: isHelping ? "Eingetragen" : "Mithelfen", symbol: isHelping ? "checkmark" : "hand.raised.fill",
-                               color: StedeTheme.heather, prominent: isHelping)
+                // Beide Beschriftungen liegen übereinander, damit der Knopf beim Umschalten gleich groß bleibt.
+                HStack(spacing: 6) {
+                    Image(systemName: isHelping ? "checkmark" : "hand.raised.fill")
+                        .font(.caption.weight(.bold))
+                        .frame(width: 16)
+                    ZStack {
+                        Text("Eingetragen").opacity(isHelping ? 1 : 0)
+                        Text("Mithelfen").opacity(isHelping ? 0 : 1)
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .fontDesign(.rounded)
+                .lineLimit(1)
+                .padding(.horizontal, 14)
+                .frame(minHeight: StedeTheme.chipHeight)
+                .background(isHelping ? AnyShapeStyle(StedeTheme.heather) : AnyShapeStyle(StedeTheme.heather.opacity(0.16)), in: Capsule())
+                .foregroundStyle(isHelping ? Color.white : StedeTheme.heather)
+                .fixedSize()
             }
             .buttonStyle(StedeCardButtonStyle())
+            .accessibilityLabel(isHelping ? "Eingetragen, austragen" : "Mithelfen")
             .accessibilityAddTraits(isHelping ? .isSelected : [])
         }
         .padding(10)

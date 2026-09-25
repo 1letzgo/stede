@@ -143,10 +143,11 @@ fun ParticipationRow(e: EventInfo, helpers: Int?, onChange: () -> Unit = {}) {
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Default.VolunteerActivism, null, tint = C.heather, modifier = Modifier.size(20.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(if (helping) "Du hilfst mit" else "Hier werden Helfer gesucht", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = C.text)
-                    Text(if (helping) "Danke! Tippe erneut, um dich auszutragen." else "Noch $open von ${e.helpersNeeded} Plätzen frei", fontSize = 12.sp, color = C.secondary)
+                    Text(if (helping) "Du hilfst mit" else "Hier werden Helfer gesucht", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = C.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (helping) "Danke fürs Mithelfen!" else "Noch $open von ${e.helpersNeeded} Plätzen frei", fontSize = 12.sp, color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                ColorChip(if (helping) "Eingetragen" else "Mithelfen", C.heather, icon = if (helping) Icons.Default.Check else Icons.Default.PanTool, prominent = helping) {
+                // Feste Breite: „Mithelfen“ und „Eingetragen“ gleich groß, der Kasten springt nicht.
+                ColorChip(if (helping) "Eingetragen" else "Mithelfen", C.heather, Modifier.width(136.dp), icon = if (helping) Icons.Default.Check else Icons.Default.PanTool, prominent = helping) {
                     if (helping) set(status ?: "going", false) else set(if (status == null || status == "declined") "going" else status, true)
                 }
             }
