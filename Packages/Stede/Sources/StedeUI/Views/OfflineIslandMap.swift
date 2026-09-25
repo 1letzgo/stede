@@ -21,11 +21,12 @@ struct OfflineIslandMap: UIViewRepresentable {
         map.showsCompass = false
         map.isPitchEnabled = false
         map.isRotateEnabled = false
-        // Ganzes Stadtgebiet samt Hobbie und Park der Gärten; weiter hinaus gibt es keine Daten.
+        // Ganzes Stadtgebiet samt Hobbie, dazu Bad Zwischenahn mit Zwischenahner Meer und
+        // Park der Gärten (Rahmen `land`: 53,15–53,35 N, 7,80–8,10 E); weiter hinaus keine Daten.
         map.cameraBoundary = MKMapView.CameraBoundary(
             coordinateRegion: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 53.26, longitude: 7.935),
-                span: MKCoordinateSpan(latitudeDelta: 0.18, longitudeDelta: 0.27)
+                center: CLLocationCoordinate2D(latitude: 53.25, longitude: 7.95),
+                span: MKCoordinateSpan(latitudeDelta: 0.20, longitudeDelta: 0.30)
             )
         )
         map.cameraZoomRange = MKMapView.CameraZoomRange(minCenterCoordinateDistance: 150, maxCenterCoordinateDistance: 45000)
