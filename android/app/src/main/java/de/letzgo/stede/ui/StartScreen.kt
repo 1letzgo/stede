@@ -140,6 +140,6 @@ private fun HomeTile(title: String, icon: ImageVector, color: Color, modifier: M
 private fun CategoryTile(category: String, modifier: Modifier, height: Dp, small: Boolean = false, onClick: () -> Unit) {
     val color = Catalog.color(category)
     Tile(color, modifier.height(height), Catalog.icon(category), onClick) {
-        Text(category, color = color, fontWeight = FontWeight.SemiBold, fontSize = if (small) 12.sp else 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(category, color = color, fontWeight = FontWeight.SemiBold, fontSize = if (small) (if (category.length > 11) 10.sp else 12.sp) else 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

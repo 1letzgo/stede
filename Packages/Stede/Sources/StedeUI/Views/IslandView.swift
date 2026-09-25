@@ -47,7 +47,7 @@ enum IslandCatalog {
     static let tripsCategory = "Ausflüge"
     static let playgroundsCategory = "Spielplätze"
     /// Vergünstigungen der Ehrenamtskarte in Westerstede (optionale Kachel auf Start).
-    static let volunteerCategory = "Ehrenamt"
+    static let volunteerCategory = "Ehrenamtskarte"
 
 
     /// Versorgung in der Stadt — nicht unter „Gastro", sondern unter „Stadt".
@@ -175,6 +175,7 @@ enum IslandCatalog {
         case tripsCategory, "Park": "leaf.fill"
         case playgroundsCategory, "Spielplatz": "figure.play"
         case "Skaterplatz": "skateboard.fill"
+        case "Kostenpflichtig": "ticket.fill"
         case "Draisine": "figure.outdoor.cycle"
         case "Schifffahrt": "ferry.fill"
         case "Radtour": "bicycle"
@@ -219,6 +220,7 @@ enum IslandCatalog {
         case tripsCategory, "Park": StedeTheme.harborRed
         case playgroundsCategory, "Spielplatz": StedeTheme.sunAmber
         case "Skaterplatz": StedeTheme.heather
+        case "Kostenpflichtig": StedeTheme.seaTeal
         case "Draisine": StedeTheme.sunAmber
         case "Schifffahrt": StedeTheme.seaTeal
         case "Radtour": StedeTheme.duneGreen

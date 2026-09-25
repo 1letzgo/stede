@@ -18,7 +18,7 @@ object Catalog {
     const val DISCOVER = "Entdecken"; const val GASTRO = "Gastro"; const val SHOPPING = "Einkaufen"
     const val PLAYGROUNDS = "Spielplätze"; const val TRIPS = "Ausflüge"; const val HEALTH = "Gesundheit"
     /** Vergünstigungen der Ehrenamtskarte in Westerstede — optionale Kachel auf Start. */
-    const val VOLUNTEER = "Ehrenamt"
+    const val VOLUNTEER = "Ehrenamtskarte"
     private val nonGastro = setOf("Einkaufen", "Bäckerei", "Drogerie")
 
     fun places(category: String): List<Place> = when (category) {
@@ -57,7 +57,7 @@ object Catalog {
         "Sehenswürdigkeiten", DISCOVER -> Icons.Default.Explore; HEALTH -> Icons.Default.MedicalServices
         "Bad" -> Icons.Default.Pool; "Sport" -> Icons.Default.DirectionsRun; "Spiel & Familie" -> Icons.Default.FamilyRestroom
         "Kultur" -> Icons.Default.TheaterComedy; TRIPS, "Park" -> Icons.Default.Park; PLAYGROUNDS, "Spielplatz" -> Icons.Default.Toys
-        "Skaterplatz" -> Icons.Default.Skateboarding; "Draisine" -> Icons.Default.PedalBike; "Schifffahrt" -> Icons.Default.DirectionsBoat
+        "Skaterplatz" -> Icons.Default.Skateboarding; "Kostenpflichtig" -> Icons.Default.ConfirmationNumber; "Draisine" -> Icons.Default.PedalBike; "Schifffahrt" -> Icons.Default.DirectionsBoat
         "Radtour" -> Icons.Default.DirectionsBike; GASTRO -> Icons.Default.Restaurant
         VOLUNTEER -> Icons.Default.VolunteerActivism; "Verwaltung" -> Icons.Default.AccountBalance; "Bildung" -> Icons.Default.MenuBook
         "Mobilität" -> Icons.Default.DirectionsBus; "Handel" -> Icons.Default.ShoppingBag; "Übernachtung" -> Icons.Default.Cabin
@@ -70,6 +70,7 @@ object Catalog {
         "Café", "Bäckerei", "Spiel & Familie", PLAYGROUNDS, "Spielplatz", "Draisine", "Therapie & Pflege" -> C.amber
         "Eiscafé", "Drogerie", "Apotheke", TRIPS, "Park" -> C.red
         VOLUNTEER -> C.green
+        "Kostenpflichtig" -> C.teal
         "Verwaltung" -> C.ink; "Mobilität" -> C.teal; "Handel" -> C.amber; "Übernachtung" -> C.red; "Versicherung" -> C.mudflat
         "Imbiss", "Fahrrad", "Sport", "Tierarzt", "Radtour" -> C.green
         "Bar", "Einkaufen", "Zahnarzt" -> C.ink
