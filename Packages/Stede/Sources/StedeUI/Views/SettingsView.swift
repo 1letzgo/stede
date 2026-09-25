@@ -16,72 +16,87 @@ struct SettingsView: View {
     private var street: WasteStreet? { WasteSettings.street(id: streetID) }
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                 NavigationLink {
                     AccountView(embedded: true)
                 } label: {
-                    accountRow
+                    HStack(spacing: 12) {
+                        accountRow
+                        Spacer(minLength: 0)
+                        SettingsChevron()
+                    }
+                    .stedeRowCard()
                 }
-            } header: {
-                StedeFormHeader(title: "Konto", symbol: "person.crop.circle")
-            }
+                .buttonStyle(StedeCardButtonStyle())
+                .foregroundStyle(.primary)
 
-            Section {
-                pickerRow("Straße", value: street?.name ?? "Nicht gewählt", symbol: "house.fill", tint: StedeTheme.duneGreen) {
-                    showsStreets = true
-                }
-                if let street, street.needsSection {
-                    Picker("Abschnitt", selection: $sectionID) {
-                        Text("Bitte wählen").tag(0)
-                        ForEach(street.sections ?? []) { Text($0.label).tag($0.id) }
+                StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
+                SettingsCard {
+                    pickerRow("Straße", value: street?.name ?? "Nicht gewählt", symbol: "house.fill", tint: StedeTheme.duneGreen) {
+                        showsStreets = true
+                    }
+                    if let street, street.needsSection {
+                        SettingsDivider()
+                        menuRow("Abschnitt", selection: $sectionID, options: street.sections ?? [])
+                    }
+                    if let street, street.needsBranchSection {
+                        SettingsDivider()
+                        menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
                     }
                 }
-                if let street, street.needsBranchSection {
-                    Picker("Ast- und Strauchwerk", selection: $branchSectionID) {
-                        Text("Bitte wählen").tag(0)
-                        ForEach(street.branchSections ?? []) { Text($0.label).tag($0.id) }
+                SettingsFootnote("Für den Abfuhrkalender auf der Startseite.")
+
+                StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
+                SettingsCard {
+                    pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
+                        showsStops = true
                     }
+                    SettingsDivider()
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
+                        Text("Bahn-Richtung")
+                        Spacer(minLength: 8)
+                        Picker("Bahn-Richtung", selection: $direction) {
+                            ForEach(TrainDirection.allCases, id: \.self) { Text($0.shortTitle).tag($0) }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .tint(StedeTheme.ink)
+                    }
+                    .padding(.vertical, 6)
                 }
-            } header: {
-                StedeFormHeader(title: "Zuhause", symbol: "house.fill")
-            } footer: {
-                Text("Für den Abfuhrkalender auf der Startseite.")
-            }
 
-            Section {
-                pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
-                    showsStops = true
-                }
-                Picker(selection: $direction) {
-                    ForEach(TrainDirection.allCases, id: \.self) { Text($0.shortTitle).tag($0) }
-                } label: {
-                    Label { Text("Bahn-Richtung") } icon: { SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed) }
-                }
-            } header: {
-                StedeFormHeader(title: "Unterwegs", symbol: "tram.fill")
-            }
-
-            Section {
+                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
                 NavigationLink {
                     HomeLayoutSettings()
                 } label: {
-                    Label { Text("Startseite anpassen") } icon: { SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink) }
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
+                        Text("Startseite anpassen")
+                        Spacer(minLength: 0)
+                        SettingsChevron()
+                    }
+                    .stedeRowCard()
                 }
-            } header: {
-                StedeFormHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
-            } footer: {
-                Text("Reihenfolge der Bereiche und Kacheln, und welche Kacheln erscheinen.")
-            }
+                .buttonStyle(StedeCardButtonStyle())
+                .foregroundStyle(.primary)
+                SettingsFootnote("Reihenfolge der Bereiche und Kacheln, und welche Kacheln erscheinen.")
 
-            Section {
-                LabeledContent("Version", value: Self.version)
-            } header: {
-                StedeFormHeader(title: "App", symbol: "info.circle.fill")
+                StedeSectionHeader(title: "App", symbol: "info.circle.fill")
+                HStack {
+                    Text("Version")
+                    Spacer()
+                    Text(Self.version).foregroundStyle(.secondary)
+                }
+                .stedeRowCard()
             }
+            .padding()
         }
+        .background(StedeTheme.sand)
         .navigationTitle("Einstellungen")
-        .stedeSheetForm()
+        .stedeBar()
         .safeAreaPadding(.bottom, StedeTheme.SelectionRow.height)
         .sheet(isPresented: $showsStreets) {
             StreetSheet(selection: $streetID) {
@@ -92,6 +107,21 @@ struct SettingsView: View {
         .sheet(isPresented: $showsStops) {
             BusStopSheet(selection: $busStopID)
         }
+    }
+
+    private func menuRow(_ title: String, selection: Binding<Int>, options: [WasteSection]) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer(minLength: 8)
+            Picker(title, selection: selection) {
+                Text("Bitte wählen").tag(0)
+                ForEach(options) { Text($0.label).tag($0.id) }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .tint(StedeTheme.ink)
+        }
+        .padding(.vertical, 6)
     }
 
     @ViewBuilder private var accountRow: some View {
@@ -115,14 +145,18 @@ struct SettingsView: View {
 
     private func pickerRow(_ title: String, value: String, symbol: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack {
-                Label { Text(title).foregroundStyle(.primary) } icon: { SettingsIcon(symbol: symbol, tint: tint) }
-                Spacer()
+            HStack(spacing: 12) {
+                SettingsIcon(symbol: symbol, tint: tint)
+                Text(title)
+                Spacer(minLength: 8)
                 Text(value).foregroundStyle(.secondary).lineLimit(1)
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                SettingsChevron()
             }
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
         }
-        .tint(.primary)
+        .buttonStyle(StedeCardButtonStyle())
+        .foregroundStyle(.primary)
     }
 
     private static var version: String {
@@ -133,7 +167,7 @@ struct SettingsView: View {
     }
 }
 
-/// Reihenfolge der Bereiche (ziehen) und Kacheln ein- und ausblenden.
+/// Reihenfolge der Bereiche und Kacheln (Pfeile) und Kacheln ein- und ausblenden.
 private struct HomeLayoutSettings: View {
     @AppStorage(HomeLayout.orderKey) private var orderRaw = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = ""
@@ -143,53 +177,74 @@ private struct HomeLayoutSettings: View {
     private var hidden: Set<HomeTileID> { HomeLayout.hidden(hiddenRaw) }
 
     var body: some View {
-        List {
-            Section {
-                ForEach(order) { section in
-                    Label { Text(section.title) } icon: { SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                StedeSectionHeader(title: "Reihenfolge", symbol: "arrow.up.arrow.down")
+                SettingsCard {
+                    ForEach(Array(order.enumerated()), id: \.element) { index, section in
+                        if index > 0 { SettingsDivider() }
+                        HStack(spacing: 12) {
+                            SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
+                            Text(section.title)
+                            Spacer(minLength: 8)
+                            MoveButtons(canMoveUp: index > 0, canMoveDown: index < order.count - 1) { delta in
+                                var sections = order
+                                sections.swapAt(index, index + delta)
+                                withAnimation { orderRaw = HomeLayout.encode(sections) }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
-                .onMove { from, to in
-                    var sections = order
-                    sections.move(fromOffsets: from, toOffset: to)
-                    orderRaw = HomeLayout.encode(sections)
-                }
-            } header: {
-                StedeFormHeader(title: "Reihenfolge", symbol: "arrow.up.arrow.down")
-            } footer: {
-                Text("Bereiche und Kacheln an den Griffen verschieben.")
-            }
 
-            ForEach(order) { section in
-                Section {
-                    ForEach(HomeLayout.tiles(in: section, order: tilesRaw)) { tile in
-                        Toggle(isOn: binding(for: tile)) {
-                            Label { Text(tile.title) } icon: { SettingsIcon(symbol: tile.symbol, tint: tile.tint) }
+                ForEach(order) { section in
+                    let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
+                    StedeSectionHeader(title: section.title, symbol: section.symbol)
+                    SettingsCard {
+                        ForEach(Array(tiles.enumerated()), id: \.element) { index, tile in
+                            if index > 0 { SettingsDivider() }
+                            HStack(spacing: 12) {
+                                SettingsIcon(symbol: tile.symbol, tint: tile.tint)
+                                Text(tile.title).lineLimit(1)
+                                Spacer(minLength: 8)
+                                if tiles.count > 1 {
+                                    MoveButtons(canMoveUp: index > 0, canMoveDown: index < tiles.count - 1) { delta in
+                                        withAnimation {
+                                            tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: IndexSet(integer: index),
+                                                                           to: delta > 0 ? index + 2 : index - 1)
+                                        }
+                                    }
+                                }
+                                Toggle(tile.title, isOn: binding(for: tile))
+                                    .labelsHidden()
+                                    .tint(StedeTheme.ink)
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
-                    .onMove { from, to in
-                        tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: from, to: to)
-                    }
-                } header: {
-                    StedeFormHeader(title: section.title, symbol: section.symbol)
-                } footer: {
-                    if section == .city { Text("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
+                    if section == .city { SettingsFootnote("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
                 }
-            }
 
-            Section {
-                Button("Standard wiederherstellen") {
-                    orderRaw = HomeLayout.defaultOrder
-                    hiddenRaw = ""
-                    tilesRaw = ""
+                Button {
+                    withAnimation {
+                        orderRaw = HomeLayout.defaultOrder
+                        hiddenRaw = ""
+                        tilesRaw = ""
+                    }
+                } label: {
+                    Text("Standard wiederherstellen")
+                        .frame(maxWidth: .infinity)
+                        .stedeSelectionChip(isSelected: false)
                 }
+                .buttonStyle(StedeCardButtonStyle())
                 .disabled(orderRaw == HomeLayout.defaultOrder && hiddenRaw.isEmpty && tilesRaw.isEmpty)
+                .padding(.top, 8)
             }
+            .padding()
         }
-        #if os(iOS)
-        .environment(\.editMode, .constant(.active))
-        #endif
+        .background(StedeTheme.sand)
         .navigationTitle("Startseite")
-        .stedeSheetForm()
+        .stedeBar()
         .safeAreaPadding(.bottom, StedeTheme.SelectionRow.height)
     }
 
@@ -201,6 +256,69 @@ private struct HomeLayoutSettings: View {
             if visible { set.remove(tile) } else { set.insert(tile) }
             hiddenRaw = HomeLayout.encode(set)
         }
+    }
+}
+
+/// Pfeile hoch/runter zum Verschieben einer Zeile.
+private struct MoveButtons: View {
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let move: (Int) -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            arrow("chevron.up", enabled: canMoveUp, label: "Nach oben") { move(-1) }
+            arrow("chevron.down", enabled: canMoveDown, label: "Nach unten") { move(1) }
+        }
+    }
+
+    private func arrow(_ symbol: String, enabled: Bool, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.footnote.weight(.bold))
+                .frame(width: 32, height: 32)
+                .background(StedeTheme.ink.opacity(enabled ? 0.1 : 0.04), in: Circle())
+                .foregroundStyle(enabled ? StedeTheme.ink : Color.secondary.opacity(0.4))
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .disabled(!enabled)
+        .accessibilityLabel(label)
+    }
+}
+
+/// Karte mit mehreren Einstellungszeilen — gleiche Form wie alle Karten der App.
+private struct SettingsCard<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) { content() }
+            .padding(.horizontal, StedeTheme.cardPadding)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .stedeCard()
+    }
+}
+
+/// Trennlinie zwischen Zeilen, eingerückt bis hinter das Symbol.
+private struct SettingsDivider: View {
+    var body: some View {
+        Rectangle().fill(.separator).frame(height: 0.5).padding(.leading, 42)
+    }
+}
+
+private struct SettingsChevron: View {
+    var body: some View {
+        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+    }
+}
+
+/// Kleiner Hinweis unter einer Karte.
+private struct SettingsFootnote: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.top, -4)
     }
 }
 
