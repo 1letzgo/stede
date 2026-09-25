@@ -44,6 +44,20 @@ fun SettingsScreen() {
 
     Scaffold(topBar = { StedeTopBar("Einstellungen") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+            item { SectionHeader("Konto", Icons.Default.Person) }
+            item {
+                RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
+                    val profile = Session.profile
+                    if (Session.signedIn) PersonAvatar(profile?.avatar, profile?.displayName ?: "?", size = 44.dp)
+                    else IconChip(Icons.Default.AccountCircle, C.ink, 44.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(if (Session.signedIn) profile?.displayName ?: "Konto" else "Anmelden", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+                        Text(if (Session.signedIn) "Profil, Kalender-Abo, Abmelden" else "Für Gruppen und ihre Termine", color = C.secondary, fontSize = 14.sp)
+                    }
+                    Chevron()
+                }
+            }
+
             item { SectionHeader("Startseite", Icons.Default.GridView) }
             item {
                 StedeCard {
@@ -84,20 +98,6 @@ fun SettingsScreen() {
             item {
                 TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
                     enabled = order != HomeSection.entries || hidden != setOf(HomeTileId.Volunteer) || tileOrder != HomeTileId.entries) { Text("Standard wiederherstellen") }
-            }
-
-            item { SectionHeader("Konto", Icons.Default.Person) }
-            item {
-                RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
-                    val profile = Session.profile
-                    if (Session.signedIn) PersonAvatar(profile?.avatar, profile?.displayName ?: "?", size = 44.dp)
-                    else IconChip(Icons.Default.AccountCircle, C.ink, 44.dp)
-                    Column(Modifier.weight(1f)) {
-                        Text(if (Session.signedIn) profile?.displayName ?: "Konto" else "Anmelden", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                        Text(if (Session.signedIn) "Profil, Kalender-Abo, Abmelden" else "Für Gruppen und ihre Termine", color = C.secondary, fontSize = 14.sp)
-                    }
-                    Chevron()
-                }
             }
 
             item { SectionHeader("Zuhause", Icons.Default.Home) }

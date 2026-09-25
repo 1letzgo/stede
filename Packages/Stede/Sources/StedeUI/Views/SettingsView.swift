@@ -18,13 +18,12 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
+                StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                 NavigationLink {
-                    HomeLayoutSettings()
+                    AccountView(embedded: true)
                 } label: {
                     HStack(spacing: 12) {
-                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
-                        Text("Startseite anpassen")
+                        accountRow
                         Spacer(minLength: 0)
                         SettingsChevron()
                     }
@@ -33,12 +32,13 @@ struct SettingsView: View {
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
 
-                StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
+                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
                 NavigationLink {
-                    AccountView(embedded: true)
+                    HomeLayoutSettings()
                 } label: {
                     HStack(spacing: 12) {
-                        accountRow
+                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
+                        Text("Startseite anpassen")
                         Spacer(minLength: 0)
                         SettingsChevron()
                     }
