@@ -553,10 +553,7 @@ fun AccountSheet(onDismiss: () -> Unit) {
                         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             ColorChip("Meine Zusagen", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.EventAvailable) { openIntent(Backend.webcalUrl(t, "mine")) }
                             ColorChip("Alle meine Gruppen", C.teal, Modifier.fillMaxWidth(), icon = Icons.Default.Groups) { openIntent(Backend.webcalUrl(t, "communities")) }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ColorChip("Link kopieren", C.mudflat, Modifier.weight(1f), icon = Icons.Default.ContentCopy) { clipboard.setText(AnnotatedString(Backend.feedUrl(t, "communities"))) }
-                                ColorChip("Neuer Link", C.amber, Modifier.weight(1f), icon = Icons.Default.Refresh) { scope.launch { Session.userId?.let { token = runCatching { CommunityApi.rotateCalendarToken(it) }.getOrNull() } } }
-                            }
+                            ColorChip("Link kopieren", C.mudflat, Modifier.fillMaxWidth(), icon = Icons.Default.ContentCopy) { clipboard.setText(AnnotatedString(Backend.feedUrl(t, "communities"))) }
                         }
                     } ?: Loading()
                 }

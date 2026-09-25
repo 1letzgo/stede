@@ -15,6 +15,7 @@ struct AccountView: View {
     @State private var calendarToken: String?
     @State private var photoItem: PhotosPickerItem?
     @State private var uploadingPhoto = false
+    @State private var showPhotoPicker = false
     @State private var confirmDelete = false
     @State private var page: BrowserPage?
     private let client = CommunityClient()
@@ -27,7 +28,8 @@ struct AccountView: View {
                 } else {
                     signInSections
                 }
-                if let error = auth.lastError {
+                // Fehler nur beim Anmelden zeigen; angemeldet sind sie überholt.
+                if !auth.isSignedIn, let error = auth.lastError {
                     Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
                 }
             }
@@ -36,7 +38,9 @@ struct AccountView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }
+            .onAppear { auth.lastError = nil }
             .task(id: auth.userID) {
+                auth.lastError = nil
                 name = auth.profile?.displayName ?? ""
                 calendarToken = nil
                 if let userID = auth.userID {
@@ -93,24 +97,33 @@ struct AccountView: View {
     }
 
     @ViewBuilder private var signedInSections: some View {
-        Section("Profil") {
+        Section {
             HStack(spacing: 14) {
-                ZStack {
-                    PersonAvatar(url: auth.profile?.avatarURL, name: name.isEmpty ? "?" : name, side: 72)
-                    if uploadingPhoto { ProgressView() }
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        Label(auth.profile?.avatarURL == nil ? "Profilbild auswählen" : "Anderes Profilbild", systemImage: "photo")
+                Menu {
+                    Button(auth.profile?.avatarURL == nil ? "Profilbild auswählen" : "Anderes Profilbild", systemImage: "photo") {
+                        showPhotoPicker = true
                     }
                     if auth.profile?.avatarURL != nil {
-                        Button("Profilbild entfernen", role: .destructive) {
+                        Button("Profilbild entfernen", systemImage: "trash", role: .destructive) {
                             Task { uploadingPhoto = true; await auth.updateAvatar(nil); uploadingPhoto = false }
                         }
                     }
+                } label: {
+                    ZStack(alignment: .bottomTrailing) {
+                        PersonAvatar(url: auth.profile?.avatarURL, name: name.isEmpty ? "?" : name, side: 64)
+                            .overlay { if uploadingPhoto { ProgressView() } }
+                        Image(systemName: "camera.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, StedeTheme.deep)
+                    }
                 }
+                .disabled(uploadingPhoto)
+                TextField("Anzeigename", text: $name)
+                    .font(.headline)
+                    .onSubmit { Task { await auth.updateDisplayName(name) } }
             }
-            .disabled(uploadingPhoto)
+            .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
             .onChange(of: photoItem) {
                 guard let item = photoItem else { return }
                 Task {
@@ -122,28 +135,33 @@ struct AccountView: View {
                     uploadingPhoto = false
                 }
             }
-            TextField("Anzeigename", text: $name)
-                .onSubmit { Task { await auth.updateDisplayName(name) } }
-            Text("Name und Bild sehen nur Mitglieder deiner Gruppen.")
-                .font(.footnote).foregroundStyle(.secondary)
+        } header: {
+            Text("Profil")
+        } footer: {
+            Text("Name und Bild sehen nur Mitglieder deiner Gruppen. Tippe auf das Bild, um es zu ändern.")
         }
-        Section("Kalender-Abo") {
-            Text("Termine, bei denen du zugesagt hast, als Abo im Systemkalender – aktualisiert sich von selbst.")
-                .font(.footnote).foregroundStyle(.secondary)
+        Section {
             if let token = calendarToken {
-                Link("Meine Termine abonnieren", destination: Backend.webcalURL(token: token))
-                Link("Alle Termine meiner Gruppen abonnieren", destination: Backend.webcalURL(token: token, scope: "communities"))
-                ShareLink("Abo-Link teilen", item: Backend.feedURL(token: token))
-                Button("Link erneuern (alte Abos verlieren den Zugriff)", role: .destructive) {
-                    Task { if let userID = auth.userID { calendarToken = try? await client.rotateCalendarToken(userID: userID) } }
+                Link(destination: Backend.webcalURL(token: token)) {
+                    Label("Meine Termine", systemImage: "calendar.badge.checkmark")
+                }
+                Link(destination: Backend.webcalURL(token: token, scope: "communities")) {
+                    Label("Alle Termine meiner Gruppen", systemImage: "calendar")
+                }
+                ShareLink(item: Backend.feedURL(token: token)) {
+                    Label("Abo-Link teilen", systemImage: "square.and.arrow.up")
                 }
             } else {
                 ProgressView()
             }
+        } header: {
+            Text("Kalender abonnieren")
+        } footer: {
+            Text("Die Termine erscheinen im Kalender deines Geräts und aktualisieren sich von selbst.")
         }
         Section {
-            Button("Abmelden") { Task { await auth.signOut(); dismiss() } }
-            Button("Konto löschen", role: .destructive) { confirmDelete = true }
+            Button("Abmelden", systemImage: "rectangle.portrait.and.arrow.right") { Task { await auth.signOut(); dismiss() } }
+            Button("Konto löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
                 .alert("Konto löschen?", isPresented: $confirmDelete) {
                     Button("Abbrechen", role: .cancel) {}
                     Button("Endgültig löschen", role: .destructive) {

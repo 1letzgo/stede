@@ -204,7 +204,6 @@ object CommunityApi {
         db.from("calendar_tokens").select(Columns.raw("token")) { filter { eq("user_id", userId); exact("revoked_at", null) } }.decodeList<TokenRow>().firstOrNull()?.let { return it.token }
         return db.from("calendar_tokens").upsert(buildJsonObject { put("user_id", userId) }) { select(Columns.raw("token")) }.decodeSingle<TokenRow>().token
     }
-    suspend fun rotateCalendarToken(userId: String): String { db.from("calendar_tokens").delete { filter { eq("user_id", userId) } }; return calendarToken(userId) }
 
     suspend fun deleteAccount() { db.functions.invoke("delete-account"); db.auth.signOut() }
 }

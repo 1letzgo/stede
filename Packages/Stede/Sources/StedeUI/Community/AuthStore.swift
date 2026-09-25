@@ -124,9 +124,10 @@ final class AuthStore {
         defer { isLoading = false }
         do {
             try await Backend.client.auth.signInWithOTP(email: email, redirectTo: Backend.redirectURL)
+            lastError = nil
             return true
         } catch {
-            lastError = error.localizedDescription
+            lastError = "Der Anmeldelink konnte nicht verschickt werden. Bitte versuche es später noch einmal."
             return false
         }
     }

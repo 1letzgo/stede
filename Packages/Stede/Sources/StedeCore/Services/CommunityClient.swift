@@ -267,11 +267,6 @@ public nonisolated struct CommunityClient: Sendable {
         return created.token
     }
 
-    public func rotateCalendarToken(userID: UUID) async throws -> String {
-        try await client.from("calendar_tokens").delete().eq("user_id", value: userID).execute()
-        return try await calendarToken(userID: userID)
-    }
-
     // MARK: Konto
 
     public func deleteAccount() async throws {
