@@ -80,7 +80,6 @@ struct SettingsView: View {
                 }
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
-                SettingsFootnote("Reihenfolge der Bereiche und Kacheln, und welche Kacheln erscheinen.")
 
                 StedeSectionHeader(title: "App", symbol: "info.circle.fill")
                 HStack {
