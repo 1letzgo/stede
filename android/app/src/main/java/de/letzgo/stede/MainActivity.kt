@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class AppTab(val title: String, val icon: ImageVector) { Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups) }
+enum class AppTab(val title: String, val icon: ImageVector) { Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups), Settings("Einstellungen", Icons.Default.Settings) }
 
 /** Ziele, die auf einen Tab geschoben werden (wie HomeDestination in iOS). */
 sealed class Screen {
@@ -78,6 +78,7 @@ fun StedeApp() {
                     AppTab.Start -> StartScreen(open)
                     AppTab.Calendar -> CalendarScreen()
                     AppTab.Community -> CommunityScreen(open)
+                    AppTab.Settings -> SettingsScreen()
                 }
                 Screen.Weather -> WeatherScreen(back)
                 Screen.Train -> TrainScreen(back)

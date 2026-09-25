@@ -5,6 +5,8 @@ import SwiftUI
 
 /// Anmeldung (Apple, Magic Link) und Kontoeinstellungen.
 struct AccountView: View {
+    /// In den Einstellungen gepusht statt als Sheet: ohne eigenen Stack und ohne „Fertig“.
+    var embedded = false
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -21,34 +23,41 @@ struct AccountView: View {
     private let client = CommunityClient()
 
     var body: some View {
-        NavigationStack {
-            Form {
-                if auth.isSignedIn {
-                    signedInSections
-                } else {
-                    signInSections
-                }
-                // Fehler nur beim Anmelden zeigen; angemeldet sind sie überholt.
-                if !auth.isSignedIn, let error = auth.lastError {
-                    Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
+        if embedded {
+            form
+        } else {
+            NavigationStack {
+                form.toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
                 }
             }
-            .navigationTitle(auth.isSignedIn ? "Konto" : "Anmelden")
-            .stedeSheetForm()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
-            }
-            .onAppear { auth.lastError = nil }
-            .task(id: auth.userID) {
-                auth.lastError = nil
-                name = auth.profile?.displayName ?? ""
-                calendarToken = nil
-                if let userID = auth.userID {
-                    calendarToken = try? await client.calendarToken(userID: userID)
-                }
-            }
-            .sheet(item: $page) { InAppBrowser(url: $0.url) }
         }
+    }
+
+    private var form: some View {
+        Form {
+            if auth.isSignedIn {
+                signedInSections
+            } else {
+                signInSections
+            }
+            // Fehler nur beim Anmelden zeigen; angemeldet sind sie überholt.
+            if !auth.isSignedIn, let error = auth.lastError {
+                Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
+            }
+        }
+        .navigationTitle(auth.isSignedIn ? "Konto" : "Anmelden")
+        .stedeSheetForm()
+        .onAppear { auth.lastError = nil }
+        .task(id: auth.userID) {
+            auth.lastError = nil
+            name = auth.profile?.displayName ?? ""
+            calendarToken = nil
+            if let userID = auth.userID {
+                calendarToken = try? await client.calendarToken(userID: userID)
+            }
+        }
+        .sheet(item: $page) { InAppBrowser(url: $0.url) }
     }
 
     @ViewBuilder private var signInSections: some View {

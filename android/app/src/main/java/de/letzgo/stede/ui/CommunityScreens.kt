@@ -61,11 +61,6 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     Scaffold(topBar = {
         StedeTopBar("Gruppen", actions = {
             if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
-            IconButton(onClick = { showAccount = true }) {
-                val avatar = Session.profile?.avatar
-                if (avatar != null) PersonAvatar(avatar, Session.profile?.displayName ?: "", size = 30.dp)
-                else Icon(if (Session.signedIn) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle, if (Session.signedIn) "Konto" else "Anmelden")
-            }
         })
     }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {

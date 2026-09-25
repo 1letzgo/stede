@@ -103,13 +103,20 @@ fun BusScreen(onBack: () -> Unit) {
             DayBar(day, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { day = it }
         }
     }
-    if (showsStops) ModalBottomSheet(onDismissRequest = { showsStops = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
-        SheetHeader("Haltestelle", trailing = "Fertig" to { showsStops = false })
+    if (showsStops) BusStopSheet(stopId, { stopId = it; Store.setString("bus.stop", it) }) { showsStops = false }
+}
+
+/** Haltestellenliste als Sheet — aus Bus und Einstellungen. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BusStopSheet(selected: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
+        SheetHeader("Haltestelle", trailing = "Fertig" to onDismiss)
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(busStops) { s ->
-                Row(Modifier.fillMaxWidth().clickable { stopId = s.id; Store.setString("bus.stop", s.id); showsStops = false }.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().clickable { onPick(s.id); onDismiss() }.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(s.short, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
-                    if (s.id == stopId) Icon(Icons.Default.Check, null, tint = C.ink)
+                    if (s.id == selected) Icon(Icons.Default.Check, null, tint = C.ink)
                 }
                 HorizontalDivider(color = C.tertiary.copy(alpha = 0.2f))
             }
@@ -181,18 +188,27 @@ fun WasteScreen(onBack: () -> Unit) {
             }
         }
     }
-    if (showsStreets) ModalBottomSheet(onDismissRequest = { showsStreets = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
+    if (showsStreets) StreetSheet(streetId, { id ->
+        if (id != streetId) { streetId = id; sectionId = 0; branchId = 0 }
+    }) { showsStreets = false }
+}
+
+/** Suchbare Straßenliste — aus Abfuhr und Einstellungen. Setzt bei neuer Straße die Abschnitte zurück. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StreetSheet(selected: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         var query by remember { mutableStateOf("") }
-        SheetHeader("Straße", trailing = "Fertig" to { showsStreets = false })
+        SheetHeader("Straße", trailing = "Fertig" to onDismiss)
         OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp), placeholder = { Text("Straße in Westerstede") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) })
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(Waste.streets.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }, key = { it.id }) { s ->
                 Row(Modifier.fillMaxWidth().clickable {
-                    if (s.id != streetId) { streetId = s.id; sectionId = 0; branchId = 0; Store.setInt("waste.street", s.id); Store.setInt("waste.section", 0); Store.setInt("waste.branchSection", 0) }
-                    showsStreets = false
+                    if (s.id != selected) { Store.setInt("waste.street", s.id); Store.setInt("waste.section", 0); Store.setInt("waste.branchSection", 0) }
+                    onPick(s.id); onDismiss()
                 }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(s.name, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
-                    if (s.id == streetId) Icon(Icons.Default.Check, null, tint = C.ink)
+                    if (s.id == selected) Icon(Icons.Default.Check, null, tint = C.ink)
                 }
                 HorizontalDivider(color = C.tertiary.copy(alpha = 0.2f))
             }
@@ -201,7 +217,7 @@ fun WasteScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SectionPicker(title: String, sections: List<WasteSection>, selected: Int, onSelect: (Int) -> Unit) {
+fun SectionPicker(title: String, sections: List<WasteSection>, selected: Int, onSelect: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(title, fontSize = 13.sp, color = C.secondary)
         Row(Modifier.horizontalScrollCompat(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { sections.forEach { s -> SelectionChip(s.label, s.id == selected) { onSelect(s.id) } } }

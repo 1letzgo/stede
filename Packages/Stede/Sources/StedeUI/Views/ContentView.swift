@@ -5,12 +5,14 @@ enum AppTab: Hashable, CaseIterable {
     case start
     case events
     case community
+    case settings
 
     var title: String {
         switch self {
         case .start: "Start"
         case .events: "Kalender"
         case .community: "Gruppen"
+        case .settings: "Einstellungen"
         }
     }
 
@@ -19,6 +21,7 @@ enum AppTab: Hashable, CaseIterable {
         case .start: "house.fill"
         case .events: "calendar"
         case .community: "person.3.fill"
+        case .settings: "gearshape.fill"
         }
     }
 }
@@ -73,6 +76,9 @@ public struct ContentView: View {
             Tab(AppTab.community.title, systemImage: AppTab.community.symbol, value: AppTab.community) {
                 screen { CommunityListView() }
             }
+            Tab(AppTab.settings.title, systemImage: AppTab.settings.symbol, value: AppTab.settings) {
+                screen { SettingsView() }
+            }
         }
         .environment(dateStore)
         .environment(favorites)
@@ -101,6 +107,7 @@ enum LaunchOptions {
         switch UserDefaults.standard.string(forKey: "startScreen") {
         case "events": .events
         case "community": .community
+        case "settings": .settings
         default: .start
         }
     }

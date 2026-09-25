@@ -135,7 +135,7 @@ struct StreetChip: View {
 }
 
 /// Suchbare Liste aller 548 Straßen.
-private struct StreetSheet: View {
+struct StreetSheet: View {
     @Binding var selection: Int
     let onChange: () -> Void
     @Environment(\.dismiss) private var dismiss

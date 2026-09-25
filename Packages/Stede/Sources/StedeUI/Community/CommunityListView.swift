@@ -76,18 +76,6 @@ struct CommunityListView: View {
                     .accessibilityLabel("Admin")
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
-                Button { showsAccount = true } label: {
-                    if let url = auth.profile?.avatarURL {
-                        PersonAvatar(url: url, name: auth.profile?.displayName ?? "", side: 28)
-                    } else {
-                        Image(systemName: auth.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
-                            .foregroundStyle(.white)
-                    }
-                }
-                .tint(.white)
-                .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")
-            }
         }
         .sheet(isPresented: $showsInvite) {
             InviteCodeSheet { code in

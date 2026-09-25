@@ -23,6 +23,8 @@ struct HomeView: View {
     @AppStorage("waste.street") private var wasteStreetID: Int = 0
     @AppStorage("waste.section") private var wasteSectionID: Int = 0
     @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
+    @AppStorage(HomeLayout.orderKey) private var homeOrder = HomeLayout.defaultOrder
+    @AppStorage(HomeLayout.hiddenKey) private var homeHidden = ""
 
     @ScaledMetric(relativeTo: .caption) private var gastroRowHeight = 172.0
 
@@ -49,45 +51,19 @@ struct HomeView: View {
                         }
                     }
 
-                    StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: 2),
-                              spacing: StedeTheme.cardSpacing) {
-                        NavigationLink(value: HomeDestination.train) {
-                            trainTile
+                    ForEach(sections) { section in
+                        let tiles = section.tiles.filter { !hiddenTiles.contains($0) }
+                        if !tiles.isEmpty {
+                            StedeSectionHeader(title: section.title, symbol: section.symbol)
+                            sectionContent(section, tiles: tiles)
                         }
-                        .buttonStyle(StedeCardButtonStyle())
-                        .foregroundStyle(.primary)
-                        .frame(maxHeight: .infinity)
+                    }
 
-                        NavigationLink(value: HomeDestination.bus) {
-                            busTile
+                    if hiddenTiles.count == HomeTileID.allCases.count {
+                        InfoCard {
+                            Text("Alle Kacheln sind ausgeblendet. Unter Einstellungen → Startseite kannst du sie wieder einblenden.")
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(StedeCardButtonStyle())
-                        .foregroundStyle(.primary)
-                        .frame(maxHeight: .infinity)
-                    }
-
-                    StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
-                    NavigationLink(value: HomeDestination.waste) {
-                        wasteTile
-                    }
-                    .buttonStyle(StedeCardButtonStyle())
-                    .foregroundStyle(.primary)
-
-                    // Zwei große Kacheln — Entdecken und Gastro —, darunter die
-                    // übrigen Stadtkategorien als kleine Kacheln.
-                    StedeSectionHeader(title: "Stadt", symbol: "map.fill")
-                    HStack(spacing: StedeTheme.cardSpacing) {
-                        islandTile(IslandCatalog.discoverCategory, prominent: true)
-                        islandTile(IslandCatalog.gastroCategory, prominent: true)
-                    }
-                    .frame(height: gastroRowHeight)
-
-                    HStack(spacing: StedeTheme.cardSpacing) {
-                        islandTile(IslandCatalog.shoppingCategory)
-                        islandTile(IslandCatalog.playgroundsCategory)
-                        islandTile(IslandCatalog.tripsCategory)
-                        islandTile(IslandCatalog.healthCategory)
                     }
 
                     }
@@ -102,6 +78,53 @@ struct HomeView: View {
         }
         .task(id: wasteSelection?.cacheKey ?? "") {
             await waste.load(selection: wasteSelection)
+        }
+    }
+
+    private var sections: [HomeSection] { HomeLayout.order(homeOrder) }
+    private var hiddenTiles: Set<HomeTileID> { HomeLayout.hidden(homeHidden) }
+
+    @ViewBuilder
+    private func sectionContent(_ section: HomeSection, tiles: [HomeTileID]) -> some View {
+        switch section {
+        case .transit:
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: tiles.count),
+                      spacing: StedeTheme.cardSpacing) {
+                ForEach(tiles) { tile in
+                    NavigationLink(value: tile == .train ? HomeDestination.train : HomeDestination.bus) {
+                        tile == .train ? trainTile : busTile
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .foregroundStyle(.primary)
+                    .frame(maxHeight: .infinity)
+                }
+            }
+        case .home:
+            NavigationLink(value: HomeDestination.waste) {
+                wasteTile
+            }
+            .buttonStyle(StedeCardButtonStyle())
+            .foregroundStyle(.primary)
+        case .city:
+            // Zwei große Kacheln — Entdecken und Gastro —, darunter die
+            // übrigen Stadtkategorien als kleine Kacheln.
+            let large = tiles.filter { $0 == .discover || $0 == .gastro }
+            let small = tiles.filter { $0 != .discover && $0 != .gastro }
+            if !large.isEmpty {
+                HStack(spacing: StedeTheme.cardSpacing) {
+                    ForEach(large) { tile in
+                        if let category = tile.category { islandTile(category, prominent: true) }
+                    }
+                }
+                .frame(height: gastroRowHeight)
+            }
+            if !small.isEmpty {
+                HStack(spacing: StedeTheme.cardSpacing) {
+                    ForEach(small) { tile in
+                        if let category = tile.category { islandTile(category) }
+                    }
+                }
+            }
         }
     }
 

@@ -94,7 +94,7 @@ private struct BusStopMenu: View {
     }
 }
 
-private struct BusStopSheet: View {
+struct BusStopSheet: View {
     @Binding var selection: String
     @Environment(\.dismiss) private var dismiss
 

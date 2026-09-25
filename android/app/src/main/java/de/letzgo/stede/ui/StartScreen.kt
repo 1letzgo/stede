@@ -40,6 +40,8 @@ fun StartScreen(open: (Screen) -> Unit) {
     val hour = now.hour
     val (greeting, tint) = when (hour) { in 5..10 -> "Guten Morgen" to C.amber; in 11..17 -> "Schönen Tag" to C.amber; in 18..21 -> "Schönen Abend" to C.red; else -> "Gute Nacht" to C.teal }
     val current = weather?.current()
+    val order = remember { HomeLayout.order() }
+    val hidden = remember { HomeLayout.hidden() }
 
     Scaffold(topBar = { StedeTopBar("stede") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -57,39 +59,52 @@ fun StartScreen(open: (Screen) -> Unit) {
                     }
                 }
             }
-            item { SectionHeader("Unterwegs", Icons.Default.Train) }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                    fun next(d: TrainDirection) = trains.filter { it.direction == d && !it.cancelled && it.departure.isAfter(now) }.minByOrNull { it.departure }
-                    fun label(t: Train?, d: TrainDirection) = t?.let { "${it.scheduled.format(Town.hm)}${if (it.delay > 0) " +${it.delay}" else ""} · ${d.short}" } ?: "kein Zug mehr · ${d.short}"
-                    val o = next(TrainDirection.Oldenburg); val l = next(TrainDirection.Leer)
-                    HomeTile("Bahn", Icons.Default.Train, C.red, Modifier.weight(1f), if (trains.isEmpty()) "–" else if (o == null && l == null) "Feierabend" else label(o, TrainDirection.Oldenburg),
-                        if (trains.isEmpty()) null else if (o == null && l == null) "Heute keine Abfahrt mehr" else label(l, TrainDirection.Leer)) { open(Screen.Train) }
-                    val b = buses?.filter { !it.cancelled && it.departure.isAfter(now) }?.minByOrNull { it.departure }
-                    HomeTile("Bus", Icons.Default.DirectionsBus, C.teal, Modifier.weight(1f),
-                        b?.let { "${it.scheduled.format(Town.hm)}${if ((it.delay ?: 0) > 0) " +${it.delay}" else ""} · ${it.line}" } ?: if (buses == null) "–" else "Feierabend",
-                        b?.let { "${it.destination} ab ${stop.short}" } ?: "Heute kein Bus mehr ab ${stop.short}") { open(Screen.Bus) }
+            for (section in order) {
+                val tiles = section.tiles.filter { it !in hidden }
+                if (tiles.isEmpty()) continue
+                item(key = section.key) { SectionHeader(section.title, section.icon) }
+                when (section) {
+                    HomeSection.Transit -> item(key = "transit-tiles") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                            fun next(d: TrainDirection) = trains.filter { it.direction == d && !it.cancelled && it.departure.isAfter(now) }.minByOrNull { it.departure }
+                            fun label(t: Train?, d: TrainDirection) = t?.let { "${it.scheduled.format(Town.hm)}${if (it.delay > 0) " +${it.delay}" else ""} · ${d.short}" } ?: "kein Zug mehr · ${d.short}"
+                            if (HomeTileId.Train in tiles) {
+                                val o = next(TrainDirection.Oldenburg); val l = next(TrainDirection.Leer)
+                                HomeTile("Bahn", Icons.Default.Train, C.red, Modifier.weight(1f), if (trains.isEmpty()) "–" else if (o == null && l == null) "Feierabend" else label(o, TrainDirection.Oldenburg),
+                                    if (trains.isEmpty()) null else if (o == null && l == null) "Heute keine Abfahrt mehr" else label(l, TrainDirection.Leer)) { open(Screen.Train) }
+                            }
+                            if (HomeTileId.Bus in tiles) {
+                                val b = buses?.filter { !it.cancelled && it.departure.isAfter(now) }?.minByOrNull { it.departure }
+                                HomeTile("Bus", Icons.Default.DirectionsBus, C.teal, Modifier.weight(1f),
+                                    b?.let { "${it.scheduled.format(Town.hm)}${if ((it.delay ?: 0) > 0) " +${it.delay}" else ""} · ${it.line}" } ?: if (buses == null) "–" else "Feierabend",
+                                    b?.let { "${it.destination} ab ${stop.short}" } ?: "Heute kein Bus mehr ab ${stop.short}") { open(Screen.Bus) }
+                            }
+                        }
+                    }
+                    HomeSection.Home -> item(key = "home-tiles") {
+                        val next = waste?.firstOrNull()
+                        val street = Waste.street(Store.int("waste.street"))
+                        if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", height = 112.dp) { open(Screen.Waste) }
+                        else HomeTile("Abfuhr", next?.let { wasteIcon(it.kind) } ?: Icons.Default.Delete, next?.let { wasteColor(it.kind) } ?: C.green, Modifier.fillMaxWidth(),
+                            next?.let { "${it.day.format(Town.dayShort)} · ${it.label}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
+                    }
+                    HomeSection.City -> {
+                        val large = tiles.filter { it == HomeTileId.Discover || it == HomeTileId.Gastro }.mapNotNull { it.category }
+                        val small = tiles.filter { it != HomeTileId.Discover && it != HomeTileId.Gastro }.mapNotNull { it.category }
+                        if (large.isNotEmpty()) item(key = "city-large") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                                large.forEach { c -> CategoryTile(c, Modifier.weight(1f), 150.dp) { open(Screen.Category(c)) } }
+                            }
+                        }
+                        if (small.isNotEmpty()) item(key = "city-small") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                                small.forEach { c -> CategoryTile(c, Modifier.weight(1f), 86.dp, small = true) { open(Screen.Category(c)) } }
+                            }
+                        }
+                    }
                 }
             }
-            item { SectionHeader("Zuhause", Icons.Default.Home) }
-            item {
-                val next = waste?.firstOrNull()
-                val street = Waste.street(Store.int("waste.street"))
-                if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", height = 112.dp) { open(Screen.Waste) }
-                else HomeTile("Abfuhr", next?.let { wasteIcon(it.kind) } ?: Icons.Default.Delete, next?.let { wasteColor(it.kind) } ?: C.green, Modifier.fillMaxWidth(),
-                    next?.let { "${it.day.format(Town.dayShort)} · ${it.label}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
-            }
-            item { SectionHeader("Stadt", Icons.Default.Map) }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                    listOf(Catalog.DISCOVER, Catalog.GASTRO).forEach { c -> CategoryTile(c, Modifier.weight(1f), 150.dp) { open(Screen.Category(c)) } }
-                }
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                    listOf(Catalog.SHOPPING, Catalog.PLAYGROUNDS, Catalog.TRIPS, Catalog.HEALTH).forEach { c -> CategoryTile(c, Modifier.weight(1f), 86.dp, small = true) { open(Screen.Category(c)) } }
-                }
-            }
+            if (hidden.size == HomeTileId.entries.size) item { InfoCard("Alle Kacheln sind ausgeblendet. Unter Einstellungen → Startseite kannst du sie wieder einblenden.") }
         }
     }
 }
