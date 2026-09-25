@@ -97,7 +97,7 @@ fun SelectionChip(title: String, selected: Boolean, modifier: Modifier = Modifie
     Row(modifier.heightIn(min = ChipHeight).clip(RoundedCornerShape(50)).background(if (selected) C.deep else C.surface).clickable { onClick() }.padding(horizontal = if (compact) 4.dp else 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
         icon?.let { Icon(it, null, tint = if (selected) Color.White else C.ink, modifier = Modifier.size(18.dp)) }
-        Text(title, color = if (selected) Color.White else C.ink, fontWeight = FontWeight.SemiBold, fontSize = if (compact) 13.sp else 15.sp, maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
+        if (title.isNotEmpty()) Text(title, color = if (selected) Color.White else C.ink, fontWeight = FontWeight.SemiBold, fontSize = if (compact) 13.sp else 15.sp, maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
     }
 }
 

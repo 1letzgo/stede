@@ -184,6 +184,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
     var editCommunity by remember { mutableStateOf(false) }
+    var joinRequest by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var showAccount by remember { mutableStateOf(false) }
     val membership = Session.membership(id)
@@ -238,7 +239,9 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                                         Text("Anfrage gestellt – ein Admin bestätigt dich.", color = C.secondary, fontSize = 13.sp)
                                     }
                                     membership == null && community.status == "approved" -> ColorChip(if (community.joinPolicy == "open") "Beitreten" else "Beitritt anfragen", C.green, icon = Icons.Default.PersonAdd, prominent = true) {
-                                        scope.launch { runCatching { CommunityApi.join(id, Session.userId!!) }; Session.refresh(); Changes.bump() }
+                                        // Mit Freigabe: erst die optionale Kurzvorstellung, sonst sofort beitreten.
+                                        if (community.joinPolicy == "open") scope.launch { runCatching { CommunityApi.join(id, Session.userId!!) }; Session.refresh(); Changes.bump() }
+                                        else joinRequest = true
                                     }
                                 }
                             }
@@ -271,7 +274,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                             items(pending, key = { "p${it.id}" }) { m ->
                                 RowCard {
                                     PersonAvatar(m.profile?.avatar, m.profile?.displayName ?: "Mitglied", C.amber)
-                                    Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Column(Modifier.weight(1f)) {
+                                        Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        JoinMessageText(m.joinMessage)
+                                    }
                                     ColorChip(null, C.green, icon = Icons.Default.Check, prominent = true) { scope.launch { runCatching { CommunityApi.setMemberStatus(id, m.userId, "active") }; Changes.bump() } }
                                     ColorChip(null, C.red, icon = Icons.Default.Close) { scope.launch { runCatching { CommunityApi.removeMember(id, m.userId) }; Changes.bump() } }
                                 }
@@ -309,6 +315,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     openEvent?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { openEvent = null; showAccount = true }) { openEvent = null } }
     if (newEvent) EventEditorSheet(id, null) { newEvent = false }
     if (editCommunity && community != null) CommunityEditorSheet(community) { editCommunity = false }
+    if (joinRequest && community != null) JoinRequestDialog(community.name, { joinRequest = false }) { message ->
+        val user = Session.userId ?: return@JoinRequestDialog false
+        runCatching { CommunityApi.join(id, user, message) }.isSuccess.also { ok -> if (ok) { Session.refresh(); Changes.bump() } }
+    }
     if (showAccount) AccountSheet { showAccount = false }
     if (confirmLeave) AlertDialog(onDismissRequest = { confirmLeave = false }, title = { Text("„${community?.name}“ verlassen?") },
         confirmButton = { TextButton({ confirmLeave = false; scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh(); tab = CommunityTab.Events; Changes.bump() } }) { Text("Verlassen", color = C.red) } },
@@ -470,6 +480,7 @@ fun AdminSheet(onDismiss: () -> Unit) {
                             Column {
                                 Text(m.profile?.displayName ?: "Mitglied", fontWeight = FontWeight.SemiBold, color = C.text)
                                 Pill(c.name, C.teal)
+                                JoinMessageText(m.joinMessage)
                             }
                         }
                         Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -646,4 +657,35 @@ private fun HeaderImagesManager(communityId: String) {
             confirmButton = { TextButton({ confirmDelete = null; scope.launch { runCatching { CommunityApi.deleteHeaderImage(img) }.onFailure { error = it.message }; load() } }) { Text("Löschen", color = C.red) } },
             dismissButton = { TextButton({ confirmDelete = null }) { Text("Abbrechen") } })
     }
+}
+
+/** Kurzvorstellung aus dem Beitrittsantrag, in Anführungszeichen unter dem Namen. */
+@Composable
+fun JoinMessageText(message: String?) {
+    message?.takeIf { it.isNotBlank() }?.let {
+        Text("„$it“", fontSize = 14.sp, color = C.secondary, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+/** Beitrittsantrag mit optionaler Kurzvorstellung — wie JoinRequestSheet auf iOS. */
+@Composable
+fun JoinRequestDialog(communityName: String, onDismiss: () -> Unit, onSend: suspend (String) -> Boolean) {
+    val scope = rememberCoroutineScope()
+    var message by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("Beitritt anfragen") },
+        text = {
+            Column {
+                Text("Die Admins von „$communityName“ bestätigen neue Mitglieder. Stell dich gern kurz vor – das ist freiwillig.", color = C.secondary, fontSize = 14.sp)
+                OutlinedTextField(message, { message = it.take(500) }, Modifier.fillMaxWidth().padding(top = 10.dp), placeholder = { Text("Kurze Vorstellung (optional)") }, minLines = 3, maxLines = 8,
+                    supportingText = { Text("${message.length}/500") })
+                if (failed) Text("Die Anfrage konnte nicht gesendet werden.", color = C.red, fontSize = 13.sp)
+            }
+        },
+        confirmButton = { TextButton(enabled = !sending, onClick = {
+            sending = true; failed = false
+            scope.launch { if (onSend(message)) onDismiss() else failed = true; sending = false }
+        }) { Text(if (sending) "Wird gesendet …" else "Anfrage senden") } },
+        dismissButton = { TextButton(onDismiss) { Text("Abbrechen") } })
 }

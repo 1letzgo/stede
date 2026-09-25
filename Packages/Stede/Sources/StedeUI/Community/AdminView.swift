@@ -54,6 +54,7 @@ struct AdminView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(request.member.profile?.displayName ?? "Mitglied").font(.headline).fontDesign(.rounded)
                                         StedeTagPill(text: request.community.name, color: StedeTheme.seaTeal)
+                                        JoinMessageText(message: request.member.joinMessage)
                                     }
                                 }
                                 HStack(spacing: 8) {

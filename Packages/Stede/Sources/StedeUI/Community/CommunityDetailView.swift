@@ -28,6 +28,7 @@ struct CommunityDetailView: View {
     @State private var showsAccount = false
     @State private var busy = false
     @State private var confirmLeave = false
+    @State private var showsJoinRequest = false
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -89,6 +90,17 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(isPresented: $showsJoinRequest) {
+            JoinRequestSheet(communityName: model.community.name) { message in
+                guard let userID = auth.userID else { return false }
+                do {
+                    try await model.join(userID: userID, message: message)
+                } catch { return false }
+                await auth.refresh()
+                await reload()
+                return true
+            }
+        }
         .sheet(item: $openedEvent) { event in
             CommunityEventDetailView(
                 info: eventInfo(event), helperCount: model.helperCounts[event.id] ?? 0,
@@ -144,7 +156,12 @@ struct CommunityDetailView: View {
             Label("Anfrage gestellt – ein Admin bestätigt dich.", systemImage: "hourglass").font(.footnote).foregroundStyle(.secondary)
         } else if membership == nil, model.community.status == .approved {
             Button {
-                Task { busy = true; try? await model.join(userID: auth.userID!); await auth.refresh(); await reload(); busy = false }
+                // Mit Freigabe: erst die optionale Kurzvorstellung, sonst sofort beitreten.
+                if model.community.joinPolicy == .open {
+                    Task { busy = true; try? await model.join(userID: auth.userID!); await auth.refresh(); await reload(); busy = false }
+                } else {
+                    showsJoinRequest = true
+                }
             } label: {
                 StedeColorChip(title: model.community.joinPolicy == .open ? "Beitreten" : "Beitritt anfragen", symbol: "person.badge.plus", color: StedeTheme.duneGreen, prominent: true)
             }
@@ -205,15 +222,21 @@ struct CommunityDetailView: View {
         if isAdmin, !model.pendingMembers.isEmpty {
             StedeSectionHeader(title: "Anfragen", symbol: "person.badge.clock")
             ForEach(model.pendingMembers) { member in
-                HStack(spacing: 12) {
-                    PersonAvatar(url: member.profile?.avatarURL, name: member.profile?.displayName ?? "Mitglied", color: StedeTheme.sunAmber)
-                    Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
-                    Spacer()
-                    Button { Task { await model.setMember(member, status: .active) } } label: {
-                        StedeColorChip(title: "Bestätigen", symbol: "checkmark", color: StedeTheme.duneGreen, prominent: true)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        PersonAvatar(url: member.profile?.avatarURL, name: member.profile?.displayName ?? "Mitglied", color: StedeTheme.sunAmber)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(member.profile?.displayName ?? "Mitglied").font(.subheadline.weight(.semibold)).fontDesign(.rounded)
+                            JoinMessageText(message: member.joinMessage)
+                        }
                     }
-                    Button { Task { await model.setMember(member, status: .banned) } } label: {
-                        StedeColorChip(title: "Ablehnen", symbol: "xmark", color: StedeTheme.harborRed)
+                    HStack(spacing: 8) {
+                        Button { Task { await model.setMember(member, status: .active) } } label: {
+                            StedeColorChip(title: "Bestätigen", symbol: "checkmark", color: StedeTheme.duneGreen, prominent: true)
+                        }
+                        Button { Task { await model.setMember(member, status: .banned) } } label: {
+                            StedeColorChip(title: "Ablehnen", symbol: "xmark", color: StedeTheme.harborRed)
+                        }
                     }
                 }
                 .buttonStyle(StedeCardButtonStyle())
@@ -653,5 +676,76 @@ struct HeaderImagesManager: View {
 
     private func delete(_ image: CommunityHeaderImage) async {
         do { try await client.deleteHeaderImage(image); await load() } catch { self.error = error.localizedDescription }
+    }
+}
+
+/// Beitrittsantrag mit optionaler Kurzvorstellung, die die Admins beim Freischalten sehen.
+private struct JoinRequestSheet: View {
+    let communityName: String
+    /// Liefert `false`, wenn das Senden fehlschlug.
+    let send: (String) async -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var message = ""
+    @State private var sending = false
+    @State private var failed = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                    Text("Die Admins von „\(communityName)“ bestätigen neue Mitglieder. Stell dich gern kurz vor – das ist freiwillig.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    VStack(alignment: .trailing, spacing: 6) {
+                        TextField("Kurze Vorstellung (optional)", text: $message, axis: .vertical)
+                            .lineLimit(3 ... 8)
+                            .focused($focused)
+                            .onChange(of: message) { if message.count > 500 { message = String(message.prefix(500)) } }
+                        Text("\(message.count)/500").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                    }
+                    .padding(StedeTheme.cardPadding)
+                    .stedeCard()
+                    Button {
+                        Task {
+                            sending = true
+                            failed = !(await send(message))
+                            sending = false
+                            if !failed { dismiss() }
+                        }
+                    } label: {
+                        StedeColorChip(title: sending ? "Wird gesendet …" : "Anfrage senden", symbol: "paperplane.fill", color: StedeTheme.duneGreen, prominent: true)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .disabled(sending)
+                    if failed {
+                        Text("Die Anfrage konnte nicht gesendet werden. Bitte versuche es noch einmal.")
+                            .font(.footnote).foregroundStyle(StedeTheme.harborRed)
+                    }
+                }
+                .padding()
+            }
+            .background(StedeTheme.sand)
+            .navigationTitle("Beitritt anfragen")
+            .stedeBar()
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } } }
+            .onAppear { focused = true }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// Kurzvorstellung aus dem Beitrittsantrag, in Anführungszeichen unter dem Namen.
+struct JoinMessageText: View {
+    let message: String?
+
+    var body: some View {
+        if let message, !message.isEmpty {
+            Text("„\(message)“")
+                .font(.subheadline)
+                .italic()
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

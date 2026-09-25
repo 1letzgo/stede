@@ -95,8 +95,8 @@ final class CommunityDetailModel {
     var pendingMembers: [CommunityMember] { members.filter { $0.status == .pending } }
     var activeMembers: [CommunityMember] { members.filter { $0.status == .active } }
 
-    func join(userID: UUID) async throws {
-        try await client.join(communityID: community.id, userID: userID)
+    func join(userID: UUID, message: String? = nil) async throws {
+        try await client.join(communityID: community.id, userID: userID, message: message)
     }
 
     func leave(userID: UUID) async throws {

@@ -93,6 +93,8 @@ public nonisolated struct CommunityMember: Codable, Hashable, Sendable, Identifi
     public var role: MemberRole
     public var status: MemberStatus
     public let joinedAt: Date?
+    /// Kurze Vorstellung aus dem Beitrittsantrag; nach der Freischaltung leer.
+    public var joinMessage: String?
     /// Per Join geladen: `profiles(display_name, avatar_url)`.
     public var profile: Profile?
 
@@ -101,6 +103,7 @@ public nonisolated struct CommunityMember: Codable, Hashable, Sendable, Identifi
         case communityId = "community_id"
         case userId = "user_id"
         case joinedAt = "joined_at"
+        case joinMessage = "join_message"
         case profile = "profiles"
     }
 }

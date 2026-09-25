@@ -380,10 +380,12 @@ struct IslandView: View {
             Button {
                 withAnimation(.snappy) { favoritesOnly.toggle() }
             } label: {
-                Label("\(favoriteCount) Favoriten", systemImage: "star.fill")
+                // Nur der Stern — der Platz gehört den Arten-Pillen.
+                Image(systemName: favoritesOnly ? "star.fill" : "star")
                     .stedeSelectionChip(isSelected: favoritesOnly)
             }
             .buttonStyle(StedeCardButtonStyle())
+            .accessibilityLabel("Favoriten, \(favoriteCount)")
             .accessibilityAddTraits(favoritesOnly ? .isSelected : [])
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { favoritesWidth = $0 }
             .padding(.leading, inset)

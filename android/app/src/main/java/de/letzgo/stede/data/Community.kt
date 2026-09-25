@@ -41,6 +41,8 @@ object Tenants {
 @Serializable data class Member(
     @SerialName("community_id") val communityId: String, @SerialName("user_id") val userId: String,
     val role: String = "member", val status: String = "pending", @SerialName("profiles") val profile: Profile? = null,
+    /** Kurze Vorstellung aus dem Beitrittsantrag; nach der Freischaltung leer. */
+    @SerialName("join_message") val joinMessage: String? = null,
 ) { val id get() = "$communityId|$userId"; val isActive get() = status == "active"; val isAdmin get() = isActive && (role == "owner" || role == "admin") }
 
 @Serializable data class CommunityRef(val name: String = "", @SerialName("logo_path") val logoPath: String? = null)
@@ -136,8 +138,14 @@ object CommunityApi {
     suspend fun setCommunityStatus(id: String, status: String) { db.from("communities").update({ set("status", status) }) { filter { eq("id", id) } } }
 
     suspend fun myMemberships(userId: String) = db.from("community_members").select(Columns.raw("community_id,user_id,role,status")) { filter { eq("user_id", userId) } }.decodeList<Member>()
-    suspend fun members(communityId: String) = db.from("community_members").select(Columns.raw("community_id,user_id,role,status,profiles(user_id,display_name,avatar_url)")) { filter { eq("community_id", communityId) } }.decodeList<Member>()
-    suspend fun join(communityId: String, userId: String) { db.from("community_members").insert(buildJsonObject { put("community_id", communityId); put("user_id", userId) }) }
+    suspend fun members(communityId: String) = db.from("community_members").select(Columns.raw("community_id,user_id,role,status,join_message,profiles(user_id,display_name,avatar_url)")) { filter { eq("community_id", communityId) } }.decodeList<Member>()
+    /** Beitritt bzw. Antrag; `message` ist die optionale Kurzvorstellung für die Admins. */
+    suspend fun join(communityId: String, userId: String, message: String? = null) {
+        db.from("community_members").insert(buildJsonObject {
+            put("community_id", communityId); put("user_id", userId)
+            message?.trim()?.takeIf { it.isNotEmpty() }?.let { put("join_message", it.take(500)) }
+        })
+    }
     suspend fun removeMember(communityId: String, userId: String) { db.from("community_members").delete { filter { eq("community_id", communityId); eq("user_id", userId) } } }
     suspend fun setMemberStatus(communityId: String, userId: String, status: String) { db.from("community_members").update({ set("status", status) }) { filter { eq("community_id", communityId); eq("user_id", userId) } } }
     suspend fun setMemberRole(communityId: String, userId: String, role: String) { db.from("community_members").update({ set("role", role) }) { filter { eq("community_id", communityId); eq("user_id", userId) } } }

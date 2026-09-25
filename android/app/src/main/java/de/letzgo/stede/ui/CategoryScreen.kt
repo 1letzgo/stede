@@ -17,6 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +58,9 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
                 }
             }
             Row(Modifier.padding(top = 16.dp, bottom = Spacing), verticalAlignment = Alignment.CenterVertically) {
-                SelectionChip("${favorites.count { f -> all.any { it.id == f } }} Favoriten", favoritesOnly, Modifier.padding(start = 16.dp, end = 8.dp), icon = Icons.Default.Star) {
+                // Nur der Stern — der Platz gehört den Arten-Pillen.
+                SelectionChip("", favoritesOnly, Modifier.padding(start = 16.dp, end = 8.dp).semantics { contentDescription = "Favoriten, ${favorites.count { f -> all.any { it.id == f } }}" },
+                    icon = if (favoritesOnly) Icons.Default.Star else Icons.Outlined.StarOutline) {
                     favoritesOnly = !favoritesOnly; Store.setBool("island.favoritesOnly.$category", favoritesOnly)
                 }
                 if (kinds.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(end = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -119,13 +119,17 @@ public nonisolated struct CommunityClient: Sendable {
 
     public func members(communityID: UUID) async throws -> [CommunityMember] {
         try await client.from("community_members")
-            .select("community_id, user_id, role, status, joined_at, profiles(user_id, display_name, avatar_url)")
+            .select("community_id, user_id, role, status, joined_at, join_message, profiles(user_id, display_name, avatar_url)")
             .eq("community_id", value: communityID).order("joined_at").execute().value
     }
 
-    public func join(communityID: UUID, userID: UUID) async throws {
-        struct Row: Encodable { let community_id: UUID; let user_id: UUID }
-        try await client.from("community_members").insert(Row(community_id: communityID, user_id: userID)).execute()
+    /// Beitritt bzw. Antrag; `message` ist die optionale Kurzvorstellung für die Admins.
+    public func join(communityID: UUID, userID: UUID, message: String? = nil) async throws {
+        struct Row: Encodable { let community_id: UUID; let user_id: UUID; let join_message: String? }
+        let text = message?.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await client.from("community_members")
+            .insert(Row(community_id: communityID, user_id: userID, join_message: text?.isEmpty == false ? String(text!.prefix(500)) : nil))
+            .execute()
     }
 
     public func leave(communityID: UUID, userID: UUID) async throws {
