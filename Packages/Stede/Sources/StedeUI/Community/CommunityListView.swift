@@ -151,7 +151,7 @@ private struct InviteCodeSheet: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(StedeTheme.sand)
+            .background(StedeTheme.surface)
             .navigationTitle("Einladungscode")
             .stedeBar()
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } } }
