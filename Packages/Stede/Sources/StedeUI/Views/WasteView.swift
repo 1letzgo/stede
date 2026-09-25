@@ -53,7 +53,6 @@ struct WasteView: View {
                 }
             }
         }
-        .navigationSubtitle(street?.name ?? "")
         .task(id: selection?.cacheKey ?? "") {
             await model.load(selection: selection)
         }

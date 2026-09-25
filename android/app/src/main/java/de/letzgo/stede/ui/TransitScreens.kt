@@ -85,7 +85,7 @@ fun BusScreen(onBack: () -> Unit) {
     val now = Town.now()
     val visible = (buses ?: emptyList()).filter { day != Town.today() || !it.departure.isBefore(now) }
     val nextId = visible.firstOrNull { !it.cancelled }?.id.takeIf { day == Town.today() }
-    Scaffold(topBar = { StedeTopBar("Bus", onBack, subtitle = "ab ${stop.short}") }, containerColor = C.sand) { pad ->
+    Scaffold(topBar = { StedeTopBar("Bus – ${stop.short}", onBack) }, containerColor = C.sand) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             Column {
                 LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -163,7 +163,7 @@ fun WasteScreen(onBack: () -> Unit, openSettings: () -> Unit) {
         items = Waste.cachedUpcoming(sel)
         runCatching { Waste.upcoming(sel) }.onSuccess { items = it }.onFailure { if (items == null) error = it.message }
     }
-    Scaffold(topBar = { StedeTopBar("Abfuhr", onBack, subtitle = street?.name) }, containerColor = C.sand) { pad ->
+    Scaffold(topBar = { StedeTopBar("Abfuhr", onBack) }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             when {
                 selection == null -> item {

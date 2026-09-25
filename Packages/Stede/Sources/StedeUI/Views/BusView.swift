@@ -11,7 +11,7 @@ struct BusView: View {
     private var stop: BusStop { BusStop.stop(id: stopID) }
 
     var body: some View {
-        TabScreen(title: "Bus") {
+        TabScreen(title: "Bus – \(stop.shortName)") {
             await model.load(stop: stop, day: dateStore.selectedDate, force: true)
         } content: {
             VStack(spacing: 0) {
@@ -38,7 +38,6 @@ struct BusView: View {
                 }
             }
         }
-        .navigationSubtitle("ab \(stop.shortName)")
         .task(id: "\(stopID)|\(IslandTime.isoDate(dateStore.selectedDate))") {
             await model.load(stop: stop, day: dateStore.selectedDate)
         }
