@@ -1,5 +1,6 @@
 import StedeCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Tab „Einstellungen“: Konto, Straße und Haltestelle, Aufbau der Startseite.
 /// Alle Werte liegen unter denselben `@AppStorage`-Schlüsseln wie in Start, Bus und Abfuhr.
@@ -167,11 +168,14 @@ struct SettingsView: View {
     }
 }
 
-/// Reihenfolge der Bereiche und Kacheln (Pfeile) und Kacheln ein- und ausblenden.
+/// Reihenfolge der Bereiche und Kacheln (am Griff ≡ ziehen) und Kacheln ein- und ausblenden.
+/// Eigene Karten statt `List`: nur so liegen die Griffe mit Abstand innerhalb der Karte.
 private struct HomeLayoutSettings: View {
     @AppStorage(HomeLayout.orderKey) private var orderRaw = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var hiddenRaw = ""
     @AppStorage(HomeLayout.tilesKey) private var tilesRaw = ""
+    /// Gerade gezogene Zeile (`rawValue` eines Bereichs oder einer Kachel).
+    @State private var dragging: String?
 
     private var order: [HomeSection] { HomeLayout.order(orderRaw) }
     private var hidden: Set<HomeTileID> { HomeLayout.hidden(hiddenRaw) }
@@ -187,15 +191,15 @@ private struct HomeLayoutSettings: View {
                             SettingsIcon(symbol: section.symbol, tint: StedeTheme.ink)
                             Text(section.title)
                             Spacer(minLength: 8)
-                            MoveButtons(canMoveUp: index > 0, canMoveDown: index < order.count - 1) { delta in
-                                var sections = order
-                                sections.swapAt(index, index + delta)
-                                withAnimation { orderRaw = HomeLayout.encode(sections) }
-                            }
+                            DragHandle()
                         }
                         .padding(.vertical, 4)
+                        .reorderable(section.rawValue, dragging: $dragging) { target in
+                            moveSection(section, to: target)
+                        }
                     }
                 }
+                SettingsFootnote("Zum Verschieben eine Zeile gedrückt halten und ziehen.")
 
                 ForEach(order) { section in
                     let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
@@ -207,19 +211,15 @@ private struct HomeLayoutSettings: View {
                                 SettingsIcon(symbol: tile.symbol, tint: tile.tint)
                                 Text(tile.title).lineLimit(1)
                                 Spacer(minLength: 8)
-                                if tiles.count > 1 {
-                                    MoveButtons(canMoveUp: index > 0, canMoveDown: index < tiles.count - 1) { delta in
-                                        withAnimation {
-                                            tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: IndexSet(integer: index),
-                                                                           to: delta > 0 ? index + 2 : index - 1)
-                                        }
-                                    }
-                                }
                                 Toggle(tile.title, isOn: binding(for: tile))
                                     .labelsHidden()
                                     .tint(StedeTheme.ink)
+                                if tiles.count > 1 { DragHandle() }
                             }
                             .padding(.vertical, 4)
+                            .reorderable(tile.rawValue, dragging: $dragging) { target in
+                                moveTile(tile, in: section, to: target)
+                            }
                         }
                     }
                     if section == .city { SettingsFootnote("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
@@ -242,10 +242,31 @@ private struct HomeLayoutSettings: View {
             }
             .padding()
         }
+        // Loslassen außerhalb einer Zeile beendet das Ziehen ebenfalls.
+        .onDrop(of: [.text], isTargeted: nil) { _ in dragging = nil; return true }
         .background(StedeTheme.sand)
         .navigationTitle("Startseite")
         .stedeBar()
         .safeAreaPadding(.bottom, StedeTheme.SelectionRow.height)
+    }
+
+    /// Gezogenen Bereich an die Stelle von `target` setzen.
+    private func moveSection(_ target: HomeSection, to dragged: String) {
+        guard let source = HomeSection(rawValue: dragged), source != target,
+              let from = order.firstIndex(of: source), let to = order.firstIndex(of: target) else { return }
+        var sections = order
+        sections.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        withAnimation(.snappy) { orderRaw = HomeLayout.encode(sections) }
+    }
+
+    /// Gezogene Kachel an die Stelle von `target` setzen — nur innerhalb desselben Bereichs.
+    private func moveTile(_ target: HomeTileID, in section: HomeSection, to dragged: String) {
+        guard let source = HomeTileID(rawValue: dragged), source != target, source.section == section else { return }
+        let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
+        guard let from = tiles.firstIndex(of: source), let to = tiles.firstIndex(of: target) else { return }
+        withAnimation(.snappy) {
+            tilesRaw = HomeLayout.moveTiles(in: section, order: tilesRaw, from: IndexSet(integer: from), to: to > from ? to + 1 : to)
+        }
     }
 
     private func binding(for tile: HomeTileID) -> Binding<Bool> {
@@ -259,30 +280,45 @@ private struct HomeLayoutSettings: View {
     }
 }
 
-/// Pfeile hoch/runter zum Verschieben einer Zeile.
-private struct MoveButtons: View {
-    let canMoveUp: Bool
-    let canMoveDown: Bool
-    let move: (Int) -> Void
-
+/// Griff ≡ rechts in der Zeile, mit Abstand zur Kartenkante (kommt vom Karten-Padding).
+private struct DragHandle: View {
     var body: some View {
-        HStack(spacing: 4) {
-            arrow("chevron.up", enabled: canMoveUp, label: "Nach oben") { move(-1) }
-            arrow("chevron.down", enabled: canMoveDown, label: "Nach unten") { move(1) }
-        }
+        Image(systemName: "line.3.horizontal")
+            .font(.body.weight(.medium))
+            .foregroundStyle(.tertiary)
+            .frame(width: 28, height: 28)
+            .accessibilityHidden(true)
+    }
+}
+
+private extension View {
+    /// Zeile per Drag & Drop umsortierbar: beim Überfahren einer anderen Zeile wird sofort getauscht.
+    func reorderable(_ id: String, dragging: Binding<String?>, moveHere: @escaping (String) -> Void) -> some View {
+        self
+            .contentShape(Rectangle())
+            .onDrag {
+                dragging.wrappedValue = id
+                return NSItemProvider(object: id as NSString)
+            }
+            .onDrop(of: [.text], delegate: ReorderDropDelegate(target: id, dragging: dragging, moveHere: moveHere))
+    }
+}
+
+private struct ReorderDropDelegate: DropDelegate {
+    let target: String
+    @Binding var dragging: String?
+    let moveHere: (String) -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let dragging, dragging != target else { return }
+        moveHere(dragging)
     }
 
-    private func arrow(_ symbol: String, enabled: Bool, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.footnote.weight(.bold))
-                .frame(width: 32, height: 32)
-                .background(StedeTheme.ink.opacity(enabled ? 0.1 : 0.04), in: Circle())
-                .foregroundStyle(enabled ? StedeTheme.ink : Color.secondary.opacity(0.4))
-        }
-        .buttonStyle(StedeCardButtonStyle())
-        .disabled(!enabled)
-        .accessibilityLabel(label)
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragging = nil
+        return true
     }
 }
 
