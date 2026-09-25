@@ -9,9 +9,7 @@ struct CommunityListView: View {
     @State private var showsAccount = false
     @State private var showsEditor = false
     @State private var showsAdmin = false
-    @State private var inviteCode = ""
     @State private var showsInvite = false
-    @State private var inviteFailed = false
 
     var body: some View {
         TabScreen(title: "Gruppen", showsDateNavigator: false) {
@@ -50,7 +48,7 @@ struct CommunityListView: View {
                     }
                     if auth.isSignedIn {
                         StedeSectionHeader(title: "Mitmachen", symbol: "plus.circle.fill")
-                        Button { inviteCode = ""; showsInvite = true } label: {
+                        Button { showsInvite = true } label: {
                             JoinRow(symbol: "key.fill", color: StedeTheme.seaTeal, title: "Einladungscode eingeben",
                                     detail: "Du hast einen Code für eine Gruppe bekommen.")
                         }
@@ -91,21 +89,14 @@ struct CommunityListView: View {
                 .accessibilityLabel(auth.isSignedIn ? "Konto" : "Anmelden")
             }
         }
-        .alert("Einladungscode", isPresented: $showsInvite) {
-            TextField("Code", text: $inviteCode)
-                .autocorrectionDisabled()
-                #if !os(macOS)
-                .textInputAutocapitalization(.characters)
-                #endif
-            Button("Abbrechen", role: .cancel) {}
-            Button("Öffnen") { Task { await openInvite() } }
-        } message: {
-            Text("Gib den Code ein, den du von der Gruppe bekommen hast.")
-        }
-        .alert("Code nicht gefunden", isPresented: $inviteFailed) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Zu diesem Einladungscode gibt es keine Gruppe. Bitte prüfe die Schreibweise.")
+        .sheet(isPresented: $showsInvite) {
+            InviteCodeSheet { code in
+                guard let community = try? await CommunityClient().communityByInvite(code: code) else { return false }
+                if !model.communities.contains(where: { $0.id == community.id }) { model.communities.append(community) }
+                showsInvite = false
+                invited = community
+                return true
+            }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
         .sheet(isPresented: $showsAdmin) { AdminView() }
@@ -126,14 +117,58 @@ struct CommunityListView: View {
     }
 
     @State private var invited: Community?
-    private func openInvite() async {
-        if let community = try? await CommunityClient().communityByInvite(code: inviteCode.trimmingCharacters(in: .whitespaces)) {
-            if !model.communities.contains(where: { $0.id == community.id }) { model.communities.append(community) }
-            inviteCode = ""
-            invited = community
-        } else {
-            inviteFailed = true
+}
+
+/// Kleines Sheet für den Einladungscode: Erklärung, Feld, Öffnen; Fehler direkt darunter.
+private struct InviteCodeSheet: View {
+    /// Liefert `false`, wenn es zum Code keine Gruppe gibt.
+    let open: (String) async -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var code = ""
+    @State private var busy = false
+    @State private var notFound = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Gib den Code ein, den du von der Gruppe bekommen hast.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    StedeTextField(placeholder: "Code", text: $code)
+                        .focused($focused)
+                        .onSubmit { Task { await submit() } }
+                    Button { Task { await submit() } } label: {
+                        StedeColorChip(title: "Öffnen", color: StedeTheme.seaTeal, prominent: canSubmit)
+                    }
+                    .buttonStyle(StedeCardButtonStyle()).disabled(!canSubmit)
+                }
+                if notFound {
+                    Text("Zu diesem Code gibt es keine Gruppe. Bitte prüfe die Schreibweise.")
+                        .font(.footnote).foregroundStyle(StedeTheme.harborRed)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(StedeTheme.sand)
+            .navigationTitle("Einladungscode")
+            .stedeBar()
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } } }
+            .onChange(of: code) { notFound = false }
+            .onAppear { focused = true }
         }
+        .presentationDetents([.height(230)])
+    }
+
+    private var trimmed: String { code.trimmingCharacters(in: .whitespaces) }
+    private var canSubmit: Bool { trimmed.count >= 6 && !busy }
+
+    private func submit() async {
+        guard canSubmit else { return }
+        busy = true
+        notFound = !(await open(trimmed))
+        busy = false
     }
 }
 
