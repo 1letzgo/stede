@@ -122,6 +122,10 @@ private struct EventBody: View {
                             }
                         }
                     }
+                    // Ort wie bei den Stadt-Terminen: unter Titel und Pills, grau, einzeilig.
+                    if compact, let location = info.location, !location.isEmpty {
+                        Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 8)
                 if !info.isPublic {
@@ -136,7 +140,7 @@ private struct EventBody: View {
                 Label { Text(info.longTimeLabel) } icon: { Image(systemName: "clock").foregroundStyle(tint) }.font(.caption)
                 Label { Text(info.community) } icon: { Image(systemName: "person.3.fill").foregroundStyle(tint) }.font(.caption)
             }
-            if let location = info.location, !location.isEmpty {
+            if !compact, let location = info.location, !location.isEmpty {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
             }
             if !info.isCancelled && !isPast {

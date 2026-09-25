@@ -101,6 +101,13 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                     if (e.isCancelled) Pill("abgesagt", C.red) else if (isPast) Pill("vorbei", C.mudflat)
                     if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
+                // Ort wie bei den Stadt-Terminen: unter Titel und Pills, grau, einzeilig.
+                if (compact) e.location?.takeIf { it.isNotBlank() }?.let {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Place, null, tint = C.secondary, modifier = Modifier.size(13.dp))
+                        Text(it, color = C.secondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
             if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary, modifier = Modifier.size(14.dp))
         }
@@ -109,7 +116,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
             SmallLabel(Icons.Default.Schedule, longTimeLabel(e), tint)
             SmallLabel(Icons.Default.Groups, e.community, tint)
         }
-        e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
+        if (!compact) e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
         if (!e.isCancelled && !isPast) {
             if (Session.signedIn) ParticipationRow(e, helpers)
             else ColorChip("Anmelden, um zuzusagen", C.ink, icon = Icons.Default.AccountCircle) { onSignIn() }
