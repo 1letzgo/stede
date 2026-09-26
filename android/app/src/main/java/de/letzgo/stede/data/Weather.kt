@@ -48,36 +48,3 @@ object Weather {
         return d
     }
 }
-
-// MARK: Luftqualität — UBA, gleiche Station wie iOS
-
-data class Pollutant(val component: Int, val value: Double, val index: Int) {
-    val name get() = when (component) { 1 -> "PM10"; 3 -> "O₃"; 4 -> "SO₂"; 5 -> "NO₂"; 9 -> "PM2,5"; else -> "Komponente $component" }
-}
-data class AirHour(val start: ZonedDateTime, val index: Int, val pollutants: List<Pollutant>)
-fun airLabel(index: Int) = when (index) { 1 -> "Sehr gut"; 2 -> "Gut"; 3 -> "Mäßig"; 4 -> "Schlecht"; 5 -> "Sehr schlecht"; else -> "Unbekannt" }
-
-object Air {
-    private val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    suspend fun load(day: LocalDate): List<AirHour> {
-        val root = Http.json.parseToJsonElement(Http.text("https://luftdaten.umweltbundesamt.de/api-proxy/airquality/json?date_from=$day&date_to=$day&time_from=1&time_to=24&station=DENI058&lang=de")).jsonObject
-        val data = root["data"] as? JsonObject ?: return emptyList()
-        val hours = mutableListOf<AirHour>()
-        for ((_, station) in data) {
-            val byStart = station as? JsonObject ?: continue
-            for ((startRaw, raw) in byStart) {
-                val fields = raw as? JsonArray ?: continue
-                val start = runCatching { LocalDateTime.parse(startRaw, fmt).atOffset(ZoneOffset.ofHours(1)).atZoneSameInstant(Town.zone) }.getOrNull() ?: continue
-                val index = (fields.getOrNull(1) as? JsonPrimitive)?.intOrNull ?: 0
-                val pollutants = fields.drop(3).mapNotNull { row ->
-                    val r = row as? JsonArray ?: return@mapNotNull null
-                    val c = (r.getOrNull(0) as? JsonPrimitive)?.intOrNull ?: return@mapNotNull null
-                    val v = (r.getOrNull(1) as? JsonPrimitive)?.doubleOrNull ?: return@mapNotNull null
-                    Pollutant(c, v, (r.getOrNull(2) as? JsonPrimitive)?.intOrNull ?: 0)
-                }
-                hours += AirHour(start, index, pollutants)
-            }
-        }
-        return hours.sortedBy { it.start }
-    }
-}

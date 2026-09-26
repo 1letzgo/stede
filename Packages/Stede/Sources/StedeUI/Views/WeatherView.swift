@@ -5,7 +5,6 @@ import SwiftUI
 struct WeatherView: View {
     @Environment(SelectedDateStore.self) private var dateStore
     @State private var weather = WeatherViewModel()
-    @State private var air = AirQualityViewModel()
     /// Vom Nutzer angetippte Stunde; `nil` heißt „jetzt" bzw. Mittag.
     @State private var selectedHourID: WeatherHour.ID?
 
@@ -40,8 +39,7 @@ struct WeatherView: View {
                             StedeSectionHeader(title: "Details um \(WeatherFormat.hour(selected.timestamp))", symbol: "square.grid.2x2")
                             WeatherDetailGrid(
                                 hour: selected,
-                                summary: summary,
-                                air: air.hour(matching: selected.timestamp)
+                                summary: summary
                             )
 
                             SourceFooter(text: sourceLine)
@@ -86,15 +84,13 @@ struct WeatherView: View {
         if let name = weather.summary?.sourceName {
             parts[0] += " · \(name)"
         }
-        parts.append("Luft: Umweltbundesamt DENI058")
         return parts.joined(separator: " · ")
     }
 
     private func reload(force: Bool) async {
         async let weatherLoad: Void = weather.load(day: dateStore.selectedDate, force: force)
-        async let airLoad: Void = air.load(day: dateStore.selectedDate, force: force)
         async let horizon = WeatherStore.latestAvailableDay()
-        _ = await (weatherLoad, airLoad)
+        await weatherLoad
         dateStore.limit(to: await horizon)
     }
 }
@@ -447,7 +443,6 @@ private struct WeatherDayChart: View {
 private struct WeatherDetailGrid: View {
     let hour: WeatherHour
     let summary: WeatherDaySummary
-    let air: AirHour?
 
     private let columns = [
         GridItem(.flexible(), spacing: StedeTheme.cardSpacing),
@@ -490,14 +485,6 @@ private struct WeatherDetailGrid: View {
                                   value: "\(WeatherFormat.number(humidity)) %",
                                   caption: hour.pressureMsl.map { "\(WeatherFormat.number($0)) hPa" })
             }
-
-            if let air {
-                WeatherDetailTile(title: "Luft", symbol: "aqi.medium", color: airColor(air.indexLevel),
-                                  value: air.indexLevel.label,
-                                  caption: air.displayPollutants.prefix(2)
-                                      .map { "\($0.name) \(WeatherFormat.number($0.value))" }
-                                      .joined(separator: " · "))
-            }
         }
     }
 
@@ -514,15 +501,6 @@ private struct WeatherDetailGrid: View {
 
     private var sunshineHours: Double {
         summary.hours.compactMap(\.sunshine).reduce(0, +) / 60
-    }
-
-    private func airColor(_ level: AirIndexLevel) -> Color {
-        switch level {
-        case .veryGood, .good: StedeTheme.duneGreen
-        case .moderate: StedeTheme.sunAmber
-        case .poor, .veryPoor: StedeTheme.harborRed
-        case .unknown: StedeTheme.ink
-        }
     }
 }
 

@@ -131,50 +131,6 @@ final class WasteViewModel {
 }
 
 @Observable
-final class AirQualityViewModel {
-    var hours: [AirHour] = []
-    var state: LoadState = .idle
-
-    private var loadedDay: Date?
-
-    var latest: AirHour? {
-        hours.last { $0.totalIndex > 0 } ?? hours.last
-    }
-
-    func hour(matching date: Date) -> AirHour? {
-        guard let match = hours.min(by: {
-            abs($0.start.timeIntervalSince(date)) < abs($1.start.timeIntervalSince(date))
-        }) else { return nil }
-        return abs(match.start.timeIntervalSince(date)) <= 45 * 60 ? match : nil
-    }
-
-    func load(day: Date, force: Bool = false) async {
-        let start = IslandTime.startOfDay(day)
-        if !force, loadedDay == start, state == .loaded || state == .empty {
-            return
-        }
-
-        if let cached = await AirQualityStore.cached(on: day) {
-            hours = cached
-            loadedDay = start
-            state = cached.isEmpty ? .empty : .loaded
-        } else if state != .loaded {
-            state = .loading
-        }
-
-        do {
-            hours = try await AirQualityStore.hours(on: day, force: force)
-            loadedDay = start
-            state = hours.isEmpty ? .empty : .loaded
-        } catch {
-            if hours.isEmpty {
-                state = .failed(error.localizedDescription)
-            }
-        }
-    }
-}
-
-@Observable
 final class WeatherViewModel {
     var summary: WeatherDaySummary?
     var state: LoadState = .idle

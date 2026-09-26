@@ -17,7 +17,6 @@ struct stedeApp: App {
                     Task {
                         let today = IslandTime.startOfDay(Date())
                         _ = try? await WeatherStore.summary(on: today)
-                        _ = try? await AirQualityStore.hours(on: today)
                     }
                 }
         }

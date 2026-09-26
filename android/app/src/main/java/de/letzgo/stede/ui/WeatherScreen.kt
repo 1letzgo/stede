@@ -38,13 +38,11 @@ fun temp(v: Double?) = v?.let { "${it.roundToInt()}°" } ?: "–"
 fun WeatherScreen(onBack: () -> Unit) {
     var day by remember { mutableStateOf(Town.today()) }
     var weather by remember { mutableStateOf<WeatherDay?>(null) }
-    var air by remember { mutableStateOf<List<AirHour>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedHour by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(day) {
         weather = Weather.cached(day); error = null; selectedHour = null
         runCatching { Weather.load(day) }.onSuccess { weather = it }.onFailure { if (weather == null) error = it.message }
-        air = runCatching { Air.load(day) }.getOrDefault(emptyList())
     }
     val w = weather
     val current = w?.let { if (day == Town.today()) it.current() else it.hours.firstOrNull { h -> h.time.hour == 12 } ?: it.hours.firstOrNull() }
@@ -108,22 +106,6 @@ fun WeatherScreen(onBack: () -> Unit) {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-                if (air.isNotEmpty()) {
-                    val latest = air.lastOrNull { it.index > 0 } ?: air.last()
-                    item { SectionHeader("Luftqualität", Icons.Default.Masks) }
-                    item {
-                        StedeCard {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(airLabel(latest.index), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.text)
-                                Text("um ${latest.start.format(Town.hm)}", color = C.secondary, fontSize = 13.sp)
-                            }
-                            Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf(1, 9, 5, 3).mapNotNull { id -> latest.pollutants.firstOrNull { it.component == id } }.forEach { p -> Pill("${p.name} ${p.value.roundToInt()}", C.teal) }
-                            }
-                            Text("Messstation Umweltbundesamt", fontSize = 11.sp, color = C.secondary, modifier = Modifier.padding(top = 6.dp))
                         }
                     }
                 }

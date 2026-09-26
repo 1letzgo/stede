@@ -16,7 +16,6 @@ struct HomeView: View {
     @AppStorage("bus.stop") private var busStopID: String = BusStop.zob.id
     @Binding var path: [HomeDestination]
     @State private var weather = WeatherViewModel()
-    @State private var air = AirQualityViewModel()
     @State private var trains = TrainViewModel()
     @State private var buses = BusViewModel()
     @State private var waste = WasteViewModel()
@@ -286,7 +285,6 @@ struct HomeView: View {
         if case .failed = trains.state { names.append("Bahn") }
         if case .failed = buses.state { names.append("Bus") }
         if case .failed = waste.state { names.append("Abfuhr") }
-        if case .failed = air.state { names.append("Luftqualität") }
         return names
     }
 
@@ -318,10 +316,9 @@ struct HomeView: View {
     private func loadWeather(force: Bool) async {
         let today = IslandTime.startOfDay(Date())
         async let weatherLoad: Void = weather.load(day: today, force: force)
-        async let airLoad: Void = air.load(day: today, force: force)
         async let trainLoad: Void = trains.load(day: today, force: force)
         async let busLoad: Void = buses.load(stop: busStop, day: today, force: force)
-        _ = await (weatherLoad, airLoad, trainLoad, busLoad)
+        _ = await (weatherLoad, trainLoad, busLoad)
     }
 }
 

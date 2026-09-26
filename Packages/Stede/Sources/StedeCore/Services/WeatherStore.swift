@@ -53,18 +53,3 @@ private actor WeatherHorizonCache {
         fetchedAt = Date()
     }
 }
-
-public nonisolated enum AirQualityStore: Sendable {
-    private static let cache = DayCache<[AirHour]>(name: "air", maxAge: 60 * 60)
-    private static let client = AirQualityClient()
-
-    public static func cached(on day: Date) async -> [AirHour]? {
-        await cache.peek(on: day)
-    }
-
-    public static func hours(on day: Date, force: Bool = false) async throws -> [AirHour] {
-        try await cache.value(on: day, force: force) {
-            try await client.hours(on: day)
-        }
-    }
-}
