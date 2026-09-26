@@ -81,11 +81,14 @@ nonisolated final class RemoteImageCache: @unchecked Sendable {
 /// Ersatz für `AsyncImage` mit dauerhaftem Cache; zeigt `placeholder`, bis das Bild da ist.
 struct RemoteImage<Placeholder: View>: View {
     let url: URL?
+    /// `.fill` schneidet zu (Karten), `.fit` zeigt das ganze Bild (Detailansicht).
+    var contentMode: ContentMode = .fill
     @ViewBuilder var placeholder: () -> Placeholder
     @State private var image: PlatformImage?
 
-    init(url: URL?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
+    init(url: URL?, contentMode: ContentMode = .fill, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.url = url
+        self.contentMode = contentMode
         self.placeholder = placeholder
         // Schon im Speicher: ohne Aufblitzen des Platzhalters anzeigen.
         _image = State(initialValue: url.flatMap { RemoteImageCache.shared.cached($0) })
@@ -95,9 +98,9 @@ struct RemoteImage<Placeholder: View>: View {
         Group {
             if let image {
                 #if canImport(UIKit)
-                Image(uiImage: image).resizable().scaledToFill()
+                Image(uiImage: image).resizable().aspectRatio(contentMode: contentMode)
                 #else
-                Image(nsImage: image).resizable().scaledToFill()
+                Image(nsImage: image).resizable().aspectRatio(contentMode: contentMode)
                 #endif
             } else {
                 placeholder()

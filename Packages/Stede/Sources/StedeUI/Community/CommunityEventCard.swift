@@ -191,7 +191,7 @@ struct CommunityEventDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                     VStack(alignment: .leading, spacing: 0) {
-                        if let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
+                        if let imageURL = info.imageURL { FullEventPhoto(url: imageURL, placeholderHeight: imageHeight) }
                         EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                                   onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: false)
                             .padding(StedeTheme.cardPadding)
@@ -274,6 +274,21 @@ struct EventPhoto: View {
         .frame(maxWidth: .infinity)
         .frame(height: height)
         .clipped()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Beitragsbild in der Detailansicht: volle Breite, Höhe nach Seitenverhältnis — nichts abgeschnitten.
+struct FullEventPhoto: View {
+    let url: URL
+    let placeholderHeight: CGFloat
+
+    var body: some View {
+        RemoteImage(url: url, contentMode: .fit) {
+            Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)).frame(height: placeholderHeight)
+        }
+        .frame(maxWidth: .infinity)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

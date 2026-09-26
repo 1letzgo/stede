@@ -182,7 +182,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
                 Column(Modifier.cardSurface().goingOutline(going)) {
-                    e.imageUrl?.let { EventPhoto(it, 220.dp) }
+                    e.imageUrl?.let { FullEventPhoto(it) }
                     EventBody(e, helpers, compact = false, onSignIn = onSignIn)
                 }
                 ColorChip("Teilen", C.ink, Modifier.fillMaxWidth().padding(top = Spacing), icon = Icons.Default.Share) {

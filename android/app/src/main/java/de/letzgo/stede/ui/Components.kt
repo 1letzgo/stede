@@ -157,6 +157,12 @@ fun EventPhoto(url: String, height: Dp, modifier: Modifier = Modifier) {
     AsyncImage(url, null, modifier.fillMaxWidth().height(height).background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.Crop)
 }
 
+/** Beitragsbild in der Detailansicht: volle Breite, Höhe nach Seitenverhältnis — nichts abgeschnitten. */
+@Composable
+fun FullEventPhoto(url: String, modifier: Modifier = Modifier) {
+    AsyncImage(url, null, modifier.fillMaxWidth().background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.FillWidth)
+}
+
 /** Kopfleiste im Petrol der Stadt: Titel mittig, weiße Symbole. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
