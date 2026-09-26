@@ -88,21 +88,8 @@ struct SettingsView: View {
                         SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
                         Text("Bahnhof")
                         Spacer(minLength: 8)
-                        // Eigenes Label: „Westerstede-Ocholt“ bräche im System-Picker zweizeilig um.
-                        Menu {
-                            Picker("Bahnhof", selection: stationBinding) {
-                                ForEach(Tenants.current.stations) { Text($0.name).tag($0.id) }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(station.name)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.75)
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .font(.footnote.weight(.semibold))
-                            }
-                            .foregroundStyle(StedeTheme.ink)
-                        }
+                        SettingsMenu(title: "Bahnhof", selection: stationBinding, value: station.name,
+                                     options: Tenants.current.stations.map { ($0.id, $0.name) })
                     }
                     .frame(minHeight: 32)
                     .stedeRowCard()
@@ -110,15 +97,11 @@ struct SettingsView: View {
                         SettingsIcon(symbol: "arrow.left.arrow.right", tint: StedeTheme.harborRed)
                         Text("Bahn-Richtung")
                         Spacer(minLength: 8)
-                        Picker("Bahn-Richtung", selection: $direction) {
-                            ForEach(TrainDirection.allCases, id: \.self) { Text($0.shortTitle(at: station)).tag($0) }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .tint(StedeTheme.ink)
+                        SettingsMenu(title: "Bahn-Richtung", selection: $direction, value: direction.shortTitle(at: station),
+                                     options: TrainDirection.allCases.map { ($0, $0.shortTitle(at: station)) })
                     }
                     .frame(minHeight: 32)
-            .stedeRowCard()
+                    .stedeRowCard()
                 }
 
                 StedeSectionHeader(title: "App", symbol: "info.circle.fill")
@@ -153,16 +136,12 @@ struct SettingsView: View {
         HStack(spacing: 12) {
             Text(title)
             Spacer(minLength: 8)
-            Picker(title, selection: selection) {
-                Text("Bitte wählen").tag(0)
-                ForEach(options) { Text($0.label).tag($0.id) }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .tint(StedeTheme.ink)
+            SettingsMenu(title: title, selection: selection,
+                         value: options.first { $0.id == selection.wrappedValue }?.label ?? "Bitte wählen",
+                         options: [(0, "Bitte wählen")] + options.map { ($0.id, $0.label) })
         }
         .frame(minHeight: 32)
-            .stedeRowCard()
+        .stedeRowCard()
     }
 
     @ViewBuilder private var accountRow: some View {
@@ -381,6 +360,37 @@ private struct SettingsCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) { content() }
+    }
+}
+
+/// Auswahlmenü mit grauem Wert wie die übrigen Zeilen („Straße“, „Bushaltestelle“) —
+/// der System-Picker färbt seinen Wert in der Akzentfarbe und bricht lange Namen um.
+private struct SettingsMenu<Value: Hashable>: View {
+    let title: String
+    @Binding var selection: Value
+    let value: String
+    let options: [(Value, String)]
+
+    var body: some View {
+        Menu {
+            Picker(title, selection: $selection) {
+                ForEach(options, id: \.0) { Text($0.1).tag($0.0) }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        // Sonst färbt das Menü sein Label in der Akzentfarbe ein.
+        .tint(.primary)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
     }
 }
 
