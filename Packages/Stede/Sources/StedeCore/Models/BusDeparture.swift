@@ -13,10 +13,11 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 
-    /// Kurzname ohne den Ortsteil davor („ZOB" statt „Westerstede ZOB").
+    /// Kurzname ohne den Gemeindenamen davor („ZOB" statt „Westerstede ZOB").
     public var shortName: String {
-        name.replacingOccurrences(of: "Westerstede-", with: "")
-            .replacingOccurrences(of: "Westerstede ", with: "")
+        let town = Tenants.current.municipality
+        return name.replacingOccurrences(of: "\(town)-", with: "")
+            .replacingOccurrences(of: "\(town) ", with: "")
     }
 
     public static let zob = BusStop(id: "009098661", name: "Westerstede ZOB", latitude: 53.258354, longitude: 7.928171)
@@ -24,13 +25,15 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
     /// Die Haltestellen im Stadtgebiet mit regelmäßigem Verkehr — ZOB zuerst,
     /// dann alphabetisch; der Bahnhof Ocholt als Umstieg zur Bahn am Ende.
     /// Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst die Liste unten.
-    public static let all: [BusStop] = {
+    public static var all: [BusStop] { store.value }
+
+    private static let store = TenantScoped { () -> [BusStop] in
         struct File: Decodable { struct Stop: Decodable { let id: String; let name: String; let latitude: Double; let longitude: Double }; let stops: [Stop] }
         if let data = ContentFiles.data("bus-stops"), let file = try? JSONDecoder().decode(File.self, from: data), !file.stops.isEmpty {
             return file.stops.map { BusStop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }
         }
-        return bundled
-    }()
+        return Tenants.usesBundle ? bundled : []
+    }
 
     private static let bundled: [BusStop] = [
         zob,
@@ -57,8 +60,10 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
         BusStop(id: "009098668", name: "Westerstede-Ocholt Bahnhof", latitude: 53.202288, longitude: 7.886533),
     ]
 
+    /// Die gewählte Haltestelle, sonst die Standardhaltestelle der Gemeinde.
     public static func stop(id: String) -> BusStop {
-        all.first { $0.id == id } ?? all.first ?? zob
+        let stops = all
+        return stops.first { $0.id == id } ?? stops.first { $0.id == Tenants.current.busDefaultStop } ?? stops.first ?? zob
     }
 }
 
@@ -108,7 +113,8 @@ public nonisolated enum BusBoardParser: Sendable {
         let cancelled = delayText.lowercased().contains("cancel") || attributes["is_cancelled"] == "1"
         // Ziele in der Stadt ohne den Ortsnamen davor — Platz ist knapp.
         var destination = unescape(attributes["dir"] ?? attributes["targetLoc"] ?? "")
-        if destination.hasPrefix("Westerstede ") { destination.removeFirst("Westerstede ".count) }
+        let town = Tenants.current.municipality + " "
+        if destination.hasPrefix(town) { destination.removeFirst(town.count) }
         let line = name.replacingOccurrences(of: "Bus ", with: "")
         return BusDeparture(
             id: "\(line)-\(date)-\(time)-\(destination)",

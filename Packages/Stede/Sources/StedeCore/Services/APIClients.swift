@@ -1,11 +1,13 @@
 import Foundation
 
-/// Abfahrtstafel für Westerstede-Ocholt vom Abfahrtsmonitor dbf.finalrewind.org
+/// Abfahrtstafel eines Ammerland-Bahnhofs vom Abfahrtsmonitor dbf.finalrewind.org
 /// (DB IRIS). Die Tafel reicht etwa zwei Stunden voraus und kennt nur „jetzt" —
 /// andere Tage gibt es hier nicht. bahn.de selbst blockt die App mit 403.
 public nonisolated struct TrainClient: Sendable {
-    public static let stationName = "Westerstede-Ocholt"
-    private static let boardURL = URL(string: "https://dbf.finalrewind.org/Westerstede-Ocholt.json?version=3")!
+    private static func boardURL(_ station: TenantConfig.Station) -> URL {
+        let name = station.dbf.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? station.dbf
+        return URL(string: "https://dbf.finalrewind.org/\(name).json?version=3")!
+    }
 
     public let http: HTTPClient
 
@@ -13,9 +15,9 @@ public nonisolated struct TrainClient: Sendable {
         self.http = http
     }
 
-    public func departures(now: Date = Date()) async throws -> [TrainDeparture] {
-        let response: TrainBoardResponse = try await http.get(Self.boardURL, decoder: JSONDecoder())
-        let departures = response.departures.compactMap { $0.asDeparture(reference: now) }
+    public func departures(at station: TenantConfig.Station, now: Date = Date()) async throws -> [TrainDeparture] {
+        let response: TrainBoardResponse = try await http.get(Self.boardURL(station), decoder: JSONDecoder())
+        let departures = response.departures.compactMap { $0.asDeparture(station: station.name, reference: now) }
         return Self.mergingDoubleListings(departures).sorted { $0.scheduled < $1.scheduled }
     }
 
@@ -120,10 +122,11 @@ public nonisolated struct WeatherClient: Sendable {
     }
 
     public func weather(on day: Date) async throws -> WeatherDaySummary {
+        let tenant = Tenants.current
         var components = URLComponents(string: "https://api.brightsky.dev/weather")
         components?.queryItems = [
-            URLQueryItem(name: "lat", value: "53.256"),
-            URLQueryItem(name: "lon", value: "7.927"),
+            URLQueryItem(name: "lat", value: String(format: "%.3f", tenant.latitude)),
+            URLQueryItem(name: "lon", value: String(format: "%.3f", tenant.longitude)),
             URLQueryItem(name: "date", value: IslandTime.isoDate(day)),
             URLQueryItem(name: "tz", value: "Europe/Berlin"),
         ]
@@ -136,10 +139,11 @@ public nonisolated struct WeatherClient: Sendable {
     public func latestAvailableDay(from start: Date = Date(), spanDays: Int = 14) async throws -> Date? {
         let from = IslandTime.startOfDay(start)
         let to = IslandTime.calendar.date(byAdding: .day, value: spanDays, to: from) ?? from
+        let tenant = Tenants.current
         var components = URLComponents(string: "https://api.brightsky.dev/weather")
         components?.queryItems = [
-            URLQueryItem(name: "lat", value: "53.256"),
-            URLQueryItem(name: "lon", value: "7.927"),
+            URLQueryItem(name: "lat", value: String(format: "%.3f", tenant.latitude)),
+            URLQueryItem(name: "lon", value: String(format: "%.3f", tenant.longitude)),
             URLQueryItem(name: "date", value: IslandTime.isoDate(from)),
             URLQueryItem(name: "last_date", value: IslandTime.isoDate(to)),
             URLQueryItem(name: "tz", value: "Europe/Berlin"),

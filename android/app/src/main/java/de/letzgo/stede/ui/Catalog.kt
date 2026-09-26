@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import de.letzgo.stede.data.Place
 import de.letzgo.stede.data.Places
+import de.letzgo.stede.data.Tenants
 import de.letzgo.stede.data.Store
 
 /** Kategorien der Rubrik „Stadt“ — wie IslandCatalog in iOS. */
@@ -80,10 +81,11 @@ object Catalog {
     }
 
     fun note(category: String): String? = when (category) {
-        TRIPS, DISCOVER -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede."
+        TRIPS, DISCOVER -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um ${Tenants.config.municipality}."
         HEALTH -> "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38."
         VOLUNTEER -> "Gilt nur mit der Ehrenamtskarte Niedersachsen/Bremen – beim Anbieter vorzeigen. Beantragung und alle Angebote im Land: freiwilligenserver.de/ehrenamtskarte."
-        PLAYGROUNDS -> "Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite."
+        // Die Kinderrat-Bewertung gibt es nur für die Westersteder Spielplätze.
+        PLAYGROUNDS -> if (Tenants.usesBundle) "Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite." else null
         else -> null
     }
 }

@@ -151,7 +151,7 @@ final class CommunityDetailModel {
 
     func updateSettings(name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, logoPath: String?) async -> Bool {
         do {
-            try await client.updateCommunity(id: community.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, logoPath: logoPath)
+            try await client.updateCommunity(id: community.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, countywide: community.isCountywide, logoPath: logoPath)
             community = try await client.community(id: community.id)
             return true
         } catch {

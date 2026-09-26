@@ -32,23 +32,26 @@ public nonisolated struct WasteStreetDirectory: Sendable, Decodable {
 }
 
 public nonisolated enum WasteStreetStore {
-    /// Alle Straßen Westerstedes, einmalig von appfuhr.de übernommen (`tbl=str&ort=5`).
-    public static let directory: WasteStreetDirectory = {
+    /// Alle Straßen der Gemeinde, von appfuhr.de übernommen (`tbl=str&ort=<Ort>`).
+    public static var directory: WasteStreetDirectory { store.value }
+
+    private static let store = TenantScoped { () -> WasteStreetDirectory in
         // Stand aus dem Backend (`content_files`), sonst das Bundle.
         if let data = ContentFiles.data("abfuhr-strassen"),
            let directory = try? JSONDecoder().decode(WasteStreetDirectory.self, from: data), !directory.streets.isEmpty {
             return directory
         }
+        let tenant = Tenants.current
         guard
+            Tenants.usesBundle,
             let url = Bundle.module.url(forResource: "abfuhr-strassen", withExtension: "json"),
             let data = try? Data(contentsOf: url),
             let directory = try? JSONDecoder().decode(WasteStreetDirectory.self, from: data)
         else {
-            assertionFailure("abfuhr-strassen.json fehlt im Bundle oder ist ungültig")
-            return WasteStreetDirectory(source: "", fetchedAt: "", townID: 5, town: "Westerstede", streets: [])
+            return WasteStreetDirectory(source: "", fetchedAt: "", townID: tenant.wasteTownID, town: tenant.municipality, streets: [])
         }
         return directory
-    }()
+    }
 }
 
 /// Abfallart, wie sie im Kalender heißt.

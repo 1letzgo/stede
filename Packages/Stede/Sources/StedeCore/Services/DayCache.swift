@@ -12,6 +12,11 @@ public nonisolated enum CacheMaintenance: Sendable {
         return base.appendingPathComponent(name, isDirectory: true)
     }
 
+    /// Ordner eines Tagescaches für eine Gemeinde; Westerstede behält den alten Ort.
+    public static func directory(_ name: String, tenant slug: String) -> URL {
+        slug == Tenants.defaultSlug ? directory(name) : directory(name).appendingPathComponent("tenants/\(slug)", isDirectory: true)
+    }
+
     /// Entfernt alle Tagesdateien, deren Datum mehr als `retentionDays` zurückliegt.
     public static func purgeExpired(reference: Date = Date()) {
         let manager = FileManager.default
@@ -21,8 +26,10 @@ public nonisolated enum CacheMaintenance: Sendable {
             to: IslandTime.startOfDay(reference)
         ) else { return }
 
-        for name in dayCacheNames {
-            let folder = directory(name)
+        let folders = dayCacheNames.flatMap { name in
+            [directory(name)] + Tenants.all.filter { $0.slug != Tenants.defaultSlug }.map { directory(name, tenant: $0.slug) }
+        }
+        for folder in folders {
             guard let files = try? manager.contentsOfDirectory(
                 at: folder,
                 includingPropertiesForKeys: nil
@@ -50,19 +57,24 @@ public actor DayCache<Value: Codable & Sendable> {
         self.maxAge = maxAge
     }
 
+    /// Schlüssel je Gemeinde und Tag — ein Gemeindewechsel sieht keine fremden Tage.
+    private func key(_ day: Date) -> String {
+        "\(Tenants.currentSlug)/\(IslandTime.isoDate(day))"
+    }
+
     public func peek(on day: Date) -> Value? {
-        cached(for: IslandTime.isoDate(day))?.value
+        cached(for: key(day))?.value
     }
 
     /// Nur ein noch gültiger Eintrag — für Bereichsabfragen, die sonst neu laden.
     public func fresh(on day: Date) -> Value? {
-        guard let entry = cached(for: IslandTime.isoDate(day)), !isStale(entry, day: day) else { return nil }
+        guard let entry = cached(for: key(day)), !isStale(entry, day: day) else { return nil }
         return entry.value
     }
 
     /// Von außen geholten Wert ablegen (eine Bereichsabfrage füllt viele Tage auf einmal).
     public func store(_ value: Value, on day: Date) {
-        let key = IslandTime.isoDate(day)
+        let key = key(day)
         let entry = CachedDay(fetchedAt: Date(), value: value)
         memory[key] = entry
         try? persist(entry, key: key)
@@ -73,7 +85,7 @@ public actor DayCache<Value: Codable & Sendable> {
         force: Bool,
         fetch: @Sendable () async throws -> Value
     ) async throws -> Value {
-        let key = IslandTime.isoDate(day)
+        let key = key(day)
 
         if !force, let cached = cached(for: key), !isStale(cached, day: day) {
             return cached.value
@@ -114,14 +126,16 @@ public actor DayCache<Value: Codable & Sendable> {
     }
 
     private func persist(_ entry: CachedDay<Value>, key: String) throws {
-        let folder = CacheMaintenance.directory(name)
-        try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = fileURL(for: key)
+        try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(entry)
-        try data.write(to: fileURL(for: key), options: .atomic)
+        try data.write(to: url, options: .atomic)
     }
 
+    /// `<slug>/<Tag>` → Datei im Ordner der Gemeinde.
     private func fileURL(for key: String) -> URL {
-        CacheMaintenance.directory(name).appendingPathComponent("\(key).json")
+        let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
+        return CacheMaintenance.directory(name, tenant: parts[0]).appendingPathComponent("\(parts[1]).json")
     }
 }
 

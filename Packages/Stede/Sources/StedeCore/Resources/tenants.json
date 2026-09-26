@@ -1,0 +1,332 @@
+[
+ {
+  "slug": "apen",
+  "municipality": "Apen",
+  "center": [
+   53.22143,
+   7.80973
+  ],
+  "bbox": [
+   53.15,
+   7.69,
+   53.27,
+   7.88
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8000664",
+  "wasteTownID": 1,
+  "busDefaultStop": "009003061"
+ },
+ {
+  "slug": "bad-zwischenahn",
+  "municipality": "Bad Zwischenahn",
+  "center": [
+   53.18478,
+   8.00285
+  ],
+  "bbox": [
+   53.12,
+   7.88,
+   53.28,
+   8.18
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8000770",
+  "wasteTownID": 2,
+  "busDefaultStop": "009006433"
+ },
+ {
+  "slug": "edewecht",
+  "municipality": "Edewecht",
+  "center": [
+   53.1284,
+   7.9855
+  ],
+  "bbox": [
+   53.05,
+   7.83,
+   53.18,
+   8.15
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8000770",
+  "wasteTownID": 3,
+  "busDefaultStop": "009022853"
+ },
+ {
+  "slug": "rastede",
+  "municipality": "Rastede",
+  "center": [
+   53.24671,
+   8.2019
+  ],
+  "bbox": [
+   53.18,
+   8.1,
+   53.36,
+   8.32
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8004945",
+  "wasteTownID": 4,
+  "busDefaultStop": "009075805"
+ },
+ {
+  "slug": "stede",
+  "municipality": "Westerstede",
+  "center": [
+   53.25752,
+   7.92734
+  ],
+  "bbox": [
+   53.15,
+   7.78,
+   53.36,
+   8.1
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8004610",
+  "wasteTownID": 5,
+  "busDefaultStop": "009098661"
+ },
+ {
+  "slug": "wiefelstede",
+  "municipality": "Wiefelstede",
+  "center": [
+   53.25586,
+   8.11501
+  ],
+  "bbox": [
+   53.17,
+   8.02,
+   53.35,
+   8.21
+  ],
+  "stations": [
+   {
+    "id": "8004610",
+    "dbf": "Westerstede-Ocholt",
+    "name": "Westerstede-Ocholt",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000770",
+    "dbf": "Bad Zwischenahn",
+    "name": "Bad Zwischenahn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8000664",
+    "dbf": "Augustfehn",
+    "name": "Augustfehn",
+    "directions": [
+     "Oldenburg",
+     "Leer"
+    ]
+   },
+   {
+    "id": "8004945",
+    "dbf": "Rastede",
+    "name": "Rastede",
+    "directions": [
+     "Oldenburg",
+     "Wilhelmshaven"
+    ]
+   }
+  ],
+  "defaultStation": "8004945",
+  "wasteTownID": 6,
+  "busDefaultStop": "009099164"
+ }
+]

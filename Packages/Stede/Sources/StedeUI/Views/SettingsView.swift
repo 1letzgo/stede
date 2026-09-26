@@ -8,12 +8,23 @@ struct SettingsView: View {
     @AppStorage("waste.street") private var streetID: Int = 0
     @AppStorage("waste.section") private var sectionID: Int = 0
     @AppStorage("waste.branchSection") private var branchSectionID: Int = 0
-    @AppStorage("bus.stop") private var busStopID: String = BusStop.zob.id
+    @AppStorage("bus.stop") private var busStopID: String = ""
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
+    @AppStorage("train.station") private var stationID = ""
+    @State private var showsTenants = false
     @State private var showsStreets = false
     @State private var showsStops = false
 
     private var street: WasteStreet? { WasteSettings.street(id: streetID) }
+
+    private var station: TenantConfig.Station {
+        Tenants.current.station(id: stationID) ?? Tenants.current.stations[0]
+    }
+
+    /// Ohne Wahl gilt der Standardbahnhof der Gemeinde.
+    private var stationBinding: Binding<String> {
+        Binding(get: { station.id }, set: { stationID = $0 })
+    }
 
     var body: some View {
         ScrollView {
@@ -31,6 +42,13 @@ struct SettingsView: View {
                 }
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
+
+                StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
+                SettingsCard {
+                    pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {
+                        showsTenants = true
+                    }
+                }
 
                 StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
                 NavigationLink {
@@ -68,10 +86,23 @@ struct SettingsView: View {
                     }
                     HStack(spacing: 12) {
                         SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
+                        Text("Bahnhof")
+                        Spacer(minLength: 8)
+                        Picker("Bahnhof", selection: stationBinding) {
+                            ForEach(Tenants.current.stations) { Text($0.name).tag($0.id) }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .tint(StedeTheme.ink)
+                    }
+                    .frame(minHeight: 32)
+                    .stedeRowCard()
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: "arrow.left.arrow.right", tint: StedeTheme.harborRed)
                         Text("Bahn-Richtung")
                         Spacer(minLength: 8)
                         Picker("Bahn-Richtung", selection: $direction) {
-                            ForEach(TrainDirection.allCases, id: \.self) { Text($0.shortTitle).tag($0) }
+                            ForEach(TrainDirection.allCases, id: \.self) { Text($0.shortTitle(at: station)).tag($0) }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
@@ -100,6 +131,9 @@ struct SettingsView: View {
                 sectionID = 0
                 branchSectionID = 0
             }
+        }
+        .sheet(isPresented: $showsTenants) {
+            TenantPickerSheet()
         }
         .sheet(isPresented: $showsStops) {
             BusStopSheet(selection: $busStopID)

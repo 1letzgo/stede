@@ -9,10 +9,9 @@ public actor ContentSync {
 
     private let client = Backend.client
     private let fileManager = FileManager.default
-    private var tenantID: UUID?
+    private var tenantIDs: [String: UUID] = [:]
 
-    private var folder: URL { CacheMaintenance.directory("content") }
-    private func file(_ name: String) -> URL { folder.appendingPathComponent("\(name).json") }
+    private func file(_ name: String, _ slug: String) -> URL { Tenants.contentFolder(slug).appendingPathComponent("\(name).json") }
 
     /// Zeile aus `places`.
     nonisolated struct PlaceRow: Codable, Sendable {
@@ -74,9 +73,9 @@ public actor ContentSync {
 
     /// Verzeichnis aus dem lokalen Stand, sonst nil (dann gilt das Bundle).
     public nonisolated static func directory(_ name: String) -> GastroDirectory? {
-        let url = CacheMaintenance.directory("content").appendingPathComponent("\(name).json")
+        let url = Tenants.contentFolder().appendingPathComponent("\(name).json")
         guard let data = try? Data(contentsOf: url),
-              let snapshot = try? JSONDecoder.api.decode(Snapshot.self, from: data)
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data)
         else { return nil }
         let places = snapshot.places.values
             .filter { $0.deletedAt == nil }
@@ -86,9 +85,9 @@ public actor ContentSync {
     }
 
     public nonisolated static func bikeDirectory() -> BikeRentalDirectory? {
-        let url = CacheMaintenance.directory("content").appendingPathComponent("bikes.json")
+        let url = Tenants.contentFolder().appendingPathComponent("bikes.json")
         guard let data = try? Data(contentsOf: url),
-              let snapshot = try? JSONDecoder.api.decode(Snapshot.self, from: data)
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data)
         else { return nil }
         let providers = snapshot.places.values
             .filter { $0.deletedAt == nil }
@@ -97,7 +96,7 @@ public actor ContentSync {
                 BikeRentalProvider(
                     id: row.externalId, name: row.name, teaser: row.teaser, phone: row.phone, email: row.email, website: row.website,
                     features: row.features,
-                    stations: [BikeRentalStation(label: "Westerstede", street: row.street ?? "", latitude: row.lat ?? 0, longitude: row.lon ?? 0)]
+                    stations: [BikeRentalStation(label: Tenants.current.municipality, street: row.street ?? "", latitude: row.lat ?? 0, longitude: row.lon ?? 0)]
                 )
             }
         return BikeRentalDirectory(source: snapshot.source, fetchedAt: snapshot.fetchedAt, providers: providers)
@@ -107,25 +106,26 @@ public actor ContentSync {
 
     public static let directories = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer"]
 
-    /// Beim Start und bei Pull-to-Refresh: alle Verzeichnisse nachziehen.
-    public func syncAll() async {
+    /// Beim Start und bei Pull-to-Refresh: alle Verzeichnisse nachziehen — ohne Angabe
+    /// für die aktuelle Gemeinde, beim Wechsel für die neue, bevor sie gilt.
+    public func syncAll(slug: String = Tenants.currentSlug) async {
         do {
-            if tenantID == nil {
-                let tenant: Tenant = try await client.from("tenants").select("id, slug, name, municipality").eq("slug", value: Backend.tenantSlug).single().execute().value
-                tenantID = tenant.id
+            if tenantIDs[slug] == nil {
+                let tenant: Tenant = try await client.from("tenants").select("id, slug, name, municipality").eq("slug", value: slug).single().execute().value
+                tenantIDs[slug] = tenant.id
             }
-            guard let tenantID else { return }
+            guard let tenantID = tenantIDs[slug] else { return }
             let directories: [DirectoryRow] = try await client.from("place_directories").select("directory, source, fetched_at").eq("tenant_id", value: tenantID).execute().value
             for meta in directories where Self.directories.contains(meta.directory) {
-                try await sync(directory: meta, tenantID: tenantID)
+                try await sync(directory: meta, tenantID: tenantID, slug: slug)
             }
         } catch {
             // Offline oder Backend nicht erreichbar: der letzte Stand bleibt.
         }
     }
 
-    private func sync(directory meta: DirectoryRow, tenantID: UUID) async throws {
-        var snapshot = loadSnapshot(meta.directory) ?? Snapshot(source: meta.source, fetchedAt: meta.fetchedAt, cursor: .distantPast, places: [:])
+    private func sync(directory meta: DirectoryRow, tenantID: UUID, slug: String) async throws {
+        var snapshot = loadSnapshot(meta.directory, slug) ?? Snapshot(source: meta.source, fetchedAt: meta.fetchedAt, cursor: .distantPast, places: [:])
         let rows: [PlaceRow] = try await client.from("places")
             .select("external_id, directory, kind, name, teaser, street, phone, email, website, hours, rest_day, season_note, image_credit, extra_link_title, extra_link_url, features, lat, lon, sort_order, updated_at, deleted_at")
             .eq("tenant_id", value: tenantID).eq("directory", value: meta.directory)
@@ -136,14 +136,14 @@ public actor ContentSync {
         snapshot.cursor = rows.map(\.updatedAt).max() ?? snapshot.cursor
         snapshot.source = meta.source
         snapshot.fetchedAt = meta.fetchedAt
-        try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: Tenants.contentFolder(slug), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(snapshot)
-        try data.write(to: file(meta.directory), options: .atomic)
+        try data.write(to: file(meta.directory, slug), options: .atomic)
     }
 
-    private func loadSnapshot(_ name: String) -> Snapshot? {
-        guard let data = try? Data(contentsOf: file(name)) else { return nil }
-        return try? JSONDecoder.api.decode(Snapshot.self, from: data)
+    private func loadSnapshot(_ name: String, _ slug: String) -> Snapshot? {
+        guard let data = try? Data(contentsOf: file(name, slug)) else { return nil }
+        return try? JSONDecoder().decode(Snapshot.self, from: data)
     }
 }
 

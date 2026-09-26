@@ -50,12 +50,17 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Communities
 
-    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count"
+    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count, countywide"
 
-    /// Alle sichtbaren Communities des Mandanten: gelistete plus eigene.
+    /// Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland.
+    static func ownOrCountywide(_ tenantID: UUID) -> String {
+        "tenant_id.eq.\(tenantID.uuidString.lowercased()),and(countywide.is.true,region.eq.ammerland)"
+    }
+
+    /// Alle sichtbaren Communities des Mandanten (gelistete plus eigene) und die kreisweiten.
     public func communities(tenantID: UUID) async throws -> [Community] {
         try await client.from("v_community_overview").select(Self.communityColumns)
-            .eq("tenant_id", value: tenantID).order("name").execute().value
+            .or(Self.ownOrCountywide(tenantID)).order("name").execute().value
     }
 
     public func community(id: UUID) async throws -> Community {
@@ -68,20 +73,20 @@ public nonisolated struct CommunityClient: Sendable {
         return rows.first
     }
 
-    public func createCommunity(tenantID: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, userID: UUID) async throws -> Community {
+    public func createCommunity(tenantID: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, countywide: Bool, userID: UUID) async throws -> Community {
         struct Draft: Encodable {
             let tenant_id: UUID; let name: String; let description: String
-            let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let created_by: UUID
+            let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let countywide: Bool; let created_by: UUID
         }
         let created: Community = try await client.from("communities")
-            .insert(Draft(tenant_id: tenantID, name: name, description: description, visibility: visibility, join_policy: joinPolicy, created_by: userID))
-            .select("id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at").single().execute().value
+            .insert(Draft(tenant_id: tenantID, name: name, description: description, visibility: visibility, join_policy: joinPolicy, countywide: countywide, created_by: userID))
+            .select("id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, countywide").single().execute().value
         return created
     }
 
-    public func updateCommunity(id: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, logoPath: String?) async throws {
-        struct Patch: Encodable { let name: String; let description: String; let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let logo_path: String? }
-        try await client.from("communities").update(Patch(name: name, description: description, visibility: visibility, join_policy: joinPolicy, logo_path: logoPath)).eq("id", value: id).execute()
+    public func updateCommunity(id: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, countywide: Bool, logoPath: String?) async throws {
+        struct Patch: Encodable { let name: String; let description: String; let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let countywide: Bool; let logo_path: String? }
+        try await client.from("communities").update(Patch(name: name, description: description, visibility: visibility, join_policy: joinPolicy, countywide: countywide, logo_path: logoPath)).eq("id", value: id).execute()
     }
 
     public func setCommunityLogo(id: UUID, logoPath: String?) async throws {
@@ -179,7 +184,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     public func publicEvents(tenantID: UUID, from: Date, to: Date) async throws -> [PublicEvent] {
         try await client.from("v_public_events").select()
-            .eq("tenant_id", value: tenantID)
+            .or(Self.ownOrCountywide(tenantID))
             .gte("starts_at", value: from.ISO8601Format()).lt("starts_at", value: to.ISO8601Format())
             .order("starts_at").execute().value
     }

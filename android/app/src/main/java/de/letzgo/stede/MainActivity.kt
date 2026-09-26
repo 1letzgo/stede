@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import de.letzgo.stede.data.Backend
 import de.letzgo.stede.data.Places
 import de.letzgo.stede.data.ContentFiles
+import de.letzgo.stede.data.Tenants
 import de.letzgo.stede.ui.*
 import io.github.jan.supabase.auth.handleDeeplinks
 
@@ -50,13 +51,29 @@ sealed class Screen {
 @Composable
 fun StedeApp() {
     var tab by rememberSaveable { mutableStateOf(AppTab.Start) }
-    val stacks = remember { AppTab.entries.associateWith { mutableStateListOf<Screen>() } }
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         Session.start(scope)
+        Tenants.refresh()
+        // Vor der ersten Gemeindewahl gibt es nichts nachzuladen.
+        if (!Tenants.hasChosen) return@LaunchedEffect
         runCatching { Places.sync() }
         runCatching { ContentFiles.sync() }
     }
+    // Gemeindewechsel: Mandant und Rollen neu laden.
+    val slug = Tenants.slug
+    var sessionSlug by remember { mutableStateOf(slug) }
+    LaunchedEffect(slug) { if (slug != sessionSlug) { sessionSlug = slug; Session.tenantChanged() } }
+
+    // Beim ersten Start fragt die App nach der Gemeinde.
+    if (!Tenants.hasChosen) { TenantOnboardingScreen(); return }
+    // Neue Gemeinde → alle Screens und ihr Zustand frisch.
+    key(slug) { StedeTabs(tab) { tab = it } }
+}
+
+@Composable
+private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
+    val stacks = remember { AppTab.entries.associateWith { mutableStateListOf<Screen>() } }
     val stack: SnapshotStateList<Screen> = stacks.getValue(tab)
     BackHandler(enabled = stack.isNotEmpty()) { stack.removeAt(stack.lastIndex) }
     val open: (Screen) -> Unit = { stack.add(it) }
@@ -67,7 +84,7 @@ fun StedeApp() {
         bottomBar = {
             NavigationBar(containerColor = C.surface) {
                 AppTab.entries.forEach { t ->
-                    NavigationBarItem(selected = tab == t, onClick = { if (tab == t) stacks.getValue(t).clear() else tab = t },
+                    NavigationBarItem(selected = tab == t, onClick = { if (tab == t) stacks.getValue(t).clear() else setTab(t) },
                         icon = { Icon(t.icon, null) }, label = { Text(t.title) },
                         colors = NavigationBarItemDefaults.colors(selectedIconColor = C.ink, selectedTextColor = C.ink, indicatorColor = C.teal.copy(alpha = 0.18f)))
                 }
@@ -85,7 +102,7 @@ fun StedeApp() {
                 Screen.Weather -> WeatherScreen(back)
                 Screen.Train -> TrainScreen(back)
                 Screen.Bus -> BusScreen(back)
-                Screen.Waste -> WasteScreen(back) { stack.clear(); tab = AppTab.Settings }
+                Screen.Waste -> WasteScreen(back) { stack.clear(); setTab(AppTab.Settings) }
                 is Screen.Category -> CategoryScreen(top.name, back)
                 is Screen.CommunityDetail -> CommunityDetailScreen(top.id, back)
             }

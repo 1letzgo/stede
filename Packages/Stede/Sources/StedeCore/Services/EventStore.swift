@@ -9,12 +9,14 @@ public nonisolated enum EventStore: Sendable {
     }
 
     /// Erst das Backend (`city_events`, stündlich vom Server gescrapt), bei Fehler
-    /// der eigene Scraper — so bleibt der Kalender auch ohne Backend nutzbar.
+    /// der eigene Scraper (nur Westerstede) — so bleibt der Kalender auch ohne Backend nutzbar.
     public static func events(on day: Date, force: Bool = false) async throws -> [StedeEvent] {
         try await cache.value(on: day, force: force) {
             do {
                 return try await CityEventClient().events(on: day)
             } catch {
+                // Der eigene Scraper kennt nur die Westersteder Veranstaltungssuche.
+                guard Tenants.usesBundle else { throw error }
                 return try await client.events(on: day)
             }
         }

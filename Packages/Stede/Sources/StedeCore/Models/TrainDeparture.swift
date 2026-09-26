@@ -1,27 +1,28 @@
 import Foundation
 
-/// Fahrtrichtung ab Westerstede-Ocholt — die Strecke Oldenburg–Leer hat nur zwei Enden.
-/// Rohwert als String, damit die Wahl per `@AppStorage` gespeichert werden kann.
+/// Fahrtrichtung ab einem Ammerland-Bahnhof — jede Strecke hat zwei Enden:
+/// Oldenburg und die Gegenrichtung (Leer, ab Rastede Wilhelmshaven).
+/// Rohwert als String, damit die Wahl per `@AppStorage` gespeichert werden kann;
+/// „leer" bleibt der Rohwert der Gegenrichtung, damit alte Einstellungen gelten.
 public nonisolated enum TrainDirection: String, CaseIterable, Hashable, Sendable, Codable {
     case oldenburg
     case leer
 
-    public var title: String {
+    /// „Oldenburg", „Leer" oder „Wilhelmshaven" — je nach Bahnhof.
+    public func shortTitle(at station: TenantConfig.Station) -> String {
+        let names = station.directions
         switch self {
-        case .oldenburg: "Richtung Oldenburg"
-        case .leer: "Richtung Leer"
+        case .oldenburg: return names.first ?? "Oldenburg"
+        case .leer: return names.count > 1 ? names[1] : "Leer"
         }
     }
 
-    public var shortTitle: String {
-        switch self {
-        case .oldenburg: "Oldenburg"
-        case .leer: "Leer"
-        }
+    public func title(at station: TenantConfig.Station) -> String {
+        "Richtung \(shortTitle(at: station))"
     }
 }
 
-/// Eine Abfahrt am Bahnhof Westerstede-Ocholt, wie sie der Abfahrtsmonitor
+/// Eine Abfahrt an einem Ammerland-Bahnhof, wie sie der Abfahrtsmonitor
 /// dbf.finalrewind.org (DB IRIS) liefert.
 public nonisolated struct TrainDeparture: Identifiable, Hashable, Sendable, Codable {
     public let id: String
@@ -103,14 +104,14 @@ public nonisolated struct TrainDepartureDTO: Decodable, Sendable {
 
     /// Nil, wenn die Fahrt nicht zur Strecke passt oder keine Abfahrtszeit hat
     /// (endende Züge stehen mit Ankunft, aber ohne Abfahrt auf der Tafel).
-    public func asDeparture(reference now: Date) -> TrainDeparture? {
+    public func asDeparture(station: String, reference now: Date) -> TrainDeparture? {
         guard let scheduledDeparture, let scheduled = Self.date(from: scheduledDeparture, reference: now) else {
             return nil
         }
         let stops = (route ?? []).map(\.name)
         // Halte nach dem eigenen Bahnhof; fehlt der Bahnhof in der Route, hilft `via`.
         let after: [String]
-        if let index = stops.firstIndex(of: TrainClient.stationName) {
+        if let index = stops.firstIndex(of: station) {
             after = Array(stops[(index + 1)...])
         } else {
             after = via ?? []
@@ -162,14 +163,14 @@ public nonisolated struct TrainDepartureDTO: Decodable, Sendable {
         return today
     }
 
+    /// Alles Richtung Oldenburg (und weiter nach Bremen, Hannover, Osnabrück) ist
+    /// `.oldenburg`, die übrigen Züge fahren in die Gegenrichtung (Leer, Wilhelmshaven).
     private static func direction(stops: [String]) -> TrainDirection? {
         let joined = stops.joined(separator: " ").lowercased()
-        if joined.contains("zwischenahn") || joined.contains("oldenburg") || joined.contains("bremen")
-            || joined.contains("hannover") {
+        if ["oldenburg", "bremen", "hannover", "osnabrück", "osnabrueck"].contains(where: joined.contains) {
             return .oldenburg
         }
-        if joined.contains("augustfehn") || joined.contains("leer") || joined.contains("emden")
-            || joined.contains("norddeich") {
+        if ["leer", "emden", "norddeich", "augustfehn", "wilhelmshaven", "varel", "sande", "jever", "esens"].contains(where: joined.contains) {
             return .leer
         }
         return nil

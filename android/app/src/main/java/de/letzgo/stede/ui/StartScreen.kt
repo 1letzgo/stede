@@ -26,13 +26,14 @@ import de.letzgo.stede.Screen
 fun StartScreen(open: (Screen) -> Unit) {
     val today = Town.today()
     var weather by remember { mutableStateOf(Weather.cached(today)) }
-    var trains by remember { mutableStateOf(Trains.cached()) }
-    val stop = busStop(Store.string("bus.stop", busStops.first().id))
+    val station = remember { Trains.station() }
+    var trains by remember { mutableStateOf(Trains.cached(station)) }
+    val stop = busStop(Store.string("bus.stop", ""))
     var buses by remember { mutableStateOf(Buses.cached(stop, today)) }
     val selection = remember { Waste.selection() }
     var waste by remember { mutableStateOf(selection?.let { Waste.cachedUpcoming(it) }) }
     LaunchedEffect(Unit) { runCatching { Weather.load(today) }.onSuccess { weather = it } }
-    LaunchedEffect(Unit) { runCatching { Trains.load() }.onSuccess { trains = it } }
+    LaunchedEffect(station?.id) { station?.let { s -> runCatching { Trains.load(s) }.onSuccess { trains = it } } }
     LaunchedEffect(stop.id) { runCatching { Buses.load(stop, today) }.onSuccess { buses = it } }
     LaunchedEffect(selection) { selection?.let { sel -> runCatching { Waste.upcoming(sel) }.onSuccess { waste = it } } }
 
@@ -50,7 +51,7 @@ fun StartScreen(open: (Screen) -> Unit) {
                     Row(Modifier.fillMaxSize()) {
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
                             Text("Moin!", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = tint)
-                            Text("$greeting in Westerstede", color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("$greeting in ${Tenants.config.municipality}", color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(temp(current?.temperature), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = C.text)
@@ -67,7 +68,7 @@ fun StartScreen(open: (Screen) -> Unit) {
                     HomeSection.Transit -> item(key = "transit-tiles") {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                             fun next(d: TrainDirection) = trains.filter { it.direction == d && !it.cancelled && it.departure.isAfter(now) }.minByOrNull { it.departure }
-                            fun label(t: Train?, d: TrainDirection) = t?.let { "${it.scheduled.format(Town.hm)}${if (it.delay > 0) " +${it.delay}" else ""} · ${d.short}" } ?: "kein Zug mehr · ${d.short}"
+                            fun label(t: Train?, d: TrainDirection) = t?.let { "${it.scheduled.format(Town.hm)}${if (it.delay > 0) " +${it.delay}" else ""} · ${d.short(station)}" } ?: "kein Zug mehr · ${d.short(station)}"
                             for (t in tiles) {
                                 if (t == HomeTileId.Train) {
                                     val o = next(TrainDirection.Oldenburg); val l = next(TrainDirection.Leer)

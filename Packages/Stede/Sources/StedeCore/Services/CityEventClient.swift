@@ -61,7 +61,7 @@ public nonisolated struct CityEventClient: Sendable {
         )
     }
 
-    /// Die Mandanten-ID ändert sich nie — einmal pro Start nachschlagen.
+    /// Die Mandanten-ID je Gemeinde einmal pro Start nachschlagen.
     private static let tenantLookup = TenantLookup()
 
     private static func tenantID() async throws -> UUID {
@@ -70,12 +70,13 @@ public nonisolated struct CityEventClient: Sendable {
 }
 
 private actor TenantLookup {
-    private var cached: UUID?
+    private var cached: [String: UUID] = [:]
 
     func id() async throws -> UUID {
-        if let cached { return cached }
-        let tenant: Tenant = try await Backend.client.from("tenants").select("id, slug, name, municipality").eq("slug", value: Backend.tenantSlug).single().execute().value
-        cached = tenant.id
+        let slug = Backend.tenantSlug
+        if let id = cached[slug] { return id }
+        let tenant: Tenant = try await Backend.client.from("tenants").select("id, slug, name, municipality").eq("slug", value: slug).single().execute().value
+        cached[slug] = tenant.id
         return tenant.id
     }
 }

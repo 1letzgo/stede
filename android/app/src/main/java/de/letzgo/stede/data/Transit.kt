@@ -16,7 +16,25 @@ import java.time.format.DateTimeFormatter
 
 // MARK: Bahn — dbf.finalrewind.org (DB IRIS), wie TrainClient in iOS
 
-enum class TrainDirection(val title: String, val short: String) { Oldenburg("Richtung Oldenburg", "Oldenburg"), Leer("Richtung Leer", "Leer") }
+/**
+ * Fahrtrichtung ab einem Ammerland-Bahnhof — jede Strecke hat zwei Enden: Oldenburg und die Gegenrichtung
+ * (Leer, ab Rastede Wilhelmshaven). Gespeichert als „oldenburg“/„leer“ wie in iOS; die Namen kommen vom Bahnhof.
+ */
+enum class TrainDirection {
+    Oldenburg, Leer;
+
+    /** „Oldenburg“, „Leer“ oder „Wilhelmshaven“ — je nach Bahnhof. */
+    fun short(station: TenantStation?): String = when (this) {
+        Oldenburg -> station?.directions?.getOrNull(0) ?: "Oldenburg"
+        Leer -> station?.directions?.getOrNull(1) ?: "Leer"
+    }
+    fun title(station: TenantStation?) = "Richtung ${short(station)}"
+
+    companion object {
+        /** Gespeicherte Richtung (`train.direction`), sonst Oldenburg. */
+        fun stored() = runCatching { valueOf(Store.string("train.direction", "oldenburg").replaceFirstChar { it.uppercase() }) }.getOrDefault(Oldenburg)
+    }
+}
 
 data class Train(
     val id: String, val scheduled: ZonedDateTime, val delay: Int, val platform: String?, val scheduledPlatform: String?,
@@ -34,15 +52,20 @@ data class Train(
 @Serializable private data class DbfBoard(val departures: List<DbfDeparture> = emptyList())
 
 object Trains {
-    private const val STATION = "Westerstede-Ocholt"
     private var board: List<Train> = emptyList()
     private var fetchedAt = 0L
+    private var stationId: String? = null
 
-    fun cached(): List<Train> = board
+    /** Gewählter Bahnhof (`train.station`), sonst der Standardbahnhof der Gemeinde. */
+    fun station(): TenantStation? = Tenants.config.station(Store.string("train.station", ""))
 
-    suspend fun load(force: Boolean = false): List<Train> {
-        if (!force && System.currentTimeMillis() - fetchedAt < 60_000 && board.isNotEmpty()) return board
-        val raw = Http.json.decodeFromString<DbfBoard>(Http.text("https://dbf.finalrewind.org/$STATION.json?version=3"))
+    /** Zuletzt geladene Tafel dieses Bahnhofs, auch wenn sie schon älter ist. */
+    fun cached(station: TenantStation?): List<Train> = if (station != null && station.id == stationId) board else emptyList()
+
+    suspend fun load(station: TenantStation, force: Boolean = false): List<Train> {
+        if (!force && station.id == stationId && System.currentTimeMillis() - fetchedAt < 60_000 && board.isNotEmpty()) return board
+        val name = java.net.URLEncoder.encode(station.dbf, "UTF-8").replace("+", "%20")
+        val raw = Http.json.decodeFromString<DbfBoard>(Http.text("https://dbf.finalrewind.org/$name.json?version=3"))
         val now = Town.now()
         val list = raw.departures.mapNotNull { d ->
             val time = d.scheduledDeparture ?: return@mapNotNull null
@@ -50,11 +73,12 @@ object Trains {
             var scheduled = now.toLocalDate().atTime(parts[0].toInt(), parts[1].toInt()).atZone(Town.zone)
             if (scheduled.isBefore(now.minusHours(6))) scheduled = scheduled.plusDays(1)
             val stops = d.route.map { it.name }
-            val after = stops.indexOf(STATION).let { if (it >= 0) stops.drop(it + 1) else d.via }
+            val after = stops.indexOf(station.name).let { if (it >= 0) stops.drop(it + 1) else d.via }
             val joined = (after + d.destination).joinToString(" ").lowercase()
+            // Alles Richtung Oldenburg (und weiter nach Bremen, Hannover, Osnabrück) ist Oldenburg, der Rest die Gegenrichtung.
             val direction = when {
-                listOf("zwischenahn", "oldenburg", "bremen", "hannover").any { it in joined } -> TrainDirection.Oldenburg
-                listOf("augustfehn", "leer", "emden", "norddeich").any { it in joined } -> TrainDirection.Leer
+                listOf("oldenburg", "bremen", "hannover", "osnabrück", "osnabrueck").any { it in joined } -> TrainDirection.Oldenburg
+                listOf("leer", "emden", "norddeich", "augustfehn", "wilhelmshaven", "varel", "sande", "jever", "esens").any { it in joined } -> TrainDirection.Leer
                 else -> return@mapNotNull null
             }
             val cancelled = (d.isCancelled as? JsonPrimitive)?.let { it.booleanOrNull ?: (it.intOrNull == 1) } ?: false
@@ -68,6 +92,7 @@ object Trains {
             val re = g.firstOrNull { it.line.startsWith("RE") }; val ic = g.firstOrNull { !it.line.startsWith("RE") }
             if (g.size > 1 && re != null && ic != null) re.copy(line = "${re.line} · ${ic.line}", delay = maxOf(re.delay, ic.delay), notes = re.notes.ifEmpty { ic.notes }) else g.first()
         }.sortedBy { it.scheduled }
+        stationId = station.id
         fetchedAt = System.currentTimeMillis()
         return board
     }
@@ -75,19 +100,25 @@ object Trains {
 
 // MARK: Bus — VBN-Fahrplaner (HAFAS stboard.exe, vs_java3), wie BusClient in iOS
 
-data class BusStop(val id: String, val name: String) { val short get() = name.replace("Westerstede-", "").replace("Westerstede ", "") }
-
-/** Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst die Liste unten. */
-val busStops: List<BusStop> by lazy {
-    ContentFiles.text("bus-stops")?.let { text ->
-        runCatching {
-            Http.json.parseToJsonElement(text).jsonObject["stops"]!!.jsonArray.map {
-                val o = it.jsonObject
-                BusStop(o["id"]!!.jsonPrimitive.content, o["name"]!!.jsonPrimitive.content)
-            }
-        }.getOrNull()
-    }?.takeIf { it.isNotEmpty() } ?: bundledBusStops
+/** Haltestelle; der Kurzname lässt den Gemeindenamen davor weg („ZOB“ statt „Westerstede ZOB“). */
+data class BusStop(val id: String, val name: String) {
+    val short: String get() = Tenants.config.municipality.let { town -> name.replace("$town-", "").replace("$town ", "") }
 }
+
+private var loadedStops: Pair<String, List<BusStop>>? = null
+
+/** Haltestellen der Gemeinde: Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst (nur Westerstede) die Liste unten. */
+val busStops: List<BusStop>
+    get() = loadedStops?.takeIf { it.first == Tenants.slug }?.second ?: (
+        ContentFiles.text("bus-stops")?.let { text ->
+            runCatching {
+                Http.json.parseToJsonElement(text).jsonObject["stops"]!!.jsonArray.map {
+                    val o = it.jsonObject
+                    BusStop(o["id"]!!.jsonPrimitive.content, o["name"]!!.jsonPrimitive.content)
+                }
+            }.getOrNull()
+        }?.takeIf { it.isNotEmpty() } ?: if (Tenants.usesBundle) bundledBusStops else emptyList()
+        ).also { loadedStops = Tenants.slug to it }
 
 private val bundledBusStops = listOf(
     BusStop("009098661", "Westerstede ZOB"), BusStop("009098621", "Westerstede Altenheim"), BusStop("009098630", "Westerstede Am Esch"),
@@ -99,7 +130,11 @@ private val bundledBusStops = listOf(
     BusStop("009098655", "Westerstede Süderstraße/Virchowstraße"), BusStop("009098657", "Westerstede Telekom"), BusStop("009098666", "Westerstede-Lindern Rosenkrug"),
     BusStop("009098668", "Westerstede-Ocholt Bahnhof"),
 )
-fun busStop(id: String) = busStops.firstOrNull { it.id == id } ?: busStops.first()
+/** Die gewählte Haltestelle, sonst die Standardhaltestelle der Gemeinde. */
+fun busStop(id: String): BusStop {
+    val stops = busStops; val fallback = Tenants.config.busDefaultStop
+    return stops.firstOrNull { it.id == id } ?: stops.firstOrNull { it.id == fallback } ?: stops.firstOrNull() ?: BusStop(fallback, Tenants.config.municipality)
+}
 
 data class Bus(val id: String, val scheduled: ZonedDateTime, val delay: Int?, val line: String, val destination: String, val platform: String?, val cancelled: Boolean) {
     val departure: ZonedDateTime get() = scheduled.plusMinutes((delay ?: 0).toLong())
@@ -139,7 +174,9 @@ object Buses {
         val name = a["hafasname"] ?: return@mapNotNull null
         if (a["prod"]?.endsWith("#Bus") == false && !name.startsWith("Bus")) return@mapNotNull null
         val scheduled = runCatching { LocalDateTime.parse("$date $time", dateFmt).atZone(Town.zone) }.getOrNull() ?: return@mapNotNull null
-        var dest = unescape(a["dir"] ?: a["targetLoc"] ?: ""); if (dest.startsWith("Westerstede ")) dest = dest.removePrefix("Westerstede ")
+        // Ziele in der Gemeinde ohne den Ortsnamen davor — Platz ist knapp.
+        val town = Tenants.config.municipality + " "
+        var dest = unescape(a["dir"] ?: a["targetLoc"] ?: ""); if (dest.startsWith(town)) dest = dest.removePrefix(town)
         val line = name.removePrefix("Bus ")
         val delay = a["delay"]?.toIntOrNull()
         Bus("$line-$date-$time-$dest", scheduled, delay, line, dest, a["platform"]?.ifBlank { null }, (a["delay"] ?: "").lowercase().contains("cancel"))

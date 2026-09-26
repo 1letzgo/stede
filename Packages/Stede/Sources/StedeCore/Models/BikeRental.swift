@@ -75,16 +75,18 @@ public nonisolated struct BikeRentalDirectory: Sendable, Decodable {
 }
 
 public nonisolated enum BikeRentalStore {
-    public static let directory: BikeRentalDirectory = {
+    public static var directory: BikeRentalDirectory { store.value }
+
+    private static let store = TenantScoped { () -> BikeRentalDirectory in
         if let synced = ContentSync.bikeDirectory(), !synced.providers.isEmpty { return synced }
         guard
+            Tenants.usesBundle,
             let url = Bundle.module.url(forResource: "fahrradverleih", withExtension: "json"),
             let data = try? Data(contentsOf: url),
             let directory = try? JSONDecoder().decode(BikeRentalDirectory.self, from: data)
         else {
-            assertionFailure("fahrradverleih.json fehlt im Bundle oder ist ungültig")
             return BikeRentalDirectory(source: "", fetchedAt: "", providers: [])
         }
         return directory
-    }()
+    }
 }

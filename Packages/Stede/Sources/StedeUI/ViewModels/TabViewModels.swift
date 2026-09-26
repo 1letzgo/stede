@@ -7,14 +7,21 @@ final class TrainViewModel {
     var state: LoadState = .idle
 
     private var loadedDay: Date?
+    private var loadedStation: String?
 
     func departures(toward direction: TrainDirection) -> [TrainDeparture] {
         departures.filter { $0.direction == direction }
     }
 
     /// Die Tafel gibt es nur für heute — andere Tage bleiben leer.
-    func load(day: Date, force: Bool = false) async {
+    func load(station: TenantConfig.Station, day: Date, force: Bool = false) async {
         let start = IslandTime.startOfDay(day)
+        if loadedStation != station.id {
+            departures = []
+            loadedDay = nil
+            state = .idle
+        }
+        loadedStation = station.id
         guard IslandTime.isSameDay(day, Date()) else {
             departures = []
             loadedDay = start
@@ -26,7 +33,7 @@ final class TrainViewModel {
         }
 
         let hadCache: Bool
-        if let cached = await TrainStore.shared.cached() {
+        if let cached = await TrainStore.shared.cached(at: station) {
             departures = cached
             loadedDay = start
             state = cached.isEmpty ? .empty : .loaded
@@ -39,7 +46,7 @@ final class TrainViewModel {
         }
 
         do {
-            departures = try await TrainStore.shared.departures(force: force)
+            departures = try await TrainStore.shared.departures(at: station, force: force)
             loadedDay = start
             state = departures.isEmpty ? .empty : .loaded
         } catch {

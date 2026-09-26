@@ -14,11 +14,10 @@ import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.json.Json
 
-/** Gemeinsames Supabase-Projekt „lokalz“ — dieselben Tabellen wie die iOS-App. */
+/** Gemeinsames Supabase-Projekt „lokalz“ — dieselben Tabellen wie die iOS-App. Welche Ammerland-Gemeinde die App zeigt, wählt der Nutzer ([Tenants]). */
 object Backend {
     const val URL = "https://fkzjlecsetbnumtqrnem.supabase.co"
     const val KEY = "sb_publishable_5ptJm36r8qnhKrGoGOWd0A_5uOpaBmH"
-    const val TENANT = "stede"
 
     val supabase = createSupabaseClient(URL, KEY) {
         install(Auth) { scheme = "stede"; host = "auth-callback" }

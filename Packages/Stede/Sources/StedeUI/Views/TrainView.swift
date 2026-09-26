@@ -4,23 +4,28 @@ import StedeCore
 struct TrainView: View {
     @Binding var direction: TrainDirection
     @Environment(SelectedDateStore.self) private var dateStore
+    @AppStorage("train.station") private var stationID = ""
     @State private var model = TrainViewModel()
+
+    private var station: TenantConfig.Station? { Tenants.current.station(id: stationID) }
 
     var body: some View {
         TabScreen(title: "Bahn") {
-            await model.load(day: dateStore.selectedDate, force: true)
+            if let station { await model.load(station: station, day: dateStore.selectedDate, force: true) }
         } content: {
             VStack(spacing: 0) {
-                DirectionSwitcher(selection: $direction)
-                    .padding(.top)
-                    .padding(.bottom, StedeTheme.cardSpacing)
+                if let station {
+                    DirectionSwitcher(selection: $direction, station: station)
+                        .padding(.top)
+                        .padding(.bottom, StedeTheme.cardSpacing)
+                }
 
                 LoadStateView(state: model.state, emptyMessage: emptyMessage) {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                             if departures.isEmpty {
                                 InfoCard {
-                                    Text("Keine Züge \(direction.title)")
+                                    Text("Keine Züge \(station.map(direction.title(at:)) ?? "")")
                                         .foregroundStyle(.secondary)
                                 }
                             } else {
@@ -32,16 +37,16 @@ struct TrainView: View {
                                     )
                                 }
                             }
-                            SourceFooter(text: "Bahnhof Westerstede-Ocholt · dbf.finalrewind.org (DB IRIS), nächste rund zwei Stunden")
+                            SourceFooter(text: "Bahnhof \(station?.name ?? "") · dbf.finalrewind.org (DB IRIS), nächste rund zwei Stunden")
                         }
                         .padding([.horizontal, .bottom])
                     }
-                    .id("trains-\(IslandTime.isoDate(dateStore.selectedDate))-\(direction.shortTitle)")
+                    .id("trains-\(IslandTime.isoDate(dateStore.selectedDate))-\(stationID)-\(direction.rawValue)")
                 }
             }
         }
-        .task(id: dateStore.selectedDate) {
-            await model.load(day: dateStore.selectedDate)
+        .task(id: "\(IslandTime.isoDate(dateStore.selectedDate))-\(stationID)") {
+            if let station { await model.load(station: station, day: dateStore.selectedDate) }
         }
     }
 
@@ -63,6 +68,7 @@ struct TrainView: View {
 
 private struct DirectionSwitcher: View {
     @Binding var selection: TrainDirection
+    let station: TenantConfig.Station
 
     var body: some View {
         // Zwei Richtungen, zwei gleich breite Hälften — wie die Tageszeile nutzt
@@ -72,7 +78,7 @@ private struct DirectionSwitcher: View {
                 Button {
                     selection = direction
                 } label: {
-                    Text(direction.title)
+                    Text(direction.title(at: station))
                         .frame(maxWidth: .infinity)
                         .stedeSelectionChip(isSelected: selection == direction)
                 }

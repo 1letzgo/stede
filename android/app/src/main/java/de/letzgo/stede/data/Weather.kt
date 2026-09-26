@@ -40,11 +40,14 @@ import java.time.format.DateTimeFormatter
 }
 
 object Weather {
-    fun cached(day: LocalDate): WeatherDay? = Store.read("weather", "$day.json")?.let { runCatching { Http.json.decodeFromString<WeatherDay>(it) }.getOrNull() }
+    /** Tagescache je Gemeinde — ein Wechsel zeigt kein fremdes Wetter. */
+    fun cached(day: LocalDate): WeatherDay? = Store.read(Tenants.folder("weather"), "$day.json")?.let { runCatching { Http.json.decodeFromString<WeatherDay>(it) }.getOrNull() }
     suspend fun load(day: LocalDate): WeatherDay {
-        val r = Http.json.decodeFromString<WeatherResponse>(Http.text("https://api.brightsky.dev/weather?lat=53.256&lon=7.927&date=$day&tz=Europe/Berlin"))
+        val tenant = Tenants.config
+        val lat = String.format(java.util.Locale.US, "%.3f", tenant.latitude); val lon = String.format(java.util.Locale.US, "%.3f", tenant.longitude)
+        val r = Http.json.decodeFromString<WeatherResponse>(Http.text("https://api.brightsky.dev/weather?lat=$lat&lon=$lon&date=$day&tz=Europe/Berlin"))
         val d = WeatherDay(r.weather.filter { Town.parse(it.timestamp)?.toLocalDate() == day }, r.sources.firstOrNull()?.stationName)
-        Store.write("weather", "$day.json", Http.json.encodeToString(WeatherDay.serializer(), d))
+        Store.write(Tenants.folder("weather"), "$day.json", Http.json.encodeToString(WeatherDay.serializer(), d))
         return d
     }
 }

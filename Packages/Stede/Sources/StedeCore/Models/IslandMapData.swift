@@ -1,6 +1,6 @@
 import Foundation
 
-/// Westerstede als eigene Karte aus OpenStreetMap-Daten (`inselkarte.json`):
+/// Die Gemeinde als eigene Karte aus OpenStreetMap-Daten (`inselkarte.json`):
 /// Siedlung, Wiesen, Wald, Wasser, Gebäude, Straßen, Wege und Bahn — offline, ohne
 /// Apple-Kartenkacheln. Einmalig per Overpass geladen und vereinfacht.
 public nonisolated struct IslandMapData: Decodable, Sendable {
@@ -10,16 +10,19 @@ public nonisolated struct IslandMapData: Decodable, Sendable {
     public let buildings: [[[Double]]]
     public let lines: [String: [[[Double]]]]
 
-    public static let shared: IslandMapData? = {
+    public static var shared: IslandMapData? { store.value }
+
+    private static let store = TenantScoped { () -> IslandMapData? in
         // Stand aus dem Backend (`content_files`), sonst das Bundle.
         if let data = ContentFiles.data("inselkarte"), let map = try? JSONDecoder().decode(IslandMapData.self, from: data) {
             return map
         }
         guard
+            Tenants.usesBundle,
             let url = Bundle.module.url(forResource: "inselkarte", withExtension: "json"),
             let data = try? Data(contentsOf: url)
         else { return nil }
         return try? JSONDecoder().decode(IslandMapData.self, from: data)
-    }()
+    }
 }
 

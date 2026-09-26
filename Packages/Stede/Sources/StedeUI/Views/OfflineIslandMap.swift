@@ -21,12 +21,12 @@ struct OfflineIslandMap: UIViewRepresentable {
         map.showsCompass = false
         map.isPitchEnabled = false
         map.isRotateEnabled = false
-        // Ganzes Stadtgebiet samt Hobbie, dazu Bad Zwischenahn mit Zwischenahner Meer und
-        // Park der Gärten (Rahmen `land`: 53,15–53,35 N, 7,80–8,10 E); weiter hinaus keine Daten.
+        // Rahmen der Gemeinde (`bbox`, wie `land` der Kartendaten); weiter hinaus keine Daten.
+        let box = Tenants.current.bbox
         map.cameraBoundary = MKMapView.CameraBoundary(
             coordinateRegion: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 53.25, longitude: 7.95),
-                span: MKCoordinateSpan(latitudeDelta: 0.20, longitudeDelta: 0.30)
+                center: CLLocationCoordinate2D(latitude: (box[0] + box[2]) / 2, longitude: (box[1] + box[3]) / 2),
+                span: MKCoordinateSpan(latitudeDelta: box[2] - box[0], longitudeDelta: box[3] - box[1])
             )
         )
         map.cameraZoomRange = MKMapView.CameraZoomRange(minCenterCoordinateDistance: 150, maxCenterCoordinateDistance: 45000)
@@ -187,11 +187,12 @@ nonisolated enum LayerStyle: Sendable {
     case building
 }
 
-/// Fertige Kartenebenen, einmal pro App-Start aus `IslandMapData` gebaut und von allen
+/// Fertige Kartenebenen, einmal je Gemeinde aus `IslandMapData` gebaut und von allen
 /// Karten geteilt (Overlays sind reine Modellobjekte). `warmUp()` baut sie beim Start
 /// im Hintergrund vor, damit die erste Karte nicht wartet.
 nonisolated final class OfflineMapLayers: @unchecked Sendable {
-    static let shared = OfflineMapLayers()
+    static var shared: OfflineMapLayers { store.value }
+    private static let store = TenantScoped { OfflineMapLayers() }
 
     /// Grundebenen in Zeichenreihenfolge (ohne den deckenden Untergrund, den jede Karte selbst legt).
     let base: [(MKOverlay, LayerStyle)]

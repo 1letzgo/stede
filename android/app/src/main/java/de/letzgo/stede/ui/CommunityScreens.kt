@@ -57,7 +57,7 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
         runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
     }
-    val town = Session.tenant?.municipality ?: "Westerstede"
+    val town = Session.tenant?.municipality ?: Tenants.config.municipality
     Scaffold(topBar = {
         StedeTopBar("Gruppen", actions = {
             if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
@@ -142,6 +142,7 @@ private fun CommunityRow(c: Community, m: Member?, onClick: () -> Unit) {
 private fun CommunityPills(c: Community, m: Member?, showsPolicy: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         c.memberCount?.let { Pill(if (it == 1) "1 Mitglied" else "$it Mitglieder", C.teal) }
+        if (c.countywide) Pill("Kreisweit", C.heather)
         if (c.status == "pending") Pill("wartet auf Freigabe", C.amber)
         when {
             m?.status == "pending" -> Pill("Anfrage offen", C.amber)
@@ -381,6 +382,7 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var listed by remember { mutableStateOf((existing?.visibility ?: "listed") == "listed") }
     var open by remember { mutableStateOf((existing?.joinPolicy ?: "approval") == "open") }
+    var countywide by remember { mutableStateOf(existing?.countywide ?: false) }
     var logoPath by remember { mutableStateOf(existing?.logoPath) }
     var newLogo by remember { mutableStateOf<ByteArray?>(null) }
     var saving by remember { mutableStateOf(false) }
@@ -393,11 +395,11 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
             val tenant = Tenants.current()
             val visibility = if (listed) "listed" else "unlisted"; val policy = if (open) "open" else "approval"
             if (existing == null) {
-                val created = CommunityApi.createCommunity(tenant.id, name.trim(), description.trim(), visibility, policy, user)
-                newLogo?.let { CommunityApi.updateCommunity(created.id, created.name, created.description, visibility, policy, CommunityApi.uploadPhoto("community-logos", created.id, it)) }
+                val created = CommunityApi.createCommunity(tenant.id, name.trim(), description.trim(), visibility, policy, countywide, user)
+                newLogo?.let { CommunityApi.updateCommunity(created.id, created.name, created.description, visibility, policy, countywide, CommunityApi.uploadPhoto("community-logos", created.id, it)) }
             } else {
                 val path = newLogo?.let { CommunityApi.uploadPhoto("community-logos", existing.id, it) } ?: logoPath
-                CommunityApi.updateCommunity(existing.id, name.trim(), description.trim(), visibility, policy, path)
+                CommunityApi.updateCommunity(existing.id, name.trim(), description.trim(), visibility, policy, countywide, path)
             }
             Session.refresh()
         }.onSuccess { Changes.bump(); onDismiss() }.onFailure { error = it.message }
@@ -429,6 +431,15 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Offen beitreten", color = C.text); Text("Sonst bestätigt ein Admin neue Mitglieder", color = C.secondary, fontSize = 13.sp) }
                     Switch(open, { open = it })
+                }
+            }
+            StedeCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Kreisweit", color = C.text)
+                        Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen Ammerland-Gemeinden, nicht nur in ${Tenants.config.municipality}.", color = C.secondary, fontSize = 13.sp)
+                    }
+                    Switch(countywide, { countywide = it })
                 }
             }
             if (existing == null) Text("Neue Gruppen gibt der App-Admin frei, bevor sie sichtbar werden.", color = C.secondary, fontSize = 13.sp)

@@ -17,7 +17,7 @@ import java.time.LocalDate
 
 /** Stadt-Termine aus `city_events` für einen Tagesbereich; der Startbereich liegt offline im Dateicache. */
 object CityEvents {
-    fun cached(name: String): List<CityEvent>? = Store.read("events", "$name.json")?.let { runCatching { Http.json.decodeFromString(ListSerializer(CityEvent.serializer()), it) }.getOrNull() }
+    fun cached(name: String): List<CityEvent>? = Store.read(Tenants.folder("events"), "$name.json")?.let { runCatching { Http.json.decodeFromString(ListSerializer(CityEvent.serializer()), it) }.getOrNull() }
 
     /** `from` bis einschließlich `through`; mit `cacheAs` wird das Ergebnis für den Offline-Start gemerkt. */
     suspend fun range(from: LocalDate, through: LocalDate, cacheAs: String? = null): List<CityEvent> {
@@ -27,7 +27,7 @@ object CityEvents {
             order("starts_at", Order.ASCENDING)
             limit(2000)
         }.decodeList<CityEvent>()
-        cacheAs?.let { Store.write("events", "$it.json", Http.json.encodeToString(ListSerializer(CityEvent.serializer()), rows)) }
+        cacheAs?.let { Store.write(Tenants.folder("events"), "$it.json", Http.json.encodeToString(ListSerializer(CityEvent.serializer()), rows)) }
         return rows
     }
 }

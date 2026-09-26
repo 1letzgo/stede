@@ -11,6 +11,9 @@ struct stedeApp: App {
                 .tint(StedeTheme.iconBlue)
                 .task {
                     CacheMaintenance.purgeExpired()
+                    Task { await Tenants.refresh() }
+                    // Vor der ersten Gemeindewahl gibt es nichts nachzuladen.
+                    guard Tenants.hasChosen else { return }
                     Task { await ContentSync.shared.syncAll() }
                     Task { await ContentFiles.shared.sync() }
                     Task { await EventStore.prefetch(around: Date()) }

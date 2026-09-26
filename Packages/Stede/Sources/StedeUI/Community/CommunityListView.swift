@@ -197,6 +197,7 @@ struct CommunityCard: View {
                 }
                 HStack(spacing: 6) {
                     if let count = community.memberCount { StedeTagPill(text: count == 1 ? "1 Mitglied" : "\(count) Mitglieder", color: StedeTheme.seaTeal) }
+                    if community.isCountywide { StedeTagPill(text: "Kreisweit", color: StedeTheme.heather) }
                     if community.status == .pending { StedeTagPill(text: "wartet auf Freigabe", color: StedeTheme.sunAmber) }
                     if let membership {
                         switch membership.status {
@@ -224,6 +225,7 @@ struct CommunityEditorView: View {
     @State private var description = ""
     @State private var visibility: CommunityVisibility = .listed
     @State private var joinPolicy: CommunityJoinPolicy = .approval
+    @State private var countywide = false
     @State private var error: String?
     @State private var saving = false
     @State private var logoItem: PhotosPickerItem?
@@ -266,6 +268,11 @@ struct CommunityEditorView: View {
                         Text("Admins bestätigen").tag(CommunityJoinPolicy.approval)
                     }
                 }
+                Section {
+                    Toggle("Kreisweit", isOn: $countywide)
+                } footer: {
+                    Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen Ammerland-Gemeinden, nicht nur in \(Tenants.current.municipality).")
+                }
                 if existing == nil {
                     Section { Text("Nach dem Antrag gibt die Gemeinde-App die Gruppe frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
                 }
@@ -292,6 +299,7 @@ struct CommunityEditorView: View {
                 if let existing {
                     name = existing.name; description = existing.description
                     visibility = existing.visibility; joinPolicy = existing.joinPolicy
+                    countywide = existing.isCountywide
                 }
             }
         }
@@ -306,11 +314,11 @@ struct CommunityEditorView: View {
             if let existing {
                 var logoPath: String? = removeLogo ? nil : existing.logoPath
                 if let logoData { logoPath = try await client.uploadCommunityLogo(logoData, communityID: existing.id) }
-                try await client.updateCommunity(id: existing.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, logoPath: logoPath)
+                try await client.updateCommunity(id: existing.id, name: name, description: description, visibility: visibility, joinPolicy: joinPolicy, countywide: countywide, logoPath: logoPath)
                 if let old = existing.logoPath, old != logoPath { try? await client.deleteCommunityLogo(path: old) }
                 onSave(nil)
             } else {
-                var created = try await client.createCommunity(tenantID: tenant.id, name: name.trimmingCharacters(in: .whitespaces), description: description, visibility: visibility, joinPolicy: joinPolicy, userID: userID)
+                var created = try await client.createCommunity(tenantID: tenant.id, name: name.trimmingCharacters(in: .whitespaces), description: description, visibility: visibility, joinPolicy: joinPolicy, countywide: countywide, userID: userID)
                 if let logoData {
                     let path = try await client.uploadCommunityLogo(logoData, communityID: created.id)
                     try await client.setCommunityLogo(id: created.id, logoPath: path)

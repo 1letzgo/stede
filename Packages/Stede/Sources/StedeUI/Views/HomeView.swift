@@ -13,7 +13,8 @@ enum HomeDestination: Hashable {
 struct HomeView: View {
     @Binding var direction: TrainDirection
     /// Gewählte Bushaltestelle — liegt in den UserDefaults, `BusView` liest denselben Schlüssel.
-    @AppStorage("bus.stop") private var busStopID: String = BusStop.zob.id
+    @AppStorage("bus.stop") private var busStopID: String = ""
+    @AppStorage("train.station") private var trainStationID = ""
     @Binding var path: [HomeDestination]
     @State private var weather = WeatherViewModel()
     @State private var trains = TrainViewModel()
@@ -75,6 +76,9 @@ struct HomeView: View {
         }
         .task(id: busStopID) {
             await buses.load(stop: busStop, day: IslandTime.startOfDay(Date()))
+        }
+        .task(id: trainStationID) {
+            await loadTrains(day: IslandTime.startOfDay(Date()), force: false)
         }
         .task(id: wasteSelection?.cacheKey ?? "") {
             await waste.load(selection: wasteSelection)
@@ -257,10 +261,13 @@ struct HomeView: View {
 
     /// Planzeit plus Verspätung („22:06 +8"), nicht die errechnete Ist-Zeit —
     /// so erkennt man auf einen Blick, ob der Zug pünktlich ist.
+    private var trainStation: TenantConfig.Station? { Tenants.current.station(id: trainStationID) }
+
     private func departure(_ train: TrainDeparture?, direction: TrainDirection) -> String {
-        guard let train else { return "kein Zug mehr · \(direction.shortTitle)" }
+        let name = trainStation.map(direction.shortTitle(at:)) ?? ""
+        guard let train else { return "kein Zug mehr · \(name)" }
         let delay = train.delayMinutes > 0 ? " +\(train.delayMinutes)" : ""
-        return "\(train.scheduled.formatted(timeStyle))\(delay) · \(direction.shortTitle)"
+        return "\(train.scheduled.formatted(timeStyle))\(delay) · \(name)"
     }
 
     private func temperature(_ value: Double?) -> String {
@@ -313,10 +320,15 @@ struct HomeView: View {
             .min { $0.departure < $1.departure }
     }
 
+    private func loadTrains(day: Date, force: Bool) async {
+        guard let trainStation else { return }
+        await trains.load(station: trainStation, day: day, force: force)
+    }
+
     private func loadWeather(force: Bool) async {
         let today = IslandTime.startOfDay(Date())
         async let weatherLoad: Void = weather.load(day: today, force: force)
-        async let trainLoad: Void = trains.load(day: today, force: force)
+        async let trainLoad: Void = loadTrains(day: today, force: force)
         async let busLoad: Void = buses.load(stop: busStop, day: today, force: force)
         _ = await (weatherLoad, trainLoad, busLoad)
     }
@@ -339,11 +351,12 @@ private struct HomeHeader: View {
                 Text("Moin!")
                     .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(daypart.color)
+                // „Guten Morgen in Bad Zwischenahn“ braucht zwei Zeilen.
                 Text(daypart.subtitle)
                     .font(.headline.weight(.regular))
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
             }
 
             Spacer(minLength: 8)
@@ -400,22 +413,22 @@ private struct Daypart {
     init(hour: Int) {
         switch hour {
         case 5 ..< 10:
-            subtitle = "Guten Morgen in Westerstede"
+            subtitle = "Guten Morgen in \(Tenants.current.municipality)"
             symbol = "sunrise.fill"
             color = StedeTheme.sunAmber
             secondColor = StedeTheme.harborRed
         case 10 ..< 17:
-            subtitle = "Schönen Tag in Westerstede"
+            subtitle = "Schönen Tag in \(Tenants.current.municipality)"
             symbol = "sun.max.fill"
             color = StedeTheme.sunAmber
             secondColor = StedeTheme.duneGreen
         case 17 ..< 22:
-            subtitle = "Schönen Abend in Westerstede"
+            subtitle = "Schönen Abend in \(Tenants.current.municipality)"
             symbol = "sunset.fill"
             color = StedeTheme.harborRed
             secondColor = StedeTheme.deep
         default:
-            subtitle = "Gute Nacht in Westerstede"
+            subtitle = "Gute Nacht in \(Tenants.current.municipality)"
             symbol = "moon.stars.fill"
             color = StedeTheme.seaTeal
             secondColor = StedeTheme.deep

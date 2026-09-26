@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.Store
 import de.letzgo.stede.data.ContentFiles
+import de.letzgo.stede.data.Tenants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -44,7 +45,10 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 
-/** Offline-Stadtkarte aus `inselkarte.json` (OpenStreetMap) — wie OfflineIslandMap in iOS. */
+/**
+ * Offline-Karte der Gemeinde aus `inselkarte.json` (OpenStreetMap) — wie OfflineIslandMap in iOS.
+ * Ebenen je Gemeinde einmal gebaut; ohne Kartendaten bleibt nur der Untergrund, Pins erscheinen trotzdem.
+ */
 object MapData {
     private const val LAT0 = 53.26; private const val LON0 = 7.935
     private val kx = 111_320.0 * cos(Math.toRadians(LAT0)); private const val KY = 111_320.0
@@ -52,10 +56,24 @@ object MapData {
     fun y(lat: Double) = (-(lat - LAT0) * KY).toFloat()
 
     class Layers(val polygons: Map<String, Path>, val lines: Map<String, Path>, val buildings: Path, val land: Path, val bounds: FloatArray)
-    @Volatile private var loaded: Layers? = null
+    @Volatile private var loaded: Pair<String, Layers>? = null
 
-    suspend fun load(): Layers = loaded ?: withContext(Dispatchers.Default) {
-        val root = Json.parseToJsonElement(ContentFiles.text("inselkarte") ?: Store.asset("inselkarte.json")).jsonObject
+    suspend fun load(): Layers {
+        val slug = Tenants.slug
+        loaded?.takeIf { it.first == slug }?.let { return it.second }
+        return withContext(Dispatchers.Default) { build() }.also { loaded = slug to it }
+    }
+
+    /** Kartenrahmen aus der `bbox` der Gemeinde (wie die Kamera-Grenze in iOS). */
+    private fun bounds(): FloatArray {
+        val b = Tenants.config.bbox
+        return floatArrayOf(x(b[1]), y(b[2]), x(b[3]), y(b[0]))
+    }
+
+    private fun build(): Layers {
+        val text = ContentFiles.text("inselkarte") ?: if (Tenants.usesBundle) Store.asset("inselkarte.json") else null
+        val root = text?.let { runCatching { Json.parseToJsonElement(it).jsonObject }.getOrNull() }
+            ?: bounds().let { b -> return Layers(emptyMap(), emptyMap(), Path(), Path().apply { addRect(b[0], b[1], b[2], b[3], Path.Direction.CW) }, b) }
         fun rings(arr: JsonArray?, close: Boolean): Path {
             val path = Path()
             arr?.forEach { ring ->
@@ -67,14 +85,11 @@ object MapData {
             }
             return path
         }
-        val polys = root["polygons"]!!.jsonObject.mapValues { rings(it.value.jsonArray, true) }
-        val lines = root["lines"]!!.jsonObject.mapValues { rings(it.value.jsonArray, false) }
-        val land = root["land"]!!.jsonArray
-        val lons = land.flatMap { r -> r.jsonArray.map { it.jsonArray[0].jsonPrimitive.double } }
-        val lats = land.flatMap { r -> r.jsonArray.map { it.jsonArray[1].jsonPrimitive.double } }
+        val polys = root["polygons"]?.jsonObject?.mapValues { rings(it.value.jsonArray, true) } ?: emptyMap()
+        val lines = root["lines"]?.jsonObject?.mapValues { rings(it.value.jsonArray, false) } ?: emptyMap()
+        val land = root["land"]?.jsonArray
         // Keine Einzelgebäude: die Siedlungsfläche reicht (spart Laden und Zeichnen der 11.000 Umrisse).
-        Layers(polys, lines, Path(), rings(land, true),
-            floatArrayOf(x(lons.min()), y(lats.max()), x(lons.max()), y(lats.min()))).also { loaded = it }
+        return Layers(polys, lines, Path(), rings(land, true), bounds())
     }
 }
 
@@ -99,7 +114,8 @@ fun OfflineMap(pins: List<MapPin>, selectedId: String?, modifier: Modifier = Mod
     // Erste Ansicht: Pins rund um den Markt, sonst alle.
     LaunchedEffect(size, layers, pins.map { it.id }) {
         if (size == IntSize.Zero || layers == null || pins.isEmpty() || scale != 0f) return@LaunchedEffect
-        val near = pins.filter { kotlin.math.abs(it.lat - 53.257) < 0.01 && kotlin.math.abs(it.lon - 7.927) < 0.02 }.ifEmpty { pins }
+        val town = Tenants.config
+        val near = pins.filter { kotlin.math.abs(it.lat - town.latitude) < 0.01 && kotlin.math.abs(it.lon - town.longitude) < 0.02 }.ifEmpty { pins }
         val xs = near.map { MapData.x(it.lon) }; val ys = near.map { MapData.y(it.lat) }
         val w = max(xs.max() - xs.min(), 400f) * 1.4f; val h = max(ys.max() - ys.min(), 400f) * 1.6f
         scale = clampScale(min(size.width / w, size.height / h))

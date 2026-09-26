@@ -24,7 +24,7 @@ private func fixture(_ name: String) throws -> String {
     let data = try Data(contentsOf: #require(Bundle.module.url(forResource: "dbf-westerstede-ocholt", withExtension: "json", subdirectory: "Fixtures")))
     let board = try JSONDecoder().decode(TrainBoardResponse.self, from: data)
     let now = try #require(IslandTime.calendar.date(bySettingHour: 21, minute: 45, second: 0, of: IslandTime.date(fromISO: "2026-09-21")!))
-    let departures = board.departures.compactMap { $0.asDeparture(reference: now) }
+    let departures = board.departures.compactMap { $0.asDeparture(station: "Westerstede-Ocholt", reference: now) }
     #expect(departures.count == 6)
     let first = try #require(departures.first)
     #expect(first.line == "RE1")

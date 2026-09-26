@@ -46,6 +46,14 @@ object Session {
         }
     }
 
+    /** Nach einem Gemeindewechsel: Mandant und Rollen neu. */
+    suspend fun tenantChanged() {
+        tenant = null
+        isTenantAdmin = false
+        runCatching { tenant = Tenants.current() }
+        refresh()
+    }
+
     suspend fun refresh() {
         val id = userId ?: return
         runCatching {

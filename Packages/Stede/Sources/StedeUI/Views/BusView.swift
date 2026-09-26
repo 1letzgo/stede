@@ -4,7 +4,7 @@ import StedeCore
 /// Busabfahrten der Haltestelle aus den Einstellungen (`@AppStorage("bus.stop")`).
 struct BusView: View {
     /// Bleibt über App-Starts gemerkt; die Startseite liest denselben Schlüssel.
-    @AppStorage("bus.stop") private var stopID: String = BusStop.zob.id
+    @AppStorage("bus.stop") private var stopID: String = ""
     @Environment(SelectedDateStore.self) private var dateStore
     @State private var model = BusViewModel()
 
@@ -75,14 +75,14 @@ struct BusStopSheet: View {
                         Text(stop.shortName)
                             .foregroundStyle(.primary)
                         Spacer()
-                        if stop.id == selection {
+                        if stop.id == BusStop.stop(id: selection).id {
                             Image(systemName: "checkmark")
                                 .foregroundStyle(StedeTheme.ink)
                                 .fontWeight(.semibold)
                         }
                     }
                 }
-                .accessibilityAddTraits(stop.id == selection ? .isSelected : [])
+                .accessibilityAddTraits(stop.id == BusStop.stop(id: selection).id ? .isSelected : [])
             }
             .navigationTitle("Haltestelle")
             .stedeSheetForm()

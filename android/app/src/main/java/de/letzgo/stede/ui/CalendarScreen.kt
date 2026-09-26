@@ -159,7 +159,8 @@ fun CalendarScreen() {
                                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
                                 LaunchedEffect(row.end) { loadLater() }
                             }
-                            CalendarRow.Footer -> SourceFooter("Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen")
+                            CalendarRow.Footer -> SourceFooter(if (Tenants.usesBundle) "Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen"
+                                else "${Tenants.config.officialName} · Ammerland-Touristik (destination.one) und Gruppen")
                         }
                     }
                 }

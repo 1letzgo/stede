@@ -40,16 +40,17 @@ data class Place(
 @Serializable private data class DirectoryRow(val directory: String, val source: String, @SerialName("fetched_at") val fetchedAt: String)
 
 /**
- * Verzeichnisse: Stand aus dem Backend (Dateicache), sonst das Bundle aus den Assets.
- * Beim Start zieht [sync] alle Verzeichnisse neu — offline bleibt der letzte Stand.
+ * Verzeichnisse: Stand aus dem Backend (Dateicache je Gemeinde), sonst — nur für Westerstede — das Bundle
+ * aus den Assets. Beim Start zieht [sync] alle Verzeichnisse neu — offline bleibt der letzte Stand.
  */
 object Places {
     val assets = mapOf("gastro" to "gastronomie.json", "health" to "gesundheit.json", "leisure" to "freizeit.json", "sights" to "sehenswuerdigkeiten.json", "playgrounds" to "spielplaetze.json", "trips" to "ausfluege.json", "volunteer" to "ehrenamt.json", "bikes" to "fahrradverleih.json")
     private val cache = mutableMapOf<String, PlaceDirectory>()
 
-    fun directory(key: String): PlaceDirectory = cache.getOrPut(key) {
-        Store.read("content", "$key.json")?.let { runCatching { Http.json.decodeFromString<PlaceDirectory>(it) }.getOrNull() }?.takeIf { it.places.isNotEmpty() }
-            ?: bundled(key)
+    /** Je Gemeinde einmal gelesen; der Schlüssel enthält die Gemeinde, ein Wechsel liest neu. */
+    fun directory(key: String): PlaceDirectory = cache.getOrPut("${Tenants.slug}/$key") {
+        Store.read(Tenants.folder("content"), "$key.json")?.let { runCatching { Http.json.decodeFromString<PlaceDirectory>(it) }.getOrNull() }?.takeIf { it.places.isNotEmpty() }
+            ?: if (Tenants.usesBundle) bundled(key) else PlaceDirectory()
     }
 
     private fun bundled(key: String): PlaceDirectory {
@@ -62,9 +63,10 @@ object Places {
         })
     }
 
-    suspend fun sync() {
+    /** Ohne Angabe die aktuelle Gemeinde; beim Wechsel die neue, bevor sie gilt. */
+    suspend fun sync(slug: String = Tenants.slug) {
         runCatching {
-            val tenant = Tenants.current()
+            val tenant = Tenants.row(slug)
             val metas = Backend.supabase.from("place_directories").select(Columns.raw("directory,source,fetched_at")) { filter { eq("tenant_id", tenant.id) } }.decodeList<DirectoryRow>()
             for (meta in metas) {
                 if (meta.directory !in assets) continue
@@ -76,8 +78,8 @@ object Places {
                 val dir = PlaceDirectory(meta.source, meta.fetchedAt, rows.map {
                     Place(it.externalId, it.name, it.kind, it.teaser, it.street, it.phone, it.email, it.website, it.hours, it.restDay, it.seasonNote, it.lat, it.lon, it.features)
                 })
-                Store.write("content", "${meta.directory}.json", Http.json.encodeToString(dir))
-                cache[meta.directory] = dir
+                Store.write(Tenants.folder("content", slug), "${meta.directory}.json", Http.json.encodeToString(dir))
+                cache["$slug/${meta.directory}"] = dir
             }
         }
     }

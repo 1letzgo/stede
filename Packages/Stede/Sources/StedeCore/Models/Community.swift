@@ -50,9 +50,13 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
     public let createdBy: UUID
     public let createdAt: Date
     public var memberCount: Int?
+    /// Kreisweit: auch in den anderen Ammerland-Gemeinden gelistet (fehlt in manchen Abfragen).
+    public var countywide: Bool?
+
+    public var isCountywide: Bool { countywide ?? false }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, description, visibility, status
+        case id, name, description, visibility, status, countywide
         case tenantId = "tenant_id"
         case joinPolicy = "join_policy"
         case inviteCode = "invite_code"

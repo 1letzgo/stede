@@ -112,7 +112,7 @@ struct StreetSheet: View {
                 }
                 .accessibilityAddTraits(street.id == selection ? .isSelected : [])
             }
-            .searchable(text: $query, prompt: "Straße in Westerstede")
+            .searchable(text: $query, prompt: "Straße in \(Tenants.current.municipality)")
             .navigationTitle("Straße")
             .stedeSheetForm()
             .toolbar {

@@ -46,6 +46,8 @@ public struct ContentView: View {
     @State private var auth = AuthStore()
     /// Die Fahrtrichtung bleibt über App-Starts erhalten — meist interessiert nur eine.
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
+    /// Gewählte Gemeinde; leer, solange beim ersten Start noch keine gewählt ist.
+    @AppStorage(Tenants.slugKey) private var tenantSlug = ""
     /// Favoriten der Rubrik „Insel" — Kacheln auf Start und Kategorie-Ansichten
     /// müssen denselben Stand sehen. Übernimmt die früheren getrennten Listen.
     @State private var favorites = PlaceFavorites(
@@ -54,6 +56,37 @@ public struct ContentView: View {
     )
 
     public var body: some View {
+        Group {
+            if tenantSlug.isEmpty {
+                TenantPickerView(onboarding: true)
+            } else {
+                // Neue Gemeinde → alle Screens und ViewModels frisch.
+                tabs.id(tenantSlug)
+            }
+        }
+        .environment(dateStore)
+        .environment(favorites)
+        .environment(navigation)
+        .environment(auth)
+        .onAppear {
+            auth.start()
+            #if canImport(UIKit)
+            if !tenantSlug.isEmpty { OfflineMapLayers.warmUp() }
+            #endif
+        }
+        .onChange(of: tenantSlug) {
+            homePath = []
+            Task { await auth.tenantChanged() }
+        }
+        .onOpenURL { url in Task { await auth.handle(url: url) } }
+        .task {
+            // Ohne diesen Startwert hat der Vorwärtspfeil keine Obergrenze,
+            // solange Wetter noch nicht geöffnet war.
+            dateStore.limit(to: await WeatherStore.latestAvailableDay())
+        }
+    }
+
+    private var tabs: some View {
         TabView(selection: $navigation.tab) {
             Tab(AppTab.start.title, systemImage: AppTab.start.symbol, value: AppTab.start) {
                 NavigationStack(path: $homePath) {
@@ -79,22 +112,6 @@ public struct ContentView: View {
             Tab(AppTab.settings.title, systemImage: AppTab.settings.symbol, value: AppTab.settings) {
                 screen { SettingsView() }
             }
-        }
-        .environment(dateStore)
-        .environment(favorites)
-        .environment(navigation)
-        .environment(auth)
-        .onAppear {
-            auth.start()
-            #if canImport(UIKit)
-            OfflineMapLayers.warmUp()
-            #endif
-        }
-        .onOpenURL { url in Task { await auth.handle(url: url) } }
-        .task {
-            // Ohne diesen Startwert hat der Vorwärtspfeil keine Obergrenze,
-            // solange Wetter noch nicht geöffnet war.
-            dateStore.limit(to: await WeatherStore.latestAvailableDay())
         }
     }
 

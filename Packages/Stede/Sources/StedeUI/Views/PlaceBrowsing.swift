@@ -171,7 +171,7 @@ struct StedePlaceMap: View {
     /// am Ostende, Lokale am Hafen) bleiben außen vor, sonst schrumpft der Ort;
     /// angetippt rückt die Karte trotzdem zu ihnen.
     static func region(for pins: [StedeMapPin]) -> MKCoordinateRegion {
-        let village = CLLocationCoordinate2D(latitude: 53.2570, longitude: 7.9270)
+        let village = CLLocationCoordinate2D(latitude: Tenants.current.latitude, longitude: Tenants.current.longitude)
         let nearby = pins.map(\.coordinate).filter {
             abs($0.latitude - village.latitude) < 0.01 && abs($0.longitude - village.longitude) < 0.02
         }

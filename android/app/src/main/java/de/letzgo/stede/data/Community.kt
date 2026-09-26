@@ -17,15 +17,6 @@ import kotlinx.serialization.json.add
 import java.time.ZonedDateTime
 import java.util.UUID
 
-@Serializable data class Tenant(val id: String, val slug: String, val name: String, val municipality: String)
-
-object Tenants {
-    private var cached: Tenant? = null
-    suspend fun current(): Tenant = cached ?: Backend.supabase.from("tenants").select(Columns.raw("id,slug,name,municipality")) {
-        filter { eq("slug", Backend.TENANT) }
-    }.decodeSingle<Tenant>().also { cached = it }
-}
-
 @Serializable data class Profile(@SerialName("user_id") val userId: String, @SerialName("display_name") val displayName: String = "Mitglied", @SerialName("avatar_url") val avatarUrl: String? = null) {
     /** Profilbild zum Anzeigen (Bucket `avatars`), null ohne Bild. */
     val avatar get() = Backend.avatarUrl(avatarUrl)
@@ -36,6 +27,8 @@ object Tenants {
     val visibility: String = "listed", @SerialName("join_policy") val joinPolicy: String = "approval", val status: String = "pending",
     @SerialName("invite_code") val inviteCode: String? = null, @SerialName("logo_path") val logoPath: String? = null,
     @SerialName("created_by") val createdBy: String, @SerialName("member_count") val memberCount: Int? = null,
+    /** Kreisweit: auch in den anderen Ammerland-Gemeinden gelistet. */
+    val countywide: Boolean = false,
 ) { val logoUrl get() = Backend.logoUrl(logoPath) }
 
 @Serializable data class Member(
@@ -115,25 +108,33 @@ data class EventInfo(
 /** Alle Zugriffe auf den Community-Teil; RLS entscheidet, was sichtbar ist. */
 object CommunityApi {
     private val db get() = Backend.supabase
-    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count"
+    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide"
     private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()
     suspend fun setDisplayName(userId: String, name: String) { db.from("profiles").update({ set("display_name", name) }) { filter { eq("user_id", userId) } } }
 
-    suspend fun communities(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("tenant_id", tenantId) }; order("name", Order.ASCENDING) }.decodeList<Community>()
+    /** Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland. */
+    private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrCountywide(tenantId: String) {
+        or { eq("tenant_id", tenantId); and { eq("countywide", true); eq("region", "ammerland") } }
+    }
+
+    suspend fun communities(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { ownOrCountywide(tenantId) }; order("name", Order.ASCENDING) }.decodeList<Community>()
     suspend fun community(id: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("id", id) } }.decodeSingle<Community>()
     suspend fun byInvite(code: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("invite_code", code) }; limit(1) }.decodeList<Community>().firstOrNull()
     suspend fun pending(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("tenant_id", tenantId); eq("status", "pending") } }.decodeList<Community>()
 
-    suspend fun createCommunity(tenantId: String, name: String, description: String, visibility: String, joinPolicy: String, userId: String): Community =
+    suspend fun createCommunity(tenantId: String, name: String, description: String, visibility: String, joinPolicy: String, countywide: Boolean, userId: String): Community =
         db.from("communities").insert(buildJsonObject {
-            put("tenant_id", tenantId); put("name", name); put("description", description); put("visibility", visibility); put("join_policy", joinPolicy); put("created_by", userId)
-        }) { select(Columns.raw("id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by")) }.decodeSingle()
+            put("tenant_id", tenantId); put("name", name); put("description", description); put("visibility", visibility); put("join_policy", joinPolicy)
+            put("countywide", countywide); put("created_by", userId)
+        }) { select(Columns.raw("id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,countywide")) }.decodeSingle()
 
-    suspend fun updateCommunity(id: String, name: String, description: String, visibility: String, joinPolicy: String, logoPath: String?) {
-        db.from("communities").update(buildJsonObject { put("name", name); put("description", description); put("visibility", visibility); put("join_policy", joinPolicy); put("logo_path", logoPath) }) { filter { eq("id", id) } }
+    suspend fun updateCommunity(id: String, name: String, description: String, visibility: String, joinPolicy: String, countywide: Boolean, logoPath: String?) {
+        db.from("communities").update(buildJsonObject {
+            put("name", name); put("description", description); put("visibility", visibility); put("join_policy", joinPolicy); put("countywide", countywide); put("logo_path", logoPath)
+        }) { filter { eq("id", id) } }
     }
     suspend fun setCommunityStatus(id: String, status: String) { db.from("communities").update({ set("status", status) }) { filter { eq("id", id) } } }
 
@@ -160,7 +161,7 @@ object CommunityApi {
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()
     }
     suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed")) {
-        filter { eq("tenant_id", tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
+        filter { ownOrCountywide(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
     }.decodeList<PublicEvent>()
 
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }

@@ -12,28 +12,31 @@ import kotlinx.serialization.builtins.serializer
 /**
  * Statische Inhalte als Dateien im öffentlichen Bucket `content` (Tabelle `content_files`) — wie ContentFiles in iOS:
  * Bushaltestellen, Straßenliste der Abfuhr, Offline-Karte. Beim Start nur Geändertes laden; Leser nehmen den
- * lokalen Stand, sonst das Asset. Ein neuer Stand gilt ab dem nächsten Start.
+ * lokalen Stand der aktuellen Gemeinde, sonst (nur Westerstede) das Asset. Ein neuer Stand gilt ab dem nächsten
+ * Start oder Gemeindewechsel.
  */
 object ContentFiles {
     private const val FOLDER = "content-files"
     private val manifestSerializer = MapSerializer(String.serializer(), String.serializer())
 
-    /** Lokal geladener Stand, sonst null (dann gilt das Asset). */
-    fun text(name: String): String? = Store.read(FOLDER, "$name.json")
+    /** Lokal geladener Stand der aktuellen Gemeinde, sonst null (dann gilt das Asset). */
+    fun text(name: String): String? = Store.read(Tenants.folder(FOLDER), "$name.json")
 
-    suspend fun sync() {
+    /** Ohne Angabe die aktuelle Gemeinde; beim Wechsel die neue, bevor sie gilt. */
+    suspend fun sync(slug: String = Tenants.slug) {
         runCatching {
-            val tenant = Tenants.current()
+            val folder = Tenants.folder(FOLDER, slug)
+            val tenant = Tenants.row(slug)
             val rows = Backend.supabase.from("content_files").select(Columns.raw("name,path,updated_at")) { filter { eq("tenant_id", tenant.id) } }.decodeList<ContentFileRow>()
-            val manifest = (Store.read(FOLDER, "manifest.json")?.let { runCatching { Http.json.decodeFromString(manifestSerializer, it) }.getOrNull() } ?: emptyMap()).toMutableMap()
+            val manifest = (Store.read(folder, "manifest.json")?.let { runCatching { Http.json.decodeFromString(manifestSerializer, it) }.getOrNull() } ?: emptyMap()).toMutableMap()
             for (row in rows) {
-                if (manifest[row.name] == row.updatedAt && text(row.name) != null) continue
+                if (manifest[row.name] == row.updatedAt && Store.read(folder, "${row.name}.json") != null) continue
                 val body = runCatching { Http.direct("${Backend.URL}/storage/v1/object/public/content/${row.path}") }.getOrNull() ?: continue
                 if (runCatching { Http.json.parseToJsonElement(body) }.isFailure) continue
-                Store.write(FOLDER, "${row.name}.json", body)
+                Store.write(folder, "${row.name}.json", body)
                 manifest[row.name] = row.updatedAt
             }
-            Store.write(FOLDER, "manifest.json", Http.json.encodeToString(manifestSerializer, manifest))
+            Store.write(folder, "manifest.json", Http.json.encodeToString(manifestSerializer, manifest))
         }
     }
 }

@@ -50,6 +50,14 @@ final class AuthStore {
         Task { await loadTenant() }
     }
 
+    /// Nach einem Gemeindewechsel: Mandant und Rollen neu.
+    func tenantChanged() async {
+        tenant = nil
+        isTenantAdmin = false
+        await loadTenant()
+        await refresh()
+    }
+
     private func loadTenant() async {
         do { tenant = try await client.tenant() } catch { lastError = error.localizedDescription }
     }

@@ -25,11 +25,13 @@ enum class WasteKind(val label: String) {
 data class WasteSelection(val street: Int, val section: Int?, val branch: Int?) { val key get() = "$street-${section ?: 0}-${branch ?: 0}" }
 
 object Waste {
-    /** Stand aus dem Backend (`content_files`), sonst das Asset. */
-    private val directory by lazy {
-        ContentFiles.text("abfuhr-strassen")?.let { runCatching { Http.json.decodeFromString<WasteStreets>(it) }.getOrNull() }?.takeIf { it.streets.isNotEmpty() }
-            ?: Http.json.decodeFromString<WasteStreets>(Store.asset("abfuhr-strassen.json"))
-    }
+    /** Straßen der aktuellen Gemeinde: Stand aus dem Backend (`content_files`), sonst (nur Westerstede) das Asset. */
+    private var loaded: Pair<String, WasteStreets>? = null
+    private val directory: WasteStreets
+        get() = loaded?.takeIf { it.first == Tenants.slug }?.second ?: (
+            ContentFiles.text("abfuhr-strassen")?.let { runCatching { Http.json.decodeFromString<WasteStreets>(it) }.getOrNull() }?.takeIf { it.streets.isNotEmpty() }
+                ?: if (Tenants.usesBundle) Http.json.decodeFromString<WasteStreets>(Store.asset("abfuhr-strassen.json")) else WasteStreets()
+            ).also { loaded = Tenants.slug to it }
     val source get() = directory.source
     val streets: List<WasteStreet> get() = directory.streets
     fun street(id: Int) = streets.firstOrNull { it.id == id }

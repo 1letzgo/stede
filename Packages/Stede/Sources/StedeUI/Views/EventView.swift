@@ -191,7 +191,9 @@ struct EventView: View {
                 .onAppear { Task { await model.loadLater() } }
                 .id("later-\(IslandTime.isoDate(model.end))")
         }
-        SourceFooter(text: "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App")
+        SourceFooter(text: Tenants.usesBundle
+            ? "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App"
+            : "\(Tenants.current.officialName) · Ammerland-Touristik (destination.one) · Gruppen-Termine aus der App")
     }
 
     private func participate(_ info: CommunityEventInfo, _ status: ParticipationStatus?, _ helping: Bool) {

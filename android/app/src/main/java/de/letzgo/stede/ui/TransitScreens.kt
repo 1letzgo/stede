@@ -26,12 +26,16 @@ import java.time.LocalDate
 
 @Composable
 fun TrainScreen(onBack: () -> Unit) {
-    var direction by remember { mutableStateOf(runCatching { TrainDirection.valueOf(Store.string("train.direction", "Oldenburg").replaceFirstChar { it.uppercase() }) }.getOrDefault(TrainDirection.Oldenburg)) }
-    var trains by remember { mutableStateOf(Trains.cached()) }
+    var direction by remember { mutableStateOf(TrainDirection.stored()) }
+    val station = remember { Trains.station() }
+    var trains by remember { mutableStateOf(Trains.cached(station)) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
-    suspend fun load(force: Boolean) { loading = true; runCatching { Trains.load(force) }.onSuccess { trains = it; error = null }.onFailure { if (trains.isEmpty()) error = it.message }; loading = false }
+    suspend fun load(force: Boolean) {
+        val s = station ?: run { loading = false; return }
+        loading = true; runCatching { Trains.load(s, force) }.onSuccess { trains = it; error = null }.onFailure { if (trains.isEmpty()) error = it.message }; loading = false
+    }
     LaunchedEffect(Unit) { load(false) }
     val list = trains.filter { it.direction == direction }
     val now = Town.now()
@@ -39,11 +43,11 @@ fun TrainScreen(onBack: () -> Unit) {
     Scaffold(topBar = { StedeTopBar("Bahn", onBack) { IconButton(onClick = { scope.launch { load(true) } }) { Icon(Icons.Default.Refresh, "Aktualisieren") } } }, containerColor = C.sand) { pad ->
         Column(Modifier.padding(pad)) {
             Spacer(Modifier.height(16.dp))
-            Switcher(TrainDirection.entries, direction, { it.title }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
+            Switcher(TrainDirection.entries, direction, { it.title(station) }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
             LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                 if (list.isEmpty()) item { if (loading) Loading() else InfoCard(error ?: "Gerade stehen keine Abfahrten auf der Tafel.") }
                 items(list, key = { it.id }) { t -> TrainCard(t, t.id == nextId, t.departure.isBefore(now)) }
-                item { SourceFooter("Bahnhof Westerstede-Ocholt · dbf.finalrewind.org (DB IRIS), nächste rund zwei Stunden") }
+                item { SourceFooter("Bahnhof ${station?.name ?: ""} · dbf.finalrewind.org (DB IRIS), nächste rund zwei Stunden") }
             }
         }
     }
@@ -73,7 +77,7 @@ private fun TrainCard(t: Train, isNext: Boolean, isPast: Boolean) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusScreen(onBack: () -> Unit) {
-    val stopId = remember { Store.string("bus.stop", busStops.first().id) }
+    val stopId = remember { Store.string("bus.stop", "") }
     var day by remember { mutableStateOf(Town.today()) }
     var buses by remember { mutableStateOf<List<Bus>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -108,11 +112,13 @@ fun BusScreen(onBack: () -> Unit) {
 fun BusStopSheet(selected: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader("Haltestelle", trailing = "Fertig" to onDismiss)
+        // Ohne Wahl gilt die Standardhaltestelle der Gemeinde.
+        val current = busStop(selected).id
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(busStops) { s ->
                 Row(Modifier.fillMaxWidth().clickable { onPick(s.id); onDismiss() }.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(s.short, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
-                    if (s.id == selected) Icon(Icons.Default.Check, null, tint = C.ink)
+                    if (s.id == current) Icon(Icons.Default.Check, null, tint = C.ink)
                 }
                 HorizontalDivider(color = C.tertiary.copy(alpha = 0.2f))
             }
@@ -194,7 +200,7 @@ fun StreetSheet(selected: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         var query by remember { mutableStateOf("") }
         SheetHeader("Straße", trailing = "Fertig" to onDismiss)
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp), placeholder = { Text("Straße in Westerstede") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) })
+        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp), placeholder = { Text("Straße in ${Tenants.config.municipality}") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) })
         LazyColumn(contentPadding = PaddingValues(16.dp)) {
             items(Waste.streets.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }, key = { it.id }) { s ->
                 Row(Modifier.fillMaxWidth().clickable {

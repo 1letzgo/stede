@@ -305,7 +305,7 @@ struct IslandView: View {
                             }
 
                             if category == IslandCatalog.tripsCategory || category == IslandCatalog.discoverCategory {
-                                Label("Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um Westerstede.", systemImage: "calendar")
+                                Label("Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um \(Tenants.current.municipality).", systemImage: "calendar")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 4)
@@ -331,7 +331,7 @@ struct IslandView: View {
                                     .padding(.horizontal, 4)
                             }
 
-                            if category == IslandCatalog.playgroundsCategory {
+                            if category == IslandCatalog.playgroundsCategory, Tenants.usesBundle {
                                 Label("Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite.", systemImage: "info.circle")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)

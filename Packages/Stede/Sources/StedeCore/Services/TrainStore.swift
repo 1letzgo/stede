@@ -9,18 +9,20 @@ public actor TrainStore {
     private let maxAge: TimeInterval = 60
     private var board: [TrainDeparture] = []
     private var fetchedAt: Date?
+    private var stationID: String?
 
-    /// Zuletzt geladene Tafel, auch wenn sie schon älter ist.
-    public func cached() -> [TrainDeparture]? {
-        fetchedAt == nil ? nil : board
+    /// Zuletzt geladene Tafel dieses Bahnhofs, auch wenn sie schon älter ist.
+    public func cached(at station: TenantConfig.Station) -> [TrainDeparture]? {
+        fetchedAt == nil || stationID != station.id ? nil : board
     }
 
-    public func departures(force: Bool = false) async throws -> [TrainDeparture] {
-        if !force, let fetchedAt, Date().timeIntervalSince(fetchedAt) < maxAge {
+    public func departures(at station: TenantConfig.Station, force: Bool = false) async throws -> [TrainDeparture] {
+        if !force, stationID == station.id, let fetchedAt, Date().timeIntervalSince(fetchedAt) < maxAge {
             return board
         }
-        let fresh = try await client.departures()
+        let fresh = try await client.departures(at: station)
         board = fresh
+        stationID = station.id
         fetchedAt = Date()
         return fresh
     }

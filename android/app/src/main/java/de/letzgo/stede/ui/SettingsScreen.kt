@@ -27,8 +27,14 @@ fun SettingsScreen() {
     var streetId by remember { mutableIntStateOf(Store.int("waste.street")) }
     var sectionId by remember { mutableIntStateOf(Store.int("waste.section")) }
     var branchId by remember { mutableIntStateOf(Store.int("waste.branchSection")) }
-    var stopId by remember { mutableStateOf(Store.string("bus.stop", busStops.first().id)) }
-    var direction by remember { mutableStateOf(runCatching { TrainDirection.valueOf(Store.string("train.direction", "Oldenburg").replaceFirstChar { it.uppercase() }) }.getOrDefault(TrainDirection.Oldenburg)) }
+    var stopId by remember { mutableStateOf(Store.string("bus.stop", "")) }
+    var direction by remember { mutableStateOf(TrainDirection.stored()) }
+    var stationId by remember { mutableStateOf(Store.string("train.station", "")) }
+    var showStations by remember { mutableStateOf(false) }
+    var showTenants by remember { mutableStateOf(false) }
+    val tenant = Tenants.config
+    // Ohne Wahl gilt der Standardbahnhof der Gemeinde.
+    val station = tenant.station(stationId)
     var order by remember { mutableStateOf(HomeLayout.order()) }
     var hidden by remember { mutableStateOf(HomeLayout.hidden()) }
     var tileOrder by remember { mutableStateOf(HomeLayout.tileOrder()) }
@@ -56,6 +62,11 @@ fun SettingsScreen() {
                     }
                     Chevron()
                 }
+            }
+
+            item { SectionHeader("Gemeinde", Icons.Default.Place) }
+            item {
+                StedeCard { ValueRow(Icons.Default.Place, C.ink, "Gemeinde", tenant.municipality) { showTenants = true } }
             }
 
             item { SectionHeader("Startseite", Icons.Default.GridView) }
@@ -120,12 +131,23 @@ fun SettingsScreen() {
                 StedeCard {
                     ValueRow(Icons.Default.DirectionsBus, C.teal, "Bushaltestelle", busStop(stopId).short) { showStops = true }
                     HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
+                    Box {
+                        ValueRow(Icons.Default.Train, C.red, "Bahnhof", station?.name ?: "–") { showStations = true }
+                        DropdownMenu(showStations, { showStations = false }) {
+                            tenant.stations.forEach { s ->
+                                DropdownMenuItem({ Text(s.name) }, {
+                                    stationId = s.id; Store.setString("train.station", s.id); showStations = false
+                                }, trailingIcon = if (s.id == station?.id) { { Icon(Icons.Default.Check, null, tint = C.ink) } } else null)
+                            }
+                        }
+                    }
+                    HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SmallIcon(Icons.Default.Train, C.red)
+                        SmallIcon(Icons.Default.SwapHoriz, C.red)
                         Text("Bahn-Richtung", Modifier.weight(1f), color = C.text, fontSize = 16.sp)
                     }
                     Spacer(Modifier.height(8.dp))
-                    Switcher(TrainDirection.entries, direction, { it.short }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
+                    Switcher(TrainDirection.entries, direction, { it.short(station) }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
                 }
             }
 
@@ -134,6 +156,7 @@ fun SettingsScreen() {
         }
     }
     if (showAccount) AccountSheet { showAccount = false }
+    if (showTenants) TenantPickerSheet { showTenants = false }
     if (showStreets) StreetSheet(streetId, { id -> if (id != streetId) { streetId = id; sectionId = 0; branchId = 0 } }) { showStreets = false }
     if (showStops) BusStopSheet(stopId, { stopId = it; Store.setString("bus.stop", it) }) { showStops = false }
 }

@@ -91,39 +91,46 @@ public nonisolated struct GastroDirectory: Sendable, Decodable {
 }
 
 public nonisolated enum GastroStore {
-    public static let directory = load("gastronomie", synced: "gastro")
+    public static var directory: GastroDirectory { directoryStore.value }
+    private static let directoryStore = TenantScoped { load("gastronomie", synced: "gastro") }
 
     /// Sehenswürdigkeiten nutzen dasselbe Format — Name, Text, Adresse,
     /// Koordinate — und liegen in `sehenswuerdigkeiten.json`.
-    public static let sights = load("sehenswuerdigkeiten", synced: "sights")
+    public static var sights: GastroDirectory { sightsStore.value }
+    private static let sightsStore = TenantScoped { load("sehenswuerdigkeiten", synced: "sights") }
 
     /// Ärzte, Zahnärzte, Apotheken, Kliniken — Kategorie „Gesundheit" unter „Stadt".
-    public static let health = load("gesundheit", synced: "health")
+    public static var health: GastroDirectory { healthStore.value }
+    private static let healthStore = TenantScoped { load("gesundheit", synced: "health") }
 
     /// Bad, Sport, Spiel & Familie, Kultur — Kategorie „Freizeit & Sport".
-    public static let leisure = load("freizeit", synced: "leisure")
+    public static var leisure: GastroDirectory { leisureStore.value }
+    private static let leisureStore = TenantScoped { load("freizeit", synced: "leisure") }
 
     /// Parks, Draisine, Zwischenahner Meer, Radrouten — „Ausflüge".
-    public static let trips = load("ausfluege", synced: "trips")
+    public static var trips: GastroDirectory { tripsStore.value }
+    private static let tripsStore = TenantScoped { load("ausfluege", synced: "trips") }
 
     /// Vergünstigungen der Ehrenamtskarte Niedersachsen/Bremen in Westerstede — „Ehrenamt".
-    public static let volunteer = load("ehrenamt", synced: "volunteer")
+    public static var volunteer: GastroDirectory { volunteerStore.value }
+    private static let volunteerStore = TenantScoped { load("ehrenamt", synced: "volunteer") }
 
     /// Die 34 städtischen Spielplätze samt Kinderrat-Bewertung — „Spielplätze".
-    public static let playgrounds = load("spielplaetze", synced: "playgrounds")
+    public static var playgrounds: GastroDirectory { playgroundsStore.value }
+    private static let playgroundsStore = TenantScoped { load("spielplaetze", synced: "playgrounds") }
 
     /// Fällt auf ein leeres Verzeichnis zurück; ohne Netzabhängigkeit kann
     /// hier nur ein Fehler beim Bundling auftreten.
-    /// Stand aus dem Backend-Sync, sonst das Bundle. Wird beim App-Start
-    /// einmal gelesen; ein frischer Sync wirkt beim nächsten Start.
+    /// Stand aus dem Backend-Sync, sonst das Bundle. Je Gemeinde einmal
+    /// gelesen; ein frischer Sync wirkt beim nächsten Start oder Gemeindewechsel.
     private static func load(_ resource: String, synced: String) -> GastroDirectory {
         if let synced = ContentSync.directory(synced), !synced.places.isEmpty { return synced }
         guard
+            Tenants.usesBundle,
             let url = Bundle.module.url(forResource: resource, withExtension: "json"),
             let data = try? Data(contentsOf: url),
             let directory = try? JSONDecoder().decode(GastroDirectory.self, from: data)
         else {
-            assertionFailure("\(resource).json fehlt im Bundle oder ist ungültig")
             return GastroDirectory(source: "", fetchedAt: "", places: [])
         }
         return directory
