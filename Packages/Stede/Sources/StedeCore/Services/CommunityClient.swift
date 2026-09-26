@@ -57,11 +57,11 @@ public nonisolated struct CommunityClient: Sendable {
         "tenant_id.eq.\(tenantID.uuidString.lowercased()),and(countywide.is.true,region.eq.ammerland)"
     }
 
-    /// Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf
-    /// andere Gemeinden beschränkt ist (`target_tenants`).
+    /// Termine: Gruppen nur ihrer Gemeinde · kreisweite ohne Auswahl · kreisweite, deren Termin
+    /// diese Gemeinde gewählt hat (`target_tenants` — auch die Heimatgemeinde muss dann gewählt sein).
     static func ownOrTargeted(_ tenantID: UUID) -> String {
         let id = tenantID.uuidString.lowercased()
-        return "tenant_id.eq.\(id),and(countywide.is.true,region.eq.ammerland,or(target_tenants.is.null,target_tenants.cs.{\(id)}))"
+        return "and(countywide.is.false,tenant_id.eq.\(id)),and(countywide.is.true,region.eq.ammerland,target_tenants.is.null),and(countywide.is.true,target_tenants.cs.{\(id)})"
     }
 
     /// Alle sichtbaren Communities des Mandanten (gelistete plus eigene) und die kreisweiten.

@@ -263,6 +263,9 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
 
     fun save() = scope.launch {
         val user = Session.userId ?: return@launch
+        if (isPublic && community?.countywide == true && !countywideReach && targetTenants.isEmpty()) {
+            error = "Bitte mindestens eine Gemeinde wählen."; return@launch
+        }
         saving = true; error = null
         runCatching {
             val path = newImage?.let { CommunityApi.uploadPhoto("event-photos", communityId, it) } ?: imagePath
@@ -326,7 +329,11 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
                 }
             }
             community?.takeIf { isPublic && it.countywide }?.let { c ->
-                ReachSection(c.tenantId.lowercase(), countywideReach, { countywideReach = it }, targetTenants) { id, on ->
+                ReachSection(c.tenantId.lowercase(), countywideReach, {
+                    countywideReach = it
+                    // Beim Umschalten ist die eigene Gemeinde vorgewählt.
+                    if (!it && targetTenants.isEmpty()) targetTenants = setOf(c.tenantId.lowercase())
+                }, targetTenants) { id, on ->
                     targetTenants = if (on) targetTenants + id else targetTenants - id
                 }
             }
@@ -345,7 +352,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
         dismissButton = { TextButton({ confirmCancel = false }) { Text("Zurück") } })
 }
 
-/** Kreisweit oder nur ausgewählte Gemeinden; die Heimatgemeinde der Gruppe sieht den Termin immer. */
+/** Kreisweit oder nur ausgewählte Gemeinden — auch die Heimatgemeinde der Gruppe ist abwählbar. */
 @Composable
 private fun ReachSection(home: String, countywide: Boolean, onCountywide: (Boolean) -> Unit, selected: Set<String>, onToggle: (String, Boolean) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -359,14 +366,16 @@ private fun ReachSection(home: String, countywide: Boolean, onCountywide: (Boole
             if (!countywide) Tenants.all.forEach { tenant ->
                 val id = tenant.tenantID?.lowercase() ?: return@forEach
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(tenant.municipality, color = C.text, modifier = Modifier.weight(1f))
-                    if (id == home) Text("Heimatgemeinde", color = C.secondary)
-                    else Switch(id in selected, { onToggle(id, it) })
+                    Column(Modifier.weight(1f)) {
+                        Text(tenant.municipality, color = C.text)
+                        if (id == home) Text("Heimatgemeinde", color = C.secondary, fontSize = 13.sp)
+                    }
+                    Switch(id in selected, { onToggle(id, it) })
                 }
             }
         }
         Text(if (countywide) "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
-             else "Der Termin erscheint nur in den gewählten Gemeinden und in der Heimatgemeinde der Gruppe.",
+             else "Der Termin erscheint nur in den gewählten Gemeinden.",
             color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
     }
 }

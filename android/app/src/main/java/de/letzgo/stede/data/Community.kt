@@ -130,7 +130,13 @@ object CommunityApi {
     /** Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf andere Gemeinden beschränkt ist (`target_tenants`). */
     private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrTargeted(tenantId: String) {
         val id = tenantId.lowercase()
-        or { eq("tenant_id", id); and { eq("countywide", true); eq("region", "ammerland"); or { exact("target_tenants", null); contains("target_tenants", listOf(id)) } } }
+        // Gruppe nur für ihre Gemeinde · kreisweit ohne Auswahl · kreisweit mit dieser Gemeinde in der Auswahl
+        // (auch die Heimatgemeinde muss dann gewählt sein).
+        or {
+            and { eq("countywide", false); eq("tenant_id", id) }
+            and { eq("countywide", true); eq("region", "ammerland"); exact("target_tenants", null) }
+            and { eq("countywide", true); contains("target_tenants", listOf(id)) }
+        }
     }
 
     suspend fun communities(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { ownOrCountywide(tenantId) }; order("name", Order.ASCENDING) }.decodeList<Community>()

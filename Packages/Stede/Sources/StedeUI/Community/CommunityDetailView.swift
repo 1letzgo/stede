@@ -521,7 +521,7 @@ struct EventEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Sichern") { Task { await save() } }.disabled(title.trimmingCharacters(in: .whitespaces).isEmpty || saving)
+                    Button("Sichern") { Task { await save() } }.disabled(title.trimmingCharacters(in: .whitespaces).isEmpty || saving || lacksTarget)
                 }
             }
             .onAppear {
@@ -541,7 +541,7 @@ struct EventEditorView: View {
         }
     }
 
-    /// Kreisweit oder nur ausgewählte Gemeinden; die Heimatgemeinde der Gruppe sieht den Termin immer.
+    /// Kreisweit oder nur ausgewählte Gemeinden — auch die Heimatgemeinde der Gruppe ist abwählbar.
     @ViewBuilder private func reachSection(home: UUID) -> some View {
         Section {
             Picker("Reichweite", selection: $countywideReach.animation()) {
@@ -549,20 +549,21 @@ struct EventEditorView: View {
                 Text("Gemeinden wählen").tag(false)
             }
             .pickerStyle(.segmented)
+            .onChange(of: countywideReach) {
+                // Beim Umschalten ist die eigene Gemeinde vorgewählt.
+                if !countywideReach, targetTenants.isEmpty { targetTenants = [home] }
+            }
             if !countywideReach {
                 ForEach(Tenants.all.filter { $0.tenantID != nil }) { tenant in
                     let id = tenant.tenantID!
-                    if id == home {
-                        HStack {
+                    Toggle(isOn: Binding(
+                        get: { targetTenants.contains(id) },
+                        set: { if $0 { targetTenants.insert(id) } else { targetTenants.remove(id) } }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(tenant.municipality)
-                            Spacer()
-                            Text("Heimatgemeinde").foregroundStyle(.secondary)
+                            if id == home { Text("Heimatgemeinde").font(.footnote).foregroundStyle(.secondary) }
                         }
-                    } else {
-                        Toggle(tenant.municipality, isOn: Binding(
-                            get: { targetTenants.contains(id) },
-                            set: { if $0 { targetTenants.insert(id) } else { targetTenants.remove(id) } }
-                        ))
                     }
                 }
             }
@@ -571,8 +572,13 @@ struct EventEditorView: View {
         } footer: {
             Text(countywideReach
                  ? "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
-                 : "Der Termin erscheint nur in den gewählten Gemeinden und in der Heimatgemeinde der Gruppe.")
+                 : targetTenants.isEmpty ? "Wähle mindestens eine Gemeinde." : "Der Termin erscheint nur in den gewählten Gemeinden.")
         }
+    }
+
+    /// Öffentlicher Termin einer kreisweiten Gruppe ohne gewählte Gemeinde wäre nirgends sichtbar.
+    private var lacksTarget: Bool {
+        isPublic && community?.isCountywide == true && !countywideReach && targetTenants.isEmpty
     }
 
     private func save() async {
