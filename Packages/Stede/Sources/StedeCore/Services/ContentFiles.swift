@@ -34,6 +34,7 @@ public actor ContentFiles {
             let rows: [Row] = try await Backend.client.from("content_files").select("name, path, updated_at")
                 .eq("tenant_id", value: tenant.id).execute().value
             var manifest = (try? JSONDecoder().decode([String: Date].self, from: Data(contentsOf: Self.manifestURL))) ?? [:]
+            let before = manifest
             try FileManager.default.createDirectory(at: Self.folder, withIntermediateDirectories: true)
             for row in rows where manifest[row.name] != row.updatedAt || !FileManager.default.fileExists(atPath: Self.file(row.name).path) {
                 let url = Backend.url.appendingPathComponent("storage/v1/object/public/content/\(row.path)")
@@ -43,7 +44,7 @@ public actor ContentFiles {
                 try data.write(to: Self.file(row.name), options: .atomic)
                 manifest[row.name] = row.updatedAt
             }
-            try JSONEncoder().encode(manifest).write(to: Self.manifestURL, options: .atomic)
+            if manifest != before { try JSONEncoder().encode(manifest).write(to: Self.manifestURL, options: .atomic) }
         } catch {
             // Offline oder Backend nicht erreichbar: der letzte Stand bleibt.
         }

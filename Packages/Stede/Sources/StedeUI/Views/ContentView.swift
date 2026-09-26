@@ -84,7 +84,12 @@ public struct ContentView: View {
         .environment(favorites)
         .environment(navigation)
         .environment(auth)
-        .onAppear { auth.start() }
+        .onAppear {
+            auth.start()
+            #if canImport(UIKit)
+            OfflineMapLayers.warmUp()
+            #endif
+        }
         .onOpenURL { url in Task { await auth.handle(url: url) } }
         .task {
             // Ohne diesen Startwert hat der Vorwärtspfeil keine Obergrenze,

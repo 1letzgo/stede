@@ -66,59 +66,20 @@ struct OfflineIslandMap: UIViewRepresentable {
             blank.canReplaceMapContent = true
             map.addOverlay(blank, level: .aboveLabels)
 
-            guard let data = IslandMapData.shared else { return }
-            // Deckender Grund, sonst scheint das leere Kachelraster durch;
-            // außerhalb des Datenausschnitts bleibt die Fläche blass.
-            let ground = MKPolygon(coordinates: [
-                CLLocationCoordinate2D(latitude: 53.0, longitude: 7.5),
-                CLLocationCoordinate2D(latitude: 53.5, longitude: 7.5),
-                CLLocationCoordinate2D(latitude: 53.5, longitude: 8.4),
-                CLLocationCoordinate2D(latitude: 53.0, longitude: 8.4),
-            ], count: 4)
-            add(ground, style: .fill(StedeTheme.mudflat, 0.12), to: map)
-            add(multiPolygon(data.land), style: .fill(StedeTheme.sand, 1), to: map)
-            add(multiPolygon(data.polygons["settlement"]), style: .fill(StedeTheme.mudflat, 0.16), to: map)
-            add(multiPolygon(data.polygons["sand"]), style: .fill(StedeTheme.sunAmber, 0.20), to: map)
-            add(multiPolygon(data.polygons["green"]), style: .fill(StedeTheme.duneGreen, 0.16), to: map)
-            add(multiPolygon(data.polygons["dune"]), style: .fill(StedeTheme.duneGreen, 0.28), to: map)
-            add(multiPolygon(data.polygons["saltmarsh"]), style: .fill(StedeTheme.seaTeal, 0.18), to: map)
-            add(multiPolygon(data.polygons["wood"]), style: .fill(StedeTheme.duneGreen, 0.45), to: map)
-            add(multiPolygon(data.polygons["water"]), style: .fill(StedeTheme.seaTeal, 0.45), to: map)
-            add(multiPolyline(data.lines["stream"]), style: .line(StedeTheme.seaTeal, 0.55, width: 1.2, dashed: false), to: map)
-            add(multiPolyline(data.lines["groyne"]), style: .line(StedeTheme.mudflat, 0.6, width: 2, dashed: false), to: map)
-            // Keine Einzelgebäude: die Siedlungsfläche reicht, und die 11.000 Umrisse kosteten
-            // beim Herauszoomen Sekunden. Fußwege nur nah heran (siehe `regionDidChangeAnimated`).
-            if let paths = multiPolyline(data.lines["path"]) {
-                styles[ObjectIdentifier(paths)] = .line(StedeTheme.ink, 0.28, width: 1, dashed: true); detail.append(paths)
+            // Die Ebenen entstehen einmal pro App-Start (`OfflineMapLayers`) und werden von
+            // jeder Karte mitbenutzt — früher baute jede Ansicht zehntausende Ringe neu auf.
+            let layers = OfflineMapLayers.shared
+            for (overlay, style) in layers.base { add(overlay, style: style, to: map) }
+            for (overlay, style) in layers.detail {
+                styles[ObjectIdentifier(overlay)] = style
+                detail.append(overlay)
             }
-            add(multiPolyline(data.lines["road"]), style: .line(StedeTheme.ink, 0.38, width: 2.5, dashed: false), to: map)
-            add(multiPolyline(data.lines["rail"]), style: .line(StedeTheme.harborRed, 0.6, width: 1.5, dashed: true), to: map)
         }
 
         private func add(_ overlay: MKOverlay?, style: LayerStyle, to map: MKMapView) {
             guard let overlay else { return }
             styles[ObjectIdentifier(overlay)] = style
             map.addOverlay(overlay, level: .aboveLabels)
-        }
-
-        private func coordinates(_ ring: [[Double]]) -> [CLLocationCoordinate2D] {
-            ring.map { CLLocationCoordinate2D(latitude: $0[1], longitude: $0[0]) }
-        }
-
-        private func multiPolygon(_ rings: [[[Double]]]?) -> MKMultiPolygon? {
-            guard let rings, !rings.isEmpty else { return nil }
-            return MKMultiPolygon(rings.map { ring in
-                let points = coordinates(ring)
-                return MKPolygon(coordinates: points, count: points.count)
-            })
-        }
-
-        private func multiPolyline(_ lines: [[[Double]]]?) -> MKMultiPolyline? {
-            guard let lines, !lines.isEmpty else { return nil }
-            return MKMultiPolyline(lines.map { line in
-                let points = coordinates(line)
-                return MKPolyline(coordinates: points, count: points.count)
-            })
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -220,10 +181,78 @@ struct OfflineIslandMap: UIViewRepresentable {
     }
 }
 
-private enum LayerStyle {
+nonisolated enum LayerStyle: Sendable {
     case fill(Color, CGFloat)
     case line(Color, CGFloat, width: CGFloat, dashed: Bool)
     case building
+}
+
+/// Fertige Kartenebenen, einmal pro App-Start aus `IslandMapData` gebaut und von allen
+/// Karten geteilt (Overlays sind reine Modellobjekte). `warmUp()` baut sie beim Start
+/// im Hintergrund vor, damit die erste Karte nicht wartet.
+nonisolated final class OfflineMapLayers: @unchecked Sendable {
+    static let shared = OfflineMapLayers()
+
+    /// Grundebenen in Zeichenreihenfolge (ohne den deckenden Untergrund, den jede Karte selbst legt).
+    let base: [(MKOverlay, LayerStyle)]
+    /// Feine Ebenen (Fußwege), nur beim Hineinzoomen.
+    let detail: [(MKOverlay, LayerStyle)]
+
+    static func warmUp() {
+        Task.detached(priority: .utility) { _ = OfflineMapLayers.shared }
+    }
+
+    private init() {
+        var base: [(MKOverlay, LayerStyle)] = []
+        var detail: [(MKOverlay, LayerStyle)] = []
+        let ground = MKPolygon(coordinates: [
+            CLLocationCoordinate2D(latitude: 53.0, longitude: 7.5),
+            CLLocationCoordinate2D(latitude: 53.5, longitude: 7.5),
+            CLLocationCoordinate2D(latitude: 53.5, longitude: 8.4),
+            CLLocationCoordinate2D(latitude: 53.0, longitude: 8.4),
+        ], count: 4)
+        // Deckender Grund, außerhalb des Datenausschnitts blass.
+        base.append((ground, .fill(StedeTheme.mudflat, 0.12)))
+        if let data = IslandMapData.shared {
+            func add(_ overlay: MKOverlay?, _ style: LayerStyle) { if let overlay { base.append((overlay, style)) } }
+            add(Self.multiPolygon(data.land), .fill(StedeTheme.sand, 1))
+            add(Self.multiPolygon(data.polygons["settlement"]), .fill(StedeTheme.mudflat, 0.16))
+            add(Self.multiPolygon(data.polygons["sand"]), .fill(StedeTheme.sunAmber, 0.20))
+            add(Self.multiPolygon(data.polygons["green"]), .fill(StedeTheme.duneGreen, 0.16))
+            add(Self.multiPolygon(data.polygons["dune"]), .fill(StedeTheme.duneGreen, 0.28))
+            add(Self.multiPolygon(data.polygons["saltmarsh"]), .fill(StedeTheme.seaTeal, 0.18))
+            add(Self.multiPolygon(data.polygons["wood"]), .fill(StedeTheme.duneGreen, 0.45))
+            add(Self.multiPolygon(data.polygons["water"]), .fill(StedeTheme.seaTeal, 0.45))
+            add(Self.multiPolyline(data.lines["stream"]), .line(StedeTheme.seaTeal, 0.55, width: 1.2, dashed: false))
+            add(Self.multiPolyline(data.lines["groyne"]), .line(StedeTheme.mudflat, 0.6, width: 2, dashed: false))
+            // Keine Einzelgebäude: die Siedlungsfläche reicht. Fußwege nur nah heran.
+            if let paths = Self.multiPolyline(data.lines["path"]) { detail.append((paths, .line(StedeTheme.ink, 0.28, width: 1, dashed: true))) }
+            add(Self.multiPolyline(data.lines["road"]), .line(StedeTheme.ink, 0.38, width: 2.5, dashed: false))
+            add(Self.multiPolyline(data.lines["rail"]), .line(StedeTheme.harborRed, 0.6, width: 1.5, dashed: true))
+        }
+        self.base = base
+        self.detail = detail
+    }
+
+    private static func coordinates(_ ring: [[Double]]) -> [CLLocationCoordinate2D] {
+        ring.map { CLLocationCoordinate2D(latitude: $0[1], longitude: $0[0]) }
+    }
+
+    private static func multiPolygon(_ rings: [[[Double]]]?) -> MKMultiPolygon? {
+        guard let rings, !rings.isEmpty else { return nil }
+        return MKMultiPolygon(rings.map { ring in
+            let points = coordinates(ring)
+            return MKPolygon(coordinates: points, count: points.count)
+        })
+    }
+
+    private static func multiPolyline(_ lines: [[[Double]]]?) -> MKMultiPolyline? {
+        guard let lines, !lines.isEmpty else { return nil }
+        return MKMultiPolyline(lines.map { line in
+            let points = coordinates(line)
+            return MKPolyline(coordinates: points, count: points.count)
+        })
+    }
 }
 
 /// Liefert leere Kacheln: Mit `canReplaceMapContent` zeichnet MapKit dann
