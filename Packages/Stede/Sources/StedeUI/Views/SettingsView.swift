@@ -67,7 +67,7 @@ struct SettingsView: View {
 
                 StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
                 SettingsCard {
-                    pickerRow("Straße", value: street?.name ?? "Nicht gewählt", symbol: "house.fill", tint: StedeTheme.duneGreen) {
+                    pickerRow("Abfuhr", value: street?.name ?? "Nicht gewählt", symbol: "trash.fill", tint: StedeTheme.duneGreen) {
                         showsStreets = true
                     }
                     if let street, street.needsSection {
@@ -77,7 +77,6 @@ struct SettingsView: View {
                         menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
                     }
                 }
-                SettingsFootnote("Für den Abfuhrkalender auf der Startseite.")
 
                 StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
                 SettingsCard {

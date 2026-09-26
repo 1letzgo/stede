@@ -114,7 +114,7 @@ fun SettingsScreen() {
             item { SectionHeader("Zuhause", Icons.Default.Home) }
             item {
                 StedeCard {
-                    ValueRow(Icons.Default.Home, C.green, "Straße", street?.name ?: "Nicht gewählt") { showStreets = true }
+                    ValueRow(Icons.Default.Delete, C.green, "Abfuhr", street?.name ?: "Nicht gewählt") { showStreets = true }
                     street?.takeIf { it.needsSection }?.let { s ->
                         Spacer(Modifier.height(10.dp))
                         SectionPicker("Abschnitt", s.sections!!, sectionId) { sectionId = it; Store.setInt("waste.section", it) }
