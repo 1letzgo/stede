@@ -88,12 +88,21 @@ struct SettingsView: View {
                         SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
                         Text("Bahnhof")
                         Spacer(minLength: 8)
-                        Picker("Bahnhof", selection: stationBinding) {
-                            ForEach(Tenants.current.stations) { Text($0.name).tag($0.id) }
+                        // Eigenes Label: „Westerstede-Ocholt“ bräche im System-Picker zweizeilig um.
+                        Menu {
+                            Picker("Bahnhof", selection: stationBinding) {
+                                ForEach(Tenants.current.stations) { Text($0.name).tag($0.id) }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(station.name)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.footnote.weight(.semibold))
+                            }
+                            .foregroundStyle(StedeTheme.ink)
                         }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .tint(StedeTheme.ink)
                     }
                     .frame(minHeight: 32)
                     .stedeRowCard()
