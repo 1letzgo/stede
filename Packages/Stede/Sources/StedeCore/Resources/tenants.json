@@ -52,7 +52,8 @@
   ],
   "defaultStation": "8000664",
   "wasteTownID": 1,
-  "busDefaultStop": "009003061"
+  "busDefaultStop": "009003061",
+  "tenantID": "fe11a620-74e7-439d-8a1f-901ec64232be"
  },
  {
   "slug": "bad-zwischenahn",
@@ -107,7 +108,8 @@
   ],
   "defaultStation": "8000770",
   "wasteTownID": 2,
-  "busDefaultStop": "009006433"
+  "busDefaultStop": "009006433",
+  "tenantID": "5878cad3-a9e7-4f2a-930f-42f0942b49d4"
  },
  {
   "slug": "edewecht",
@@ -162,7 +164,8 @@
   ],
   "defaultStation": "8000770",
   "wasteTownID": 3,
-  "busDefaultStop": "009022853"
+  "busDefaultStop": "009022853",
+  "tenantID": "2e8d0d8a-bb13-4fec-98cf-a6913af48e10"
  },
  {
   "slug": "rastede",
@@ -217,7 +220,8 @@
   ],
   "defaultStation": "8004945",
   "wasteTownID": 4,
-  "busDefaultStop": "009075805"
+  "busDefaultStop": "009075805",
+  "tenantID": "3a74b231-b8fd-472d-a84c-55756590a8be"
  },
  {
   "slug": "stede",
@@ -272,7 +276,8 @@
   ],
   "defaultStation": "8004610",
   "wasteTownID": 5,
-  "busDefaultStop": "009098661"
+  "busDefaultStop": "009098661",
+  "tenantID": "210a865a-71a1-45d9-a326-2b0086b19cbf"
  },
  {
   "slug": "wiefelstede",
@@ -327,6 +332,7 @@
   ],
   "defaultStation": "8004945",
   "wasteTownID": 6,
-  "busDefaultStop": "009099164"
+  "busDefaultStop": "009099164",
+  "tenantID": "3413e984-425f-4597-a363-02c8c68e9f60"
  }
 ]

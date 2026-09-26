@@ -250,6 +250,11 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
     var newImage by remember { mutableStateOf<ByteArray?>(null) }
     var headerImages by remember { mutableStateOf<List<HeaderImage>>(emptyList()) }
     LaunchedEffect(communityId) { headerImages = runCatching { CommunityApi.headerImages(communityId) }.getOrDefault(emptyList()) }
+    // Gruppe des Termins — nur bei kreisweiten Gruppen lässt sich die Reichweite wählen.
+    var community by remember { mutableStateOf<Community?>(null) }
+    LaunchedEffect(communityId) { community = runCatching { CommunityApi.community(communityId) }.getOrNull() }
+    var countywideReach by remember { mutableStateOf(existing?.targetTenants == null) }
+    var targetTenants by remember { mutableStateOf(existing?.targetTenants.orEmpty().map { it.lowercase() }.toSet()) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var picker by remember { mutableStateOf<String?>(null) }
@@ -266,7 +271,8 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             if (ends != null && !ends.isAfter(starts)) ends = ends.plusDays(1)
             val draft = EventDraft(communityId, title.trim(), description.trim(), starts.toOffsetDateTime().toString(), ends?.toOffsetDateTime()?.toString(),
                 location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user,
-                commentsEnabled = comments && !isPublic)
+                commentsEnabled = comments && !isPublic,
+                targetTenants = if (isPublic && community?.countywide == true && !countywideReach) targetTenants.toList() else null)
             if (existing == null) CommunityApi.createEvent(draft) else CommunityApi.updateEvent(existing.id, draft)
             if (originalPath != null && originalPath != path) CommunityApi.deletePhoto("event-photos", originalPath)
         }.onSuccess { Changes.bump(); onDismiss() }.onFailure { error = it.message }
@@ -319,6 +325,11 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
                     Switch(comments, { comments = it }, enabled = !isPublic)
                 }
             }
+            community?.takeIf { isPublic && it.countywide }?.let { c ->
+                ReachSection(c.tenantId.lowercase(), countywideReach, { countywideReach = it }, targetTenants) { id, on ->
+                    targetTenants = if (on) targetTenants + id else targetTenants - id
+                }
+            }
             error?.let { Text(it, color = C.red) }
             if (existing != null && !existing.isCancelled) ColorChip("Termin absagen", C.red, Modifier.fillMaxWidth(), icon = Icons.Default.EventBusy) { confirmCancel = true }
         }
@@ -332,6 +343,32 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
         title = { Text("Termin absagen?") }, text = { Text("Der Termin bleibt sichtbar, ist aber als abgesagt markiert.") },
         confirmButton = { TextButton({ confirmCancel = false; scope.launch { runCatching { CommunityApi.cancelEvent(existing.id) }; Changes.bump(); onDismiss() } }) { Text("Absagen", color = C.red) } },
         dismissButton = { TextButton({ confirmCancel = false }) { Text("Zurück") } })
+}
+
+/** Kreisweit oder nur ausgewählte Gemeinden; die Heimatgemeinde der Gruppe sieht den Termin immer. */
+@Composable
+private fun ReachSection(home: String, countywide: Boolean, onCountywide: (Boolean) -> Unit, selected: Set<String>, onToggle: (String, Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Sichtbar in")
+        StedeCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(true to "Kreisweit", false to "Gemeinden wählen").forEach { (value, label) ->
+                    SelectionChip(label, countywide == value, Modifier.weight(1f), compact = true) { onCountywide(value) }
+                }
+            }
+            if (!countywide) Tenants.all.forEach { tenant ->
+                val id = tenant.tenantID?.lowercase() ?: return@forEach
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(tenant.municipality, color = C.text, modifier = Modifier.weight(1f))
+                    if (id == home) Text("Heimatgemeinde", color = C.secondary)
+                    else Switch(id in selected, { onToggle(id, it) })
+                }
+            }
+        }
+        Text(if (countywide) "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
+             else "Der Termin erscheint nur in den gewählten Gemeinden und in der Heimatgemeinde der Gruppe.",
+            color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
+    }
 }
 
 @Composable

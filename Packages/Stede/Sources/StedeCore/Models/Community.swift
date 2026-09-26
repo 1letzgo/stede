@@ -126,6 +126,8 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     /// Kommentare der Mitglieder — nur bei internen Terminen, vom Ersteller eingeschaltet.
     public var commentsEnabled: Bool
     public var visibility: EventVisibility
+    /// Nur bei kreisweiten Gruppen: nil = kreisweit, sonst nur diese Gemeinden (plus Heimatgemeinde).
+    public var targetTenants: [UUID]?
     public var publishedAt: Date?
     public var cancelledAt: Date?
     public let version: Int
@@ -155,6 +157,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case imagePath = "image_path"
         case helpersNeeded = "helpers_needed"
         case commentsEnabled = "comments_enabled"
+        case targetTenants = "target_tenants"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case publishedAt = "published_at"
@@ -183,6 +186,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         // Ältere Zwischenspeicher kennen das Feld noch nicht.
         commentsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commentsEnabled) ?? false
         visibility = try c.decode(EventVisibility.self, forKey: .visibility)
+        targetTenants = try c.decodeIfPresent([UUID].self, forKey: .targetTenants)
         publishedAt = try c.decodeIfPresent(Date.self, forKey: .publishedAt)
         cancelledAt = try c.decodeIfPresent(Date.self, forKey: .cancelledAt)
         version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 1
@@ -259,9 +263,11 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     public var helpersNeeded: Int
     public var commentsEnabled: Bool
     public var visibility: EventVisibility
+    /// nil = kreisweit (oder Gruppe nicht kreisweit), sonst nur diese Gemeinden.
+    public var targetTenants: [UUID]?
     public var createdBy: UUID
 
-    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, commentsEnabled: Bool = false, visibility: EventVisibility, createdBy: UUID) {
+    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, commentsEnabled: Bool = false, visibility: EventVisibility, targetTenants: [UUID]? = nil, createdBy: UUID) {
         self.communityId = communityId
         self.title = title
         self.description = description
@@ -273,6 +279,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         // Kommentare gibt es nur bei internen Terminen.
         self.commentsEnabled = commentsEnabled && visibility == .members
         self.visibility = visibility
+        self.targetTenants = visibility == .public ? targetTenants : nil
         self.createdBy = createdBy
     }
 
@@ -282,9 +289,28 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         case imagePath = "image_path"
         case helpersNeeded = "helpers_needed"
         case commentsEnabled = "comments_enabled"
+        case targetTenants = "target_tenants"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case createdBy = "created_by"
+    }
+
+    /// `target_tenants` immer mitschicken — auch als null, sonst bliebe beim Bearbeiten
+    /// eine alte Auswahl stehen, wenn der Termin wieder kreisweit wird.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(communityId, forKey: .communityId)
+        try c.encode(title, forKey: .title)
+        try c.encode(description, forKey: .description)
+        try c.encode(startsAt, forKey: .startsAt)
+        try c.encode(endsAt, forKey: .endsAt)
+        try c.encode(location, forKey: .location)
+        try c.encode(imagePath, forKey: .imagePath)
+        try c.encode(helpersNeeded, forKey: .helpersNeeded)
+        try c.encode(commentsEnabled, forKey: .commentsEnabled)
+        try c.encode(visibility, forKey: .visibility)
+        try c.encode(targetTenants, forKey: .targetTenants)
+        try c.encode(createdBy, forKey: .createdBy)
     }
 }
 

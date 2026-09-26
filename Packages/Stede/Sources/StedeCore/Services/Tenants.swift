@@ -6,6 +6,8 @@ import Supabase
 public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiable {
     public var id: String { slug }
     public let slug: String
+    /// `tenants.id` — für Termine, die nur in bestimmten Gemeinden erscheinen.
+    public let tenantID: UUID?
     /// „Westerstede", „Bad Zwischenahn" …
     public let municipality: String
     /// [Breite, Länge] des Ortskerns — Wetter und Kartenmitte.
@@ -91,6 +93,7 @@ public nonisolated enum Tenants {
     private static var cacheURL: URL { CacheMaintenance.directory("content").appendingPathComponent("tenants.json") }
 
     private nonisolated struct Row: Decodable, Sendable {
+        let id: UUID
         let slug: String
         let municipality: String
         let config: Config
@@ -113,13 +116,13 @@ public nonisolated enum Tenants {
     /// Lädt die Gemeinden der Region neu; ohne Netz bleibt der letzte Stand.
     public static func refresh() async {
         do {
-            let rows: [Row] = try await Backend.client.from("tenants").select("slug, municipality, config")
+            let rows: [Row] = try await Backend.client.from("tenants").select("id, slug, municipality, config")
                 .eq("region", value: "ammerland").order("municipality").execute().value
             let list = rows.compactMap { row -> TenantConfig? in
                 let c = row.config
                 guard let center = c.center, let bbox = c.bbox, let stations = c.stations, let station = c.defaultStation,
                       let town = c.wasteTownId, let stop = c.busDefaultStop else { return nil }
-                return TenantConfig(slug: row.slug, municipality: row.municipality, center: center, bbox: bbox, stations: stations,
+                return TenantConfig(slug: row.slug, tenantID: row.id, municipality: row.municipality, center: center, bbox: bbox, stations: stations,
                                     defaultStation: station, wasteTownID: town, busDefaultStop: stop)
             }
             guard !list.isEmpty else { return }
@@ -136,7 +139,7 @@ public nonisolated enum Tenants {
               let list = try? JSONDecoder().decode([TenantConfig].self, from: data), !list.isEmpty
         else {
             assertionFailure("tenants.json fehlt im Bundle")
-            return [TenantConfig(slug: defaultSlug, municipality: "Westerstede", center: [53.25752, 7.92734], bbox: [53.15, 7.78, 53.36, 8.10],
+            return [TenantConfig(slug: defaultSlug, tenantID: nil, municipality: "Westerstede", center: [53.25752, 7.92734], bbox: [53.15, 7.78, 53.36, 8.10],
                                  stations: [.init(id: "8004610", dbf: "Westerstede-Ocholt", name: "Westerstede-Ocholt", directions: ["Oldenburg", "Leer"])],
                                  defaultStation: "8004610", wasteTownID: 5, busDefaultStop: "009098661")]
         }

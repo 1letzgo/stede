@@ -31,6 +31,8 @@ import kotlinx.serialization.json.JsonObject
     val defaultStation: String,
     val wasteTownID: Int,
     val busDefaultStop: String,
+    /** `tenants.id` — für Termine, die nur in bestimmten Gemeinden erscheinen. */
+    val tenantID: String? = null,
 ) {
     val latitude get() = center.getOrElse(0) { 53.2575 }
     val longitude get() = center.getOrElse(1) { 7.9273 }
@@ -42,7 +44,7 @@ import kotlinx.serialization.json.JsonObject
     val officialName get() = if (slug == Tenants.DEFAULT) "Stadt $municipality" else "Gemeinde $municipality"
 }
 
-@Serializable private data class TenantRow(val slug: String, val municipality: String, val config: JsonObject)
+@Serializable private data class TenantRow(val id: String, val slug: String, val municipality: String, val config: JsonObject)
 @Serializable private data class TenantRowConfig(
     val center: List<Double>? = null, val bbox: List<Double>? = null, val stations: List<TenantStation>? = null,
     @SerialName("default_station") val defaultStation: String? = null,
@@ -109,14 +111,14 @@ object Tenants {
     /** Lädt die Gemeinden der Region neu; ohne Netz bleibt der letzte Stand. */
     suspend fun refresh() {
         runCatching {
-            val list = Backend.supabase.from("tenants").select(Columns.raw("slug,municipality,config")) {
+            val list = Backend.supabase.from("tenants").select(Columns.raw("id,slug,municipality,config")) {
                 filter { eq("region", "ammerland") }
                 order("municipality", Order.ASCENDING)
             }.decodeList<TenantRow>().mapNotNull { row ->
                 val c = runCatching { Http.json.decodeFromJsonElement(TenantRowConfig.serializer(), row.config) }.getOrNull() ?: return@mapNotNull null
                 TenantConfig(row.slug, row.municipality, c.center ?: return@mapNotNull null, c.bbox ?: return@mapNotNull null,
                     c.stations ?: return@mapNotNull null, c.defaultStation ?: return@mapNotNull null,
-                    c.wasteTownId ?: return@mapNotNull null, c.busDefaultStop ?: return@mapNotNull null)
+                    c.wasteTownId ?: return@mapNotNull null, c.busDefaultStop ?: return@mapNotNull null, row.id)
             }
             if (list.isEmpty()) return
             Store.write("content", "tenants.json", Http.json.encodeToString(listSerializer, list))

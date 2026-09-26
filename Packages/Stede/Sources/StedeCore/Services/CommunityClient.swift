@@ -57,6 +57,13 @@ public nonisolated struct CommunityClient: Sendable {
         "tenant_id.eq.\(tenantID.uuidString.lowercased()),and(countywide.is.true,region.eq.ammerland)"
     }
 
+    /// Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf
+    /// andere Gemeinden beschränkt ist (`target_tenants`).
+    static func ownOrTargeted(_ tenantID: UUID) -> String {
+        let id = tenantID.uuidString.lowercased()
+        return "tenant_id.eq.\(id),and(countywide.is.true,region.eq.ammerland,or(target_tenants.is.null,target_tenants.cs.{\(id)}))"
+    }
+
     /// Alle sichtbaren Communities des Mandanten (gelistete plus eigene) und die kreisweiten.
     public func communities(tenantID: UUID) async throws -> [Community] {
         try await client.from("v_community_overview").select(Self.communityColumns)
@@ -158,7 +165,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -184,7 +191,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     public func publicEvents(tenantID: UUID, from: Date, to: Date) async throws -> [PublicEvent] {
         try await client.from("v_public_events").select()
-            .or(Self.ownOrCountywide(tenantID))
+            .or(Self.ownOrTargeted(tenantID))
             .gte("starts_at", value: from.ISO8601Format()).lt("starts_at", value: to.ISO8601Format())
             .order("starts_at").execute().value
     }

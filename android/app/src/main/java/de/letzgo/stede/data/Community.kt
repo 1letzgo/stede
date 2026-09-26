@@ -45,6 +45,8 @@ import java.util.UUID
     @SerialName("starts_at") val startsAt: String, @SerialName("ends_at") val endsAt: String? = null, val location: String? = null,
     @SerialName("image_path") val imagePath: String? = null, @SerialName("helpers_needed") val helpersNeeded: Int = 0,
     @SerialName("comments_enabled") val commentsEnabled: Boolean = false,
+    /** Nur bei kreisweiten Gruppen: null = kreisweit, sonst nur diese Gemeinden (plus Heimatgemeinde). */
+    @SerialName("target_tenants") val targetTenants: List<String>? = null,
     val visibility: String = "members", @SerialName("published_at") val publishedAt: String? = null,
     @SerialName("cancelled_at") val cancelledAt: String? = null, @SerialName("created_by") val createdBy: String? = null,
     @SerialName("communities") val community: CommunityRef? = null,
@@ -83,12 +85,14 @@ data class EventInfo(
     val helpersNeeded: Int, val createdBy: String?, val communityId: String?,
     /** Kommentare eingeschaltet — nur bei internen Terminen. */
     val commentsEnabled: Boolean = false,
+    /** Gewählte Gemeinden eines öffentlichen Termins; null = kreisweit. */
+    val targetTenants: List<String>? = null,
 ) {
     companion object {
         fun of(e: CommunityEvent, fallbackName: String = "", fallbackLogo: String? = null) = EventInfo(
             e.id, e.title, e.community?.name?.ifBlank { null } ?: fallbackName, Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
-            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled && !e.isPublic,
+            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled && !e.isPublic, e.targetTenants,
         )
         fun of(e: PublicEvent) = EventInfo(
             e.id, e.title, e.communityName, Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,
@@ -103,13 +107,16 @@ data class EventInfo(
     @SerialName("image_path") val imagePath: String?, @SerialName("helpers_needed") val helpersNeeded: Int,
     val visibility: String, @SerialName("created_by") val createdBy: String,
     @SerialName("comments_enabled") val commentsEnabled: Boolean = false,
+    /** Ohne Standardwert, damit das Feld immer (auch als null) mitgeht — sonst bliebe beim
+     *  Bearbeiten eine alte Auswahl stehen, wenn der Termin wieder kreisweit wird. */
+    @SerialName("target_tenants") val targetTenants: List<String>?,
 )
 
 /** Alle Zugriffe auf den Community-Teil; RLS entscheidet, was sichtbar ist. */
 object CommunityApi {
     private val db get() = Backend.supabase
     private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide"
-    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
+    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()
@@ -118,6 +125,12 @@ object CommunityApi {
     /** Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland. */
     private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrCountywide(tenantId: String) {
         or { eq("tenant_id", tenantId); and { eq("countywide", true); eq("region", "ammerland") } }
+    }
+
+    /** Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf andere Gemeinden beschränkt ist (`target_tenants`). */
+    private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrTargeted(tenantId: String) {
+        val id = tenantId.lowercase()
+        or { eq("tenant_id", id); and { eq("countywide", true); eq("region", "ammerland"); or { exact("target_tenants", null); contains("target_tenants", listOf(id)) } } }
     }
 
     suspend fun communities(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { ownOrCountywide(tenantId) }; order("name", Order.ASCENDING) }.decodeList<Community>()
@@ -161,7 +174,7 @@ object CommunityApi {
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()
     }
     suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed")) {
-        filter { ownOrCountywide(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
+        filter { ownOrTargeted(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
     }.decodeList<PublicEvent>()
 
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }

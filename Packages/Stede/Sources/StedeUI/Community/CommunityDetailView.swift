@@ -429,6 +429,10 @@ struct EventEditorView: View {
     @State private var removePhoto = false
     @State private var error: String?
     @State private var headerImages: [CommunityHeaderImage] = []
+    /// Gruppe des Termins — nur bei kreisweiten Gruppen lässt sich die Reichweite wählen.
+    @State private var community: Community?
+    @State private var countywideReach = true
+    @State private var targetTenants: Set<UUID> = []
 
     /// Neue Termine beginnen zur nächsten vollen Stunde (10:23 → 11:00), nicht zur aktuellen Minute.
     static var nextFullHour: Date {
@@ -494,6 +498,9 @@ struct EventEditorView: View {
                     Text("Öffentlich zeigt Titel, Zeit, Ort und Gruppenname allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                if isPublic, let community, community.isCountywide {
+                    reachSection(home: community.tenantId)
+                }
                 if existing != nil, existing?.cancelledAt == nil, let onCancelEvent {
                     Section { Button("Termin absagen", role: .destructive) { Task { await onCancelEvent(); dismiss() } } }
                 }
@@ -508,6 +515,7 @@ struct EventEditorView: View {
                 }
             }
             .task { headerImages = (try? await CommunityClient().headerImages(communityID: communityID)) ?? [] }
+            .task { community = try? await CommunityClient().community(id: communityID) }
             .navigationTitle(existing == nil ? "Neuer Termin" : "Termin bearbeiten")
             .stedeSheetForm()
             .toolbar {
@@ -526,8 +534,44 @@ struct EventEditorView: View {
                     wantsHelpers = existing.helpersNeeded > 0
                     helpersNeeded = max(existing.helpersNeeded, 1)
                     commentsEnabled = existing.commentsEnabled
+                    countywideReach = existing.targetTenants == nil
+                    targetTenants = Set(existing.targetTenants ?? [])
                 }
             }
+        }
+    }
+
+    /// Kreisweit oder nur ausgewählte Gemeinden; die Heimatgemeinde der Gruppe sieht den Termin immer.
+    @ViewBuilder private func reachSection(home: UUID) -> some View {
+        Section {
+            Picker("Reichweite", selection: $countywideReach.animation()) {
+                Text("Kreisweit").tag(true)
+                Text("Gemeinden wählen").tag(false)
+            }
+            .pickerStyle(.segmented)
+            if !countywideReach {
+                ForEach(Tenants.all.filter { $0.tenantID != nil }) { tenant in
+                    let id = tenant.tenantID!
+                    if id == home {
+                        HStack {
+                            Text(tenant.municipality)
+                            Spacer()
+                            Text("Heimatgemeinde").foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Toggle(tenant.municipality, isOn: Binding(
+                            get: { targetTenants.contains(id) },
+                            set: { if $0 { targetTenants.insert(id) } else { targetTenants.remove(id) } }
+                        ))
+                    }
+                }
+            }
+        } header: {
+            Text("Sichtbar in")
+        } footer: {
+            Text(countywideReach
+                 ? "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
+                 : "Der Termin erscheint nur in den gewählten Gemeinden und in der Heimatgemeinde der Gruppe.")
         }
     }
 
@@ -548,7 +592,9 @@ struct EventEditorView: View {
         let draft = CommunityEventDraft(
             communityId: communityID, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled && !isPublic, visibility: isPublic ? .public : .members, createdBy: existing?.createdBy ?? userID
+            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled && !isPublic, visibility: isPublic ? .public : .members,
+            targetTenants: community?.isCountywide == true && !countywideReach ? Array(targetTenants) : nil,
+            createdBy: existing?.createdBy ?? userID
         )
         if await onSave(draft) {
             // Altes Foto räumen, wenn ersetzt oder entfernt.
