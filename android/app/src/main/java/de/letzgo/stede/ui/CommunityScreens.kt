@@ -152,7 +152,7 @@ private fun CommunityPills(c: Community, m: Member?, showsPolicy: Boolean) {
     }
 }
 
-enum class CommunityTab(val title: String) { Events("Termine"), Archive("Archiv"), Members("Mitglieder"), Settings("Einstellungen") }
+enum class CommunityTab(val title: String) { Events("Termine"), Polls("Umfragen"), Members("Mitglieder"), Settings("Einstellungen") }
 
 /** Reiter wie SectionSwitcher in iOS: drei gleich breite Chips, Einstellungen als schmales Zahnrad. */
 @Composable
@@ -169,7 +169,7 @@ private fun CommunityTabs(selected: CommunityTab, onSelect: (CommunityTab) -> Un
     }
 }
 
-/** Eine Community wie CommunityDetailView: Umschalter Termine · Mitglieder · Einstellungen wie bei der Bahn;
+/** Eine Community wie CommunityDetailView: Umschalter Termine · Umfragen · Mitglieder · Einstellungen wie bei der Bahn;
  *  wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
 @Composable
 fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
@@ -181,6 +181,9 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var past by remember { mutableStateOf<List<EventInfo>?>(null) }
     var hasMorePast by remember { mutableStateOf(true) }
     var loadingPast by remember { mutableStateOf(false) }
+    var noMorePast by remember { mutableStateOf(false) }
+    val polls = remember(id) { PollsModel(id) }
+    var newPoll by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(CommunityTab.Events) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
@@ -199,29 +202,34 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             runCatching { CommunityApi.members(id) }.onSuccess { members = it }
             helpers = runCatching { CommunityApi.helperCounts(events.orEmpty().filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             MyParticipation.load()
+            if (polls.polls != null) polls.load()
         }
     }
-    // Archiv: erst beim Öffnen des Reiters laden, seitenweise (20) beim Scrollen.
+    // Frühere Termine: jeder Tipp auf den Chip holt die nächsten 20 (neueste zuerst geladen, oben chronologisch gezeigt).
     suspend fun loadPast(offset: Long) {
         if (loadingPast) return
         loadingPast = true
+        noMorePast = false
         val before = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
         runCatching { CommunityApi.pastEvents(id, before, offset) }.onSuccess { page ->
             val infos = page.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
             past = if (offset == 0L) infos else past.orEmpty() + infos
             hasMorePast = page.size == 20
+            noMorePast = page.isEmpty()
             val counts = runCatching { CommunityApi.helperCounts(page.filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             helpers = helpers + counts
         }.onFailure { if (past == null) past = emptyList() }
         loadingPast = false
     }
-    LaunchedEffect(id, tab, Changes.version) {
-        if (tab == CommunityTab.Archive && isMember) loadPast(0)
+    // Umfragen: erst beim ersten Öffnen des Reiters laden.
+    LaunchedEffect(id, tab) {
+        if (tab == CommunityTab.Polls && isMember && polls.polls == null) polls.load()
     }
     val community = c
     Scaffold(topBar = {
         StedeTopBar(community?.name ?: "Gruppe", onBack, actions = {
             if (isMember && tab == CommunityTab.Events) IconButton(onClick = { newEvent = true }) { Icon(Icons.Default.Add, "Termin anlegen") }
+            if (isAdmin && tab == CommunityTab.Polls) IconButton(onClick = { newPoll = true }) { Icon(Icons.Default.Add, "Umfrage anlegen") }
         })
     }, containerColor = C.sand) { pad ->
         if (community == null) { Box(Modifier.padding(pad)) { Loading() }; return@Scaffold }
@@ -252,20 +260,31 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                 }
                 when (tab) {
                     CommunityTab.Events -> {
+                        // Oben „Frühere Termine“ wie im Kalender; vergangene Termine chronologisch über den kommenden.
+                        if (hasMorePast) item(key = "earlier") {
+                            EarlierChip(loadingPast) { scope.launch { loadPast(past?.size?.toLong() ?: 0L) } }
+                        }
+                        if (noMorePast) item(key = "noMorePast") {
+                            Text("Keine früheren Termine.", color = C.secondary, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        }
+                        items(past.orEmpty().asReversed(), key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
                         if (events == null) item { Loading() }
                         else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
                         items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
                     }
-                    CommunityTab.Archive -> {
-                        val list = past
+                    CommunityTab.Polls -> {
+                        val list = polls.polls
                         if (list == null) item { Loading() }
-                        else if (list.isEmpty()) item { InfoCard("Keine vergangenen Termine.") }
-                        else items(list, key = { "past${it.id}" }) { e ->
-                            EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e }
-                            // Letzte Karte sichtbar: nächste Seite nachladen.
-                            if (e.id == list.last().id && hasMorePast) LaunchedEffect(list.size) { loadPast(list.size.toLong()) }
+                        else {
+                            if (list.isEmpty()) item { InfoCard(if (isAdmin) "Noch keine Umfrage. Starte eine mit +." else "Noch keine Umfrage in dieser Gruppe.") }
+                            items(list, key = { "poll${it.id}" }) { poll ->
+                                PollCard(poll, polls.votes[poll.id].orEmpty(), Session.userId, isAdmin,
+                                    onToggle = { option -> Session.userId?.let { user -> scope.launch { polls.toggle(option, poll, user) } } },
+                                    onClose = { scope.launch { polls.close(poll) } },
+                                    onDelete = { scope.launch { polls.delete(poll) } })
+                            }
+                            polls.lastError?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
                         }
-                        if (loadingPast && list != null) item { Loading() }
                     }
                     CommunityTab.Members -> {
                         val all = members.orEmpty()
@@ -315,6 +334,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     }
     openEvent?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { openEvent = null; showAccount = true }) { openEvent = null } }
     if (newEvent) EventEditorSheet(id, null) { newEvent = false }
+    if (newPoll) PollEditorSheet({ newPoll = false }) { draft ->
+        val user = Session.userId ?: return@PollEditorSheet false
+        polls.create(draft, user)
+    }
     if (editCommunity && community != null) CommunityEditorSheet(community) { editCommunity = false }
     if (joinRequest && community != null) JoinRequestDialog(community.name, { joinRequest = false }) { message ->
         val user = Session.userId ?: return@JoinRequestDialog false
@@ -324,6 +347,17 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     if (confirmLeave) AlertDialog(onDismissRequest = { confirmLeave = false }, title = { Text("„${community?.name}“ verlassen?") },
         confirmButton = { TextButton({ confirmLeave = false; scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh(); tab = CommunityTab.Events; Changes.bump() } }) { Text("Verlassen", color = C.red) } },
         dismissButton = { TextButton({ confirmLeave = false }) { Text("Abbrechen") } })
+}
+
+/** „Frühere Termine“ wie im Kalender: volle Breite, Pfeil nach oben, beim Laden ein Spinner. */
+@Composable
+private fun EarlierChip(loading: Boolean, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = ChipHeight).clip(RoundedCornerShape(50)).background(C.surface).clickable(enabled = !loading) { onClick() }.padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+        if (loading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = C.ink)
+        else Icon(Icons.Default.KeyboardArrowUp, null, tint = C.ink, modifier = Modifier.size(18.dp))
+        Text("Frühere Termine", color = C.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1)
+    }
 }
 
 /** Kopf einer Community: Logo, Name, Pills, Beschreibung. */

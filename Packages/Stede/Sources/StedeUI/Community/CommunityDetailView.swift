@@ -2,16 +2,16 @@ import PhotosUI
 import StedeCore
 import SwiftUI
 
-/// Eine Community: Umschalter Termine · Mitglieder · Einstellungen wie bei der Bahn;
+/// Eine Community: Umschalter Termine · Umfragen · Mitglieder · Einstellungen wie bei der Bahn;
 /// wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt.
 struct CommunityDetailView: View {
     private enum Section: CaseIterable, Hashable {
-        case events, archive, members, settings
+        case events, polls, members, settings
 
         var title: String {
             switch self {
             case .events: "Termine"
-            case .archive: "Archiv"
+            case .polls: "Umfragen"
             case .members: "Mitglieder"
             case .settings: "Einstellungen"
             }
@@ -29,6 +29,8 @@ struct CommunityDetailView: View {
     @State private var busy = false
     @State private var confirmLeave = false
     @State private var showsJoinRequest = false
+    @State private var polls = PollsModel()
+    @State private var showsNewPoll = false
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -56,7 +58,7 @@ struct CommunityDetailView: View {
                         } else {
                             switch section {
                             case .events: eventsSection
-                            case .archive: archiveSection
+                            case .polls: pollsSection
                             case .members: membersSection
                             case .settings: settingsSection
                             }
@@ -76,6 +78,13 @@ struct CommunityDetailView: View {
                         .accessibilityLabel("Termin anlegen")
                 }
             }
+            if isAdmin, section == .polls {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showsNewPoll = true } label: { Image(systemName: "plus").foregroundStyle(.white) }
+                        .tint(.white)
+                        .accessibilityLabel("Umfrage anlegen")
+                }
+            }
         }
         .task(id: "\(auth.userID?.uuidString ?? "")|\(isActiveMember)") { await reload() }
         .sheet(isPresented: $showsEditor) {
@@ -90,6 +99,12 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(isPresented: $showsNewPoll) {
+            PollEditorView { draft in
+                guard let userID = auth.userID else { return false }
+                return await polls.create(draft, communityID: model.community.id, userID: userID)
+            }
+        }
         .sheet(isPresented: $showsJoinRequest) {
             JoinRequestSheet(communityName: model.community.name) { message in
                 guard let userID = auth.userID else { return false }
@@ -117,6 +132,7 @@ struct CommunityDetailView: View {
 
     private func reload() async {
         await model.load(userID: auth.userID, isMember: isActiveMember)
+        if isActiveMember, polls.polls != nil { await polls.load(communityID: model.community.id) }
     }
 
     // MARK: Kopf (Nicht-Mitglieder)
@@ -171,27 +187,58 @@ struct CommunityDetailView: View {
 
     // MARK: Termine
 
+    /// Oben „Frühere Termine“ wie im Kalender: jeder Tipp holt 20 vergangene Termine dazu,
+    /// die chronologisch über den kommenden stehen.
     @ViewBuilder private var eventsSection: some View {
+        if model.hasMorePast { earlierButton }
+        if let past = model.pastEvents {
+            if past.isEmpty {
+                Text("Keine früheren Termine.").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+            }
+            ForEach(past.reversed()) { event in eventCard(event) }
+        }
         if model.events.isEmpty { InfoCard { Text("Noch keine anstehenden Termine.").foregroundStyle(.secondary) } }
         ForEach(model.events) { event in eventCard(event) }
     }
 
-    // MARK: Archiv
-
-    /// Vergangene Termine, neueste zuerst; weitere Seiten laden, sobald die letzte Karte erscheint.
-    @ViewBuilder private var archiveSection: some View {
-        if let past = model.pastEvents {
-            if past.isEmpty { InfoCard { Text("Keine vergangenen Termine.").foregroundStyle(.secondary) } }
-            ForEach(past) { event in
-                eventCard(event)
-                    .onAppear {
-                        if event.id == past.last?.id { Task { await model.loadMorePastEvents() } }
-                    }
+    private var earlierButton: some View {
+        Button {
+            Task { if model.pastEvents == nil { await model.loadPastEvents() } else { await model.loadMorePastEvents() } }
+        } label: {
+            HStack(spacing: 6) {
+                if model.loadingPast { ProgressView().controlSize(.small) } else { Image(systemName: "chevron.up") }
+                Text("Frühere Termine")
             }
-            if model.loadingPast { ProgressView().frame(maxWidth: .infinity).padding(.vertical, 8) }
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .stedeSelectionChip(isSelected: false)
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .disabled(model.loadingPast)
+    }
+
+    // MARK: Umfragen
+
+    @ViewBuilder private var pollsSection: some View {
+        if let list = polls.polls {
+            if list.isEmpty {
+                InfoCard {
+                    Text(isAdmin ? "Noch keine Umfrage. Starte eine mit +." : "Noch keine Umfrage in dieser Gruppe.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ForEach(list) { poll in
+                PollCard(
+                    poll: poll, votes: polls.votes[poll.id] ?? [], userID: auth.userID, isAdmin: isAdmin,
+                    onToggle: { option in Task { if let userID = auth.userID { await polls.toggle(option, in: poll, userID: userID) } } },
+                    onClose: { Task { await polls.close(poll) } },
+                    onDelete: { Task { await polls.delete(poll) } }
+                )
+            }
+            if let error = polls.lastError { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
         } else {
             ProgressView().frame(maxWidth: .infinity).padding(.vertical, 24)
-                .task { await model.loadPastEvents() }
+                .task { await polls.load(communityID: model.community.id) }
         }
     }
 
