@@ -1,7 +1,9 @@
 package de.letzgo.stede.ui
 
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -58,6 +60,8 @@ fun CalendarScreen() {
     var loadingEarlier by remember { mutableStateOf(false) }
     var loadingLater by remember { mutableStateOf(false) }
     var didScroll by remember { mutableStateOf(false) }
+    // Nach „Frühere Termine“: Schlüssel der Zeile, die vorher ganz oben stand und nun unten am Rand stehen soll.
+    var earlierAnchor by remember { mutableStateOf<String?>(null) }
     val openUrl = rememberOpenUrl()
     val userId = Session.userId
     val memberIds = Session.activeCommunityIds
@@ -101,7 +105,7 @@ fun CalendarScreen() {
         }
     }
 
-    fun loadEarlier() {
+    fun loadEarlier(anchorKey: String?) {
         if (loadingEarlier) return
         loadingEarlier = true
         scope.launch {
@@ -111,6 +115,7 @@ fun CalendarScreen() {
             city = (more + city.orEmpty()).distinctBy { it.externalId + it.day }
             community = (moreCommunity + community).distinctBy { it.id }
             start = from; loadingEarlier = false
+            earlierAnchor = anchorKey
             refreshHelpers()
             refreshComments()
         }
@@ -138,6 +143,14 @@ fun CalendarScreen() {
     }
     val todayIndex = rows.indexOfFirst { it is CalendarRow.Header && it.day == today }
 
+    // Grenze halten: der bisher erste Tag rückt an den unteren Rand, die neu geladenen Termine stehen direkt darüber.
+    LaunchedEffect(earlierAnchor) {
+        val key = earlierAnchor ?: return@LaunchedEffect
+        val index = rows.indexOfFirst { it.key == key }
+        if (index >= 0) listState.scrollItemToBottom(index)
+        earlierAnchor = null
+    }
+
     LaunchedEffect(city != null) {
         if (!didScroll && city != null && todayIndex >= 0) { didScroll = true; listState.scrollToItem(todayIndex) }
     }
@@ -155,7 +168,7 @@ fun CalendarScreen() {
                 items(rows, key = { it.key }) { row ->
                     Box(Modifier.padding(horizontal = 16.dp)) {
                         when (row) {
-                            CalendarRow.Earlier -> SelectionChip(if (loadingEarlier) "Lade …" else "Frühere Termine", false, Modifier.fillMaxWidth(), icon = Icons.Default.KeyboardArrowUp) { loadEarlier() }
+                            CalendarRow.Earlier -> SelectionChip(if (loadingEarlier) "Lade …" else "Frühere Termine", false, Modifier.fillMaxWidth(), icon = Icons.Default.KeyboardArrowUp) { loadEarlier(rows.firstOrNull { it is CalendarRow.Header }?.key) }
                             is CalendarRow.Header -> SectionHeader((if (row.day == today) "Heute, " else "") + row.day.format(Town.fmt(if (row.day.year == today.year) "EEEE, d. MMM" else "EEEE, d. MMM yyyy")), if (row.day == today) Icons.Default.WbSunny else null)
                             is CalendarRow.NoneToday -> Text("Heute keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
                             is CalendarRow.Entry -> when (val entry = row.entry) {
@@ -178,6 +191,17 @@ fun CalendarScreen() {
     open?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { open = null; showAccount = true }) { open = null } }
     commenting?.let { e -> CommentsSheet(e.title, CommentTarget.Event(e.id), canModerate = canEdit(e)) { commenting = null; scope.launch { refreshComments() } } }
     if (showAccount) AccountSheet { showAccount = false }
+}
+
+/** Scrollt so, dass die Zeile [index] am unteren Rand des sichtbaren Bereichs steht —
+ *  für „Frühere Termine“: die neu geladenen Einträge liegen dann direkt darüber. */
+internal suspend fun LazyListState.scrollItemToBottom(index: Int) {
+    scrollToItem(index)
+    val info = layoutInfo
+    val item = info.visibleItemsInfo.firstOrNull { it.index == index } ?: return
+    val bottom = info.viewportEndOffset - info.afterContentPadding
+    val delta = item.offset + item.size - bottom
+    if (delta < 0) scrollBy(delta.toFloat())
 }
 
 /** Kompakte Karte für Stadt-Termine: Zeit-Pille, Titel, Ort; Tipp öffnet die Seite der Stadt. */

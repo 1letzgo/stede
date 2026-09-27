@@ -33,6 +33,8 @@ struct CommunityDetailView: View {
     @State private var showsNewPoll = false
     @State private var commentingPoll: CommunityPoll?
     @State private var commentingEvent: CommunityEvent?
+    /// Erster Termin vor „Frühere Termine“ — danach bleibt die Liste dort stehen.
+    @State private var earlierAnchor: UUID?
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -53,6 +55,7 @@ struct CommunityDetailView: View {
                         .padding(.top)
                         .padding(.bottom, StedeTheme.cardSpacing)
                 }
+                ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                         if !isActiveMember {
@@ -69,6 +72,15 @@ struct CommunityDetailView: View {
                     }
                     .padding([.horizontal, .bottom])
                     .padding(.top, isActiveMember ? 0 : 16)
+                }
+                .onChange(of: earlierAnchor) {
+                    guard let id = earlierAnchor else { return }
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(60))
+                        proxy.scrollTo(id, anchor: .bottom)
+                        earlierAnchor = nil
+                    }
+                }
                 }
             }
         }
@@ -203,15 +215,20 @@ struct CommunityDetailView: View {
             if past.isEmpty {
                 Text("Keine früheren Termine.").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
-            ForEach(past.reversed()) { event in eventCard(event) }
+            ForEach(past.reversed()) { event in eventCard(event).id(event.id) }
         }
         if model.events.isEmpty { InfoCard { Text("Noch keine anstehenden Termine.").foregroundStyle(.secondary) } }
-        ForEach(model.events) { event in eventCard(event) }
+        ForEach(model.events) { event in eventCard(event).id(event.id) }
     }
 
     private var earlierButton: some View {
         Button {
-            Task { if model.pastEvents == nil { await model.loadPastEvents() } else { await model.loadMorePastEvents() } }
+            // Bisher oberster Termin: der älteste geladene frühere, sonst der nächste kommende.
+            let anchor = model.pastEvents?.last?.id ?? model.events.first?.id
+            Task {
+                if model.pastEvents == nil { await model.loadPastEvents() } else { await model.loadMorePastEvents() }
+                earlierAnchor = anchor
+            }
         } label: {
             HStack(spacing: 6) {
                 if model.loadingPast { ProgressView().controlSize(.small) } else { Image(systemName: "chevron.up") }

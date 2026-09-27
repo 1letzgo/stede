@@ -39,6 +39,9 @@ struct EventView: View {
     @State private var editingEvent: CommunityEvent?
 
     private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
+    /// Tag, der vor „Frühere Termine“ oben stand — danach bleibt die Liste dort stehen,
+    /// die geladenen Tage stehen darüber (alt → neu), statt zum ältesten zu springen.
+    @State private var earlierAnchor: String?
 
     var body: some View {
         TabScreen(title: "Kalender", showsDateNavigator: false) {
@@ -71,6 +74,14 @@ struct EventView: View {
                                 laterFooter
                             }
                             .padding([.horizontal, .bottom])
+                        }
+                        .onChange(of: earlierAnchor) {
+                            guard let id = earlierAnchor else { return }
+                            Task {
+                                try? await Task.sleep(for: .milliseconds(60))
+                                proxy.scrollTo(id, anchor: .bottom)
+                                earlierAnchor = nil
+                            }
                         }
                         .onChange(of: scrollTarget) {
                             scrollToCurrent(scrollTarget, in: proxy)
@@ -173,7 +184,11 @@ struct EventView: View {
     /// Oben: frühere Termine auf Tipp — automatisch würde die Liste beim Einfügen springen.
     private var earlierButton: some View {
         Button {
-            Task { await model.loadEarlier() }
+            let anchor = days.first.map { dayID($0.date) }
+            Task {
+                await model.loadEarlier()
+                earlierAnchor = anchor
+            }
         } label: {
             HStack(spacing: 6) {
                 if model.isLoadingEarlier { ProgressView().controlSize(.small) } else { Image(systemName: "chevron.up") }

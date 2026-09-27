@@ -182,6 +182,9 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var hasMorePast by remember { mutableStateOf(true) }
     var loadingPast by remember { mutableStateOf(false) }
     var noMorePast by remember { mutableStateOf(false) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Nach „Frühere Termine“: Schlüssel des Termins, der vorher oben stand und nun unten am Rand stehen soll.
+    var pastAnchor by remember { mutableStateOf<String?>(null) }
     val polls = remember(id) { PollsModel(id) }
     var newPoll by remember { mutableStateOf(false) }
     var commentingPoll by remember { mutableStateOf<CommunityPoll?>(null) }
@@ -231,6 +234,22 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
         }.onFailure { if (past == null) past = emptyList() }
         loadingPast = false
     }
+    // Grenze halten: der bisher älteste geladene (sonst der erste kommende) Termin rückt an den unteren Rand,
+    // die neu geladenen früheren Termine stehen direkt darüber. Die Schlüssel folgen der Reihenfolge im Reiter Termine.
+    LaunchedEffect(pastAnchor) {
+        val key = pastAnchor ?: return@LaunchedEffect
+        pastAnchor = null
+        if (!isMember || tab != CommunityTab.Events) return@LaunchedEffect
+        val keys = buildList {
+            if (hasMorePast) add("earlier")
+            if (noMorePast) add("noMorePast")
+            past.orEmpty().asReversed().forEach { add("past${it.id}") }
+            if (events == null || events!!.isEmpty()) add("placeholder")
+            events.orEmpty().forEach { add(it.id) }
+        }
+        val index = keys.indexOf(key)
+        if (index >= 0) listState.scrollItemToBottom(index)
+    }
     // Umfragen: erst beim ersten Öffnen des Reiters laden.
     LaunchedEffect(id, tab) {
         if (tab == CommunityTab.Polls && isMember && polls.polls == null) polls.load()
@@ -245,7 +264,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
         if (community == null) { Box(Modifier.padding(pad)) { Loading() }; return@Scaffold }
         Column(Modifier.padding(pad).fillMaxSize()) {
             if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { CommunityTabs(tab) { tab = it } }
-            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (isMember) 0.dp else 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+            LazyColumn(state = listState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (isMember) 0.dp else 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                 if (!isMember) {
                     item {
                         StedeCard {
@@ -272,7 +291,14 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                     CommunityTab.Events -> {
                         // Oben „Frühere Termine“ wie im Kalender; vergangene Termine chronologisch über den kommenden.
                         if (hasMorePast) item(key = "earlier") {
-                            EarlierChip(loadingPast) { scope.launch { loadPast(past?.size?.toLong() ?: 0L) } }
+                            EarlierChip(loadingPast) {
+                                val anchor = past?.lastOrNull()?.let { "past${it.id}" } ?: events?.firstOrNull()?.id
+                                scope.launch {
+                                    val before = past?.size ?: 0
+                                    loadPast(before.toLong())
+                                    if ((past?.size ?: 0) > before) pastAnchor = anchor
+                                }
+                            }
                         }
                         if (noMorePast) item(key = "noMorePast") {
                             Text("Keine früheren Termine.", color = C.secondary, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
