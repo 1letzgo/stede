@@ -92,7 +92,7 @@ data class EventInfo(
         fun of(e: CommunityEvent, fallbackName: String = "", fallbackLogo: String? = null) = EventInfo(
             e.id, e.title, e.community?.name?.ifBlank { null } ?: fallbackName, Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
-            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled && !e.isPublic, e.targetTenants,
+            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants,
         )
         fun of(e: PublicEvent) = EventInfo(
             e.id, e.title, e.communityName, Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,

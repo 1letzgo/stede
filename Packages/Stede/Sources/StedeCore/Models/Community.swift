@@ -123,7 +123,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var imagePath: String?
     /// 0 = keine Helfer gesucht.
     public var helpersNeeded: Int
-    /// Kommentare der Mitglieder — nur bei internen Terminen, vom Ersteller eingeschaltet.
+    /// Kommentare der Mitglieder — vom Ersteller eingeschaltet, auch bei öffentlichen Terminen nur für Mitglieder.
     public var commentsEnabled: Bool
     public var visibility: EventVisibility
     /// Nur bei kreisweiten Gruppen: nil = kreisweit, sonst nur diese Gemeinden (plus Heimatgemeinde).
@@ -276,8 +276,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         self.location = location
         self.imagePath = imagePath
         self.helpersNeeded = helpersNeeded
-        // Kommentare gibt es nur bei internen Terminen.
-        self.commentsEnabled = commentsEnabled && visibility == .members
+        self.commentsEnabled = commentsEnabled
         self.visibility = visibility
         self.targetTenants = visibility == .public ? targetTenants : nil
         self.createdBy = createdBy

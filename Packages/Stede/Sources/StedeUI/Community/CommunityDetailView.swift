@@ -287,9 +287,9 @@ struct CommunityDetailView: View {
         let open = event.cancelledAt == nil && (event.endsAt ?? event.startsAt) > Date()
         return EventCardActions(
             edit: { editingEvent = event },
-            toggleComments: event.visibility == .members ? {
+            toggleComments: {
                 Task { try? await CommunityClient().setEventComments(id: event.id, enabled: !event.commentsEnabled); await reload() }
-            } : nil,
+            },
             cancel: open ? { Task { await model.cancel(event: event) } } : nil
         )
     }
@@ -573,15 +573,11 @@ struct EventEditorView: View {
                 }
                 Section("Kommentare") {
                     Toggle("Kommentare erlauben", isOn: $commentsEnabled)
-                        .disabled(isPublic)
-                    Text(isPublic
-                         ? "Kommentare gibt es nur bei internen Terminen."
-                         : "Mitglieder der Gruppe können unter dem Termin Fragen stellen und sich abstimmen.")
+                    Text("Mitglieder der Gruppe können unter dem Termin Fragen stellen und sich abstimmen – auch bei öffentlichen Terminen sehen nur sie die Kommentare.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section {
                     Toggle("Öffentlich im Kalender der Gemeinde", isOn: $isPublic)
-                        .onChange(of: isPublic) { if isPublic { commentsEnabled = false } }
                     Text("Öffentlich zeigt Titel, Zeit, Ort und Gruppenname allen Nutzern der App. Mitglieder und Zusagen bleiben intern.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
@@ -685,7 +681,7 @@ struct EventEditorView: View {
         let draft = CommunityEventDraft(
             communityId: communityID, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled && !isPublic, visibility: isPublic ? .public : .members,
+            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled, visibility: isPublic ? .public : .members,
             targetTenants: community?.isCountywide == true && !countywideReach ? Array(targetTenants) : nil,
             createdBy: existing?.createdBy ?? userID
         )

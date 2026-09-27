@@ -203,7 +203,7 @@ final class CommunityCalendarModel {
     }
 
     func loadCommentCounts() async {
-        let ids = memberEvents.filter { $0.commentsEnabled && $0.visibility == .members }.map(\.id)
+        let ids = memberEvents.filter(\.commentsEnabled).map(\.id)
         commentCounts = (try? await client.commentCounts(eventIDs: ids)) ?? commentCounts
     }
 

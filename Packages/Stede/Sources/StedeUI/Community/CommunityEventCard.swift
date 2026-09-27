@@ -16,7 +16,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
     let isPublic: Bool
     let isCancelled: Bool
     let helpersNeeded: Int
-    /// Kommentare eingeschaltet (nur interne Termine).
+    /// Kommentare eingeschaltet — sichtbar nur für Mitglieder (öffentliche Termine kommen für
+    /// Außenstehende als `PublicEvent` ohne Kommentare).
     let commentsEnabled: Bool
     let createdBy: UUID?
     let communityId: UUID?
@@ -26,7 +27,7 @@ struct CommunityEventInfo: Identifiable, Hashable {
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = event.isPublic; isCancelled = event.cancelledAt != nil
         helpersNeeded = event.helpersNeeded; createdBy = event.createdBy; communityId = event.communityId
-        commentsEnabled = event.commentsEnabled && !event.isPublic
+        commentsEnabled = event.commentsEnabled
     }
 
     init(_ event: PublicEvent) {
@@ -53,7 +54,6 @@ struct CommunityEventInfo: Identifiable, Hashable {
 /// Schnellmenü „…“ auf der Karte — für Ersteller und Admins, wie bei Umfragen.
 struct EventCardActions {
     var edit: () -> Void
-    /// Nur bei internen Terminen.
     var toggleComments: (() -> Void)?
     /// Nur solange der Termin weder abgesagt noch vorbei ist.
     var cancel: (() -> Void)?

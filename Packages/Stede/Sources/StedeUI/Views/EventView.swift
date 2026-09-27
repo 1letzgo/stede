@@ -287,9 +287,9 @@ struct EventView: View {
         let open = event.cancelledAt == nil && (event.endsAt ?? event.startsAt) > Date()
         return EventCardActions(
             edit: { editingEvent = event },
-            toggleComments: event.visibility == .members ? {
+            toggleComments: {
                 Task { try? await CommunityClient().setEventComments(id: event.id, enabled: !event.commentsEnabled); await loadCommunity() }
-            } : nil,
+            },
             cancel: open ? { Task { try? await CommunityClient().cancelEvent(id: event.id); await loadCommunity() } } : nil
         )
     }

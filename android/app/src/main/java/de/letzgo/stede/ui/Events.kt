@@ -113,7 +113,7 @@ private fun EventCardMenu(e: EventInfo, onEdit: () -> Unit, onCancel: () -> Unit
         IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreHoriz, "Termin verwalten", tint = C.ink) }
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem({ Text("Bearbeiten") }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Default.Edit, null) })
-            if (!e.isPublic) DropdownMenuItem({ Text(if (e.commentsEnabled) "Kommentare ausschalten" else "Kommentare erlauben") },
+            DropdownMenuItem({ Text(if (e.commentsEnabled) "Kommentare ausschalten" else "Kommentare erlauben") },
                 { menu = false; scope.launch { runCatching { CommunityApi.setEventComments(e.id, !e.commentsEnabled) }; Changes.bump() } },
                 leadingIcon = { Icon(if (e.commentsEnabled) Icons.Default.CommentsDisabled else Icons.Default.Forum, null) })
             DropdownMenuItem({ Text("Teilen") }, { menu = false; scope.launch { EventShare.share(context, e) } }, leadingIcon = { Icon(Icons.Default.Share, null) })
@@ -316,7 +316,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             if (ends != null && !ends.isAfter(starts)) ends = ends.plusDays(1)
             val draft = EventDraft(communityId, title.trim(), description.trim(), starts.toOffsetDateTime().toString(), ends?.toOffsetDateTime()?.toString(),
                 location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user,
-                commentsEnabled = comments && !isPublic,
+                commentsEnabled = comments,
                 targetTenants = if (isPublic && community?.countywide == true && !countywideReach) targetTenants.toList() else null)
             if (existing == null) CommunityApi.createEvent(draft) else CommunityApi.updateEvent(existing.id, draft)
             if (originalPath != null && originalPath != path) CommunityApi.deletePhoto("event-photos", originalPath)
@@ -360,14 +360,14 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Öffentlich", color = C.text); Text("Erscheint im Stadtkalender für alle", color = C.secondary, fontSize = 13.sp) }
-                    Switch(isPublic, { isPublic = it; if (it) comments = false })
+                    Switch(isPublic, { isPublic = it })
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Kommentare erlauben", color = if (isPublic) C.tertiary else C.text)
-                        Text(if (isPublic) "Nur bei internen Terminen" else "Mitglieder können unter dem Termin schreiben", color = C.secondary, fontSize = 13.sp)
+                        Text("Kommentare erlauben", color = C.text)
+                        Text("Mitglieder können unter dem Termin schreiben – auch bei öffentlichen Terminen nur sie", color = C.secondary, fontSize = 13.sp)
                     }
-                    Switch(comments, { comments = it }, enabled = !isPublic)
+                    Switch(comments, { comments = it })
                 }
             }
             community?.takeIf { isPublic && it.countywide }?.let { c ->
