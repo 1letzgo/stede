@@ -33,6 +33,7 @@ final class CommunityDetailModel {
     private static let pastPageSize = 20
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
+    var commentCounts: [UUID: Int] = [:]
     var state: LoadState = .idle
     var lastError: String?
     private let client = CommunityClient()
@@ -55,6 +56,7 @@ final class CommunityDetailModel {
                     myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, MyParticipation(status: $0.status, helping: $0.helping)) })
                 }
                 helperCounts = try await client.helperCounts(eventIDs: events.filter { $0.helpersNeeded > 0 }.map(\.id))
+                await loadCommentCounts()
                 if pastEvents != nil { await loadPastEvents() }
             } else {
                 members = []
@@ -64,6 +66,12 @@ final class CommunityDetailModel {
         } catch {
             state = .failed(error.localizedDescription)
         }
+    }
+
+    /// Kommentarzahlen der geladenen Termine mit eingeschalteten Kommentaren.
+    func loadCommentCounts() async {
+        let ids = (events + (pastEvents ?? [])).filter(\.commentsEnabled).map(\.id)
+        commentCounts = (try? await client.commentCounts(eventIDs: ids)) ?? commentCounts
     }
 
     /// Erste Seite des Archivs (oder neu laden, z. B. nach Bearbeiten).
@@ -87,6 +95,7 @@ final class CommunityDetailModel {
             helperCounts.merge(counts) { _, new in new }
             hasMorePast = page.count == Self.pastPageSize
             pastEvents = offset == 0 ? page : (pastEvents ?? []) + page
+            await loadCommentCounts()
         } catch {
             lastError = error.localizedDescription
         }
@@ -168,6 +177,7 @@ final class CommunityCalendarModel {
     var memberEvents: [CommunityEvent] = []
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
+    var commentCounts: [UUID: Int] = [:]
     private let client = CommunityClient()
 
     /// Lädt bei jedem Aufruf neu — Termine entstehen auch in anderen Tabs.
@@ -186,9 +196,15 @@ final class CommunityCalendarModel {
             }
             let helperIDs = memberEvents.filter { $0.helpersNeeded > 0 }.map(\.id) + publicEvents.filter { $0.helpersNeeded > 0 }.map(\.id)
             helperCounts = try await client.helperCounts(eventIDs: helperIDs)
+            await loadCommentCounts()
         } catch {
             // Community-Termine sind Beiwerk im Kalender: Fehler stören die Stadt-Termine nicht.
         }
+    }
+
+    func loadCommentCounts() async {
+        let ids = memberEvents.filter { $0.commentsEnabled && $0.visibility == .members }.map(\.id)
+        commentCounts = (try? await client.commentCounts(eventIDs: ids)) ?? commentCounts
     }
 
     func setParticipation(eventID: UUID, userID: UUID, status: ParticipationStatus?, helping: Bool = false) async {

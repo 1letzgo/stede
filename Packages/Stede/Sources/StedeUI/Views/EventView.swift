@@ -35,6 +35,7 @@ struct EventView: View {
     @State private var community = CommunityCalendarModel()
     @State private var showsAccount = false
     @State private var openedEvent: CommunityEventInfo?
+    @State private var commentingEvent: CommunityEventInfo?
     @State private var editingEvent: CommunityEvent?
 
     private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
@@ -96,6 +97,9 @@ struct EventView: View {
         }
         .onAppear { Task { await loadCommunity() } }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(item: $commentingEvent, onDismiss: { Task { await community.loadCommentCounts() } }) { info in
+            CommentsSheet(title: info.title, target: .event(info.id), canModerate: canEdit(info))
+        }
         .sheet(item: $openedEvent) { info in
             CommunityEventDetailView(
                 info: info, helperCount: community.helperCounts[info.id] ?? 0,
@@ -256,7 +260,9 @@ struct EventView: View {
             onParticipate: { status, helping in participate(info, status, helping) },
             signIn: { showsAccount = true },
             onOpen: { openedEvent = info },
-            showsDate: false
+            showsDate: false,
+            commentCount: community.commentCounts[info.id] ?? 0,
+            onComments: { commentingEvent = info }
         )
     }
 }

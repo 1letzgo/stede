@@ -185,6 +185,8 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val polls = remember(id) { PollsModel(id) }
     var newPoll by remember { mutableStateOf(false) }
     var commentingPoll by remember { mutableStateOf<CommunityPoll?>(null) }
+    var commentingEvent by remember { mutableStateOf<EventInfo?>(null) }
+    var commentCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var tab by remember { mutableStateOf(CommunityTab.Events) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
@@ -195,6 +197,11 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val membership = Session.membership(id)
     val isMember = membership?.isActive == true
     val isAdmin = membership?.isAdmin == true
+    // Kommentarzahlen der geladenen Termine (kommende und frühere) mit eingeschalteten Kommentaren.
+    suspend fun loadCommentCounts() {
+        val ids = (events.orEmpty() + past.orEmpty()).filter { it.commentsEnabled }.map { it.id }
+        commentCounts = runCatching { CommunityApi.commentCounts(ids) }.getOrDefault(commentCounts)
+    }
     LaunchedEffect(id, Changes.version, Session.memberships) {
         runCatching { CommunityApi.community(id) }.onSuccess { c = it }
         if (isMember) {
@@ -202,6 +209,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             runCatching { CommunityApi.events(id, from) }.onSuccess { list -> events = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) } }
             runCatching { CommunityApi.members(id) }.onSuccess { members = it }
             helpers = runCatching { CommunityApi.helperCounts(events.orEmpty().filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
+            loadCommentCounts()
             MyParticipation.load()
             if (polls.polls != null) polls.load()
         }
@@ -219,6 +227,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             noMorePast = page.isEmpty()
             val counts = runCatching { CommunityApi.helperCounts(page.filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             helpers = helpers + counts
+            loadCommentCounts()
         }.onFailure { if (past == null) past = emptyList() }
         loadingPast = false
     }
@@ -268,10 +277,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (noMorePast) item(key = "noMorePast") {
                             Text("Keine früheren Termine.", color = C.secondary, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
-                        items(past.orEmpty().asReversed(), key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                        items(past.orEmpty().asReversed(), key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }) { openEvent = e } }
                         if (events == null) item { Loading() }
                         else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
-                        items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }) { openEvent = e } }
+                        items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }) { openEvent = e } }
                     }
                     CommunityTab.Polls -> {
                         val list = polls.polls
@@ -344,7 +353,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     }
     commentingPoll?.let { poll ->
         // Nach dem Schließen die Zähler unter den Karten auffrischen.
-        PollCommentsSheet(poll, canModerate = isAdmin) { commentingPoll = null; scope.launch { polls.load() } }
+        CommentsSheet(poll.question, CommentTarget.Poll(poll.id), canModerate = isAdmin) { commentingPoll = null; scope.launch { polls.load() } }
+    }
+    commentingEvent?.let { e ->
+        CommentsSheet(e.title, CommentTarget.Event(e.id), canModerate = canEdit(e)) { commentingEvent = null; scope.launch { loadCommentCounts() } }
     }
     if (editCommunity && community != null) CommunityEditorSheet(community) { editCommunity = false }
     if (joinRequest && community != null) JoinRequestDialog(community.name, { joinRequest = false }) { message ->

@@ -50,6 +50,8 @@ fun CalendarScreen() {
     var city by remember { mutableStateOf(CityEvents.cached("feed")) }
     var community by remember { mutableStateOf<List<EventInfo>>(emptyList()) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var commentCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var commenting by remember { mutableStateOf<EventInfo?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var open by remember { mutableStateOf<EventInfo?>(null) }
     var showAccount by remember { mutableStateOf(false) }
@@ -70,6 +72,8 @@ fun CalendarScreen() {
         return own + CommunityApi.publicEvents(tenant.id, f, t).filter { it.id !in ownIds }.map { EventInfo.of(it) }
     }
     suspend fun refreshHelpers() { runCatching { helpers = CommunityApi.helperCounts(community.filter { it.helpersNeeded > 0 }.map { it.id }) } }
+    // Kommentarzahlen nur für interne Termine mit eingeschalteten Kommentaren (öffentliche haben keine).
+    suspend fun refreshComments() { runCatching { commentCounts = CommunityApi.commentCounts(community.filter { it.commentsEnabled }.map { it.id }) } }
 
     // Ganzer geladener Bereich — beim Start, bei An-/Abmeldung und nach Änderungen.
     LaunchedEffect(userId, memberIds, Changes.version) {
@@ -78,6 +82,7 @@ fun CalendarScreen() {
             .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }
         runCatching { community = communityRange(start, end) }
         refreshHelpers()
+        refreshComments()
         MyParticipation.load()
     }
 
@@ -92,6 +97,7 @@ fun CalendarScreen() {
             community = (community + moreCommunity).distinctBy { it.id }
             end = to; loadingLater = false
             refreshHelpers()
+            refreshComments()
         }
     }
 
@@ -106,6 +112,7 @@ fun CalendarScreen() {
             community = (moreCommunity + community).distinctBy { it.id }
             start = from; loadingEarlier = false
             refreshHelpers()
+            refreshComments()
         }
     }
 
@@ -153,7 +160,8 @@ fun CalendarScreen() {
                             is CalendarRow.NoneToday -> Text("Heute keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
                             is CalendarRow.Entry -> when (val entry = row.entry) {
                                 is CalendarEntry.City -> CityEventRow(entry.e) { entry.e.detailUrl?.let(openUrl) }
-                                is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true }) { open = entry.e }
+                                is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true },
+                                    commentCount = commentCounts[entry.e.id] ?: 0, onComments = { commenting = entry.e }) { open = entry.e }
                             }
                             is CalendarRow.Later -> {
                                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
@@ -168,6 +176,7 @@ fun CalendarScreen() {
         }
     }
     open?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { open = null; showAccount = true }) { open = null } }
+    commenting?.let { e -> CommentsSheet(e.title, CommentTarget.Event(e.id), canModerate = canEdit(e)) { commenting = null; scope.launch { refreshComments() } } }
     if (showAccount) AccountSheet { showAccount = false }
 }
 

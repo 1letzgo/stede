@@ -68,15 +68,26 @@ struct CommunityEventCard: View {
     var showsPhoto = true
     /// In tagesweise gegliederten Listen reicht die Uhrzeit.
     var showsDate = true
+    /// Kommentare wie bei Umfragen: Knopf unten rechts, öffnet den Verlauf als Sheet.
+    var commentCount = 0
+    var onComments: (() -> Void)?
 
     @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
-            EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
-                      onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate)
-                .padding(StedeTheme.cardPadding)
+            VStack(alignment: .leading, spacing: 10) {
+                EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
+                          onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate)
+                if info.commentsEnabled, let onComments {
+                    HStack {
+                        Spacer(minLength: 0)
+                        CommentsButton(count: commentCount, tint: StedeTheme.seaTeal, action: onComments)
+                    }
+                }
+            }
+            .padding(StedeTheme.cardPadding)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .stedeCard()

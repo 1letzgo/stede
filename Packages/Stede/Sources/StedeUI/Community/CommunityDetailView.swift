@@ -32,6 +32,7 @@ struct CommunityDetailView: View {
     @State private var polls = PollsModel()
     @State private var showsNewPoll = false
     @State private var commentingPoll: CommunityPoll?
+    @State private var commentingEvent: CommunityEvent?
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -100,8 +101,11 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(item: $commentingEvent, onDismiss: { Task { await model.loadCommentCounts() } }) { event in
+            CommentsSheet(title: event.title, target: .event(event.id), canModerate: canEdit(event))
+        }
         .sheet(item: $commentingPoll, onDismiss: { Task { await polls.load(communityID: model.community.id) } }) { poll in
-            PollCommentsSheet(poll: poll, canModerate: isAdmin)
+            CommentsSheet(title: poll.question, target: .poll(poll.id), canModerate: isAdmin)
         }
         .sheet(isPresented: $showsNewPoll) {
             PollEditorView { draft in
@@ -257,7 +261,9 @@ struct CommunityDetailView: View {
                 Task { if let userID = auth.userID { await model.setParticipation(event: event, userID: userID, status: status, helping: helping) } }
             },
             signIn: { showsAccount = true },
-            onOpen: { openedEvent = event }
+            onOpen: { openedEvent = event },
+            commentCount: model.commentCounts[event.id] ?? 0,
+            onComments: { commentingEvent = event }
         )
     }
 

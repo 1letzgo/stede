@@ -73,7 +73,9 @@ fun canEdit(e: EventInfo) = Session.userId != null && (e.createdBy == Session.us
 
 /** Die eine Terminkarte für Community-Termine — in Community und Kalender identisch (CommunityEventCard). */
 @Composable
-fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: () -> Unit) {
+fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {},
+              /** Kommentare wie bei Umfragen: Knopf unten rechts, öffnet den Verlauf als Sheet. */
+              commentCount: Int = 0, onComments: (() -> Unit)? = null, onOpen: () -> Unit) {
     val going = MyParticipation.byEvent[e.id]?.status == "going"
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -81,13 +83,17 @@ fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onOpen: ()
     Column(Modifier.cardSurface().goingOutline(going)
         .combinedClickable(onClick = onOpen, onLongClick = { scope.launch { EventShare.share(context, e) } })) {
         e.imageUrl?.let { EventPhoto(it, 170.dp) }
-        EventBody(e, helpers, compact = true, onSignIn = onSignIn)
+        EventBody(e, helpers, compact = true, onSignIn = onSignIn) {
+            if (e.commentsEnabled && onComments != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                CommentsButton(commentCount, C.teal, onClick = onComments)
+            }
+        }
     }
 }
 
 /** Inhalt unter dem Foto — in Karte (gekürzt) und Detail (voll) gleich aufgebaut. */
 @Composable
-private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit) {
+private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit, footer: @Composable () -> Unit = {}) {
     val tint = if (e.isCancelled) C.red else C.teal
     val count = helpers ?: 0
     // Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
@@ -118,6 +124,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
             if (Session.signedIn) ParticipationRow(e, helpers)
             else ColorChip("Anmelden, um zuzusagen", C.ink, icon = Icons.Default.AccountCircle) { onSignIn() }
         }
+        footer()
     }
 }
 

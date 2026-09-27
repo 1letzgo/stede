@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -140,14 +141,7 @@ fun PollCard(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (voterCount == 1) "1 Person hat abgestimmt" else "$voterCount Personen haben abgestimmt", fontSize = 12.sp, color = C.secondary, modifier = Modifier.weight(1f))
-            if (poll.commentsEnabled) {
-                val label = if (commentCount == 1) "1 Kommentar" else "$commentCount Kommentare"
-                Row(Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.12f)).clickable(onClickLabel = label, onClick = onComments)
-                    .padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Icon(Icons.Default.Forum, label, tint = tint, modifier = Modifier.size(14.dp))
-                    Text(if (commentCount > 0) "$commentCount" else "Kommentieren", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = tint)
-                }
-            }
+            if (poll.commentsEnabled) CommentsButton(commentCount, tint, Modifier.padding(start = 8.dp), onComments)
         }
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Umfrage löschen?") },
@@ -252,15 +246,26 @@ fun PollEditorSheet(onDismiss: () -> Unit, onSave: suspend (PollDraft) -> Boolea
     }
 }
 
-/** Kommentare einer Umfrage als Sheet: oben die Frage, darunter der Verlauf wie bei Terminen — wie PollCommentsSheet in iOS. */
+/** Kommentare als Sheet — für Umfragen und interne Termine gleich: oben der Titel, darunter der Verlauf (CommentsSheet in iOS). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PollCommentsSheet(poll: CommunityPoll, canModerate: Boolean, onDismiss: () -> Unit) {
+fun CommentsSheet(title: String, target: CommentTarget, canModerate: Boolean, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
         SheetHeader("Kommentare", trailing = "Fertig" to onDismiss)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            Text(poll.question, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.padding(horizontal = 4.dp))
-            EventComments(CommentTarget.Poll(poll.id), canModerate)
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.padding(horizontal = 4.dp))
+            EventComments(target, canModerate)
         }
+    }
+}
+
+/** Knopf unten rechts auf Karten: Zahl der Kommentare oder „Kommentieren“ (CommentsButton in iOS). */
+@Composable
+fun CommentsButton(count: Int, tint: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val label = if (count == 1) "1 Kommentar" else "$count Kommentare"
+    Row(modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.12f)).clickable(onClickLabel = label, onClick = onClick)
+        .padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Icon(Icons.Default.Forum, label, tint = tint, modifier = Modifier.size(14.dp))
+        Text(if (count > 0) "$count" else "Kommentieren", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = tint)
     }
 }

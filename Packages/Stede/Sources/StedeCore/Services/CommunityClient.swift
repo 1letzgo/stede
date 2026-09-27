@@ -255,6 +255,15 @@ public nonisolated struct CommunityClient: Sendable {
         try await client.from("event_comments").insert(Row(event_id: eventID, user_id: userID, body: body)).execute()
     }
 
+    /// Anzahl Kommentare je Termin — für den Knopf unter der Karte.
+    public func commentCounts(eventIDs: [UUID]) async throws -> [UUID: Int] {
+        guard !eventIDs.isEmpty else { return [:] }
+        struct Row: Decodable { let event_id: UUID }
+        let rows: [Row] = try await client.from("event_comments").select("event_id")
+            .in("event_id", values: eventIDs.map(\.uuidString)).execute().value
+        return Dictionary(grouping: rows, by: \.event_id).mapValues(\.count)
+    }
+
     public func deleteComment(id: UUID) async throws {
         try await client.from("event_comments").delete().eq("id", value: id).execute()
     }

@@ -132,13 +132,7 @@ struct PollCard: View {
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer(minLength: 8)
                 if poll.commentsEnabled {
-                    Button(action: onComments) {
-                        Label(commentCount > 0 ? "\(commentCount)" : "Kommentieren", systemImage: "bubble.left.and.bubble.right.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(tint)
-                    }
-                    .buttonStyle(StedeCardButtonStyle())
-                    .accessibilityLabel(commentCount == 1 ? "1 Kommentar" : "\(commentCount) Kommentare")
+                    CommentsButton(count: commentCount, tint: tint, action: onComments)
                 }
             }
         }
@@ -312,9 +306,11 @@ struct PollEditorView: View {
     }
 }
 
-/// Kommentare einer Umfrage als Sheet: oben die Frage, darunter der Verlauf wie bei Terminen.
-struct PollCommentsSheet: View {
-    let poll: CommunityPoll
+/// Kommentare als Sheet — für Umfragen und interne Termine gleich: oben der Titel,
+/// darunter der Verlauf.
+struct CommentsSheet: View {
+    let title: String
+    let target: CommentTarget
     let canModerate: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -322,9 +318,9 @@ struct PollCommentsSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                    Text(poll.question).font(.title3.weight(.semibold)).fontDesign(.rounded)
+                    Text(title).font(.title3.weight(.semibold)).fontDesign(.rounded)
                         .padding(.horizontal, 4)
-                    EventCommentsSection(target: .poll(poll.id), canModerate: canModerate)
+                    EventCommentsSection(target: target, canModerate: canModerate)
                 }
                 .padding()
             }
@@ -335,5 +331,22 @@ struct PollCommentsSheet: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }
         }
+    }
+}
+
+/// Knopf unten rechts auf Karten: Zahl der Kommentare oder „Kommentieren“.
+struct CommentsButton: View {
+    let count: Int
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(count > 0 ? "\(count)" : "Kommentieren", systemImage: "bubble.left.and.bubble.right.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(tint)
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .accessibilityLabel(count == 1 ? "1 Kommentar" : "\(count) Kommentare")
     }
 }

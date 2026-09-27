@@ -194,6 +194,13 @@ object CommunityApi {
         db.from("event_comments").insert(buildJsonObject { put("event_id", eventId); put("user_id", userId); put("body", body) })
     }
     suspend fun deleteComment(id: String) { db.from("event_comments").delete { filter { eq("id", id) } } }
+    @Serializable private data class CommentRow(@SerialName("event_id") val eventId: String)
+    /** Anzahl Kommentare je Termin — für den Knopf unter der Karte. */
+    suspend fun commentCounts(eventIds: List<String>): Map<String, Int> {
+        if (eventIds.isEmpty()) return emptyMap()
+        return db.from("event_comments").select(Columns.raw("event_id")) { filter { isIn("event_id", eventIds) } }
+            .decodeList<CommentRow>().groupingBy { it.eventId }.eachCount()
+    }
 
     suspend fun myParticipations(userId: String) = db.from("event_participations").select(Columns.raw("event_id,user_id,status,helping")) { filter { eq("user_id", userId) } }.decodeList<Participation>()
     suspend fun participations(eventId: String) = db.from("event_participations").select(Columns.raw("event_id,user_id,status,helping,profiles(user_id,display_name,avatar_url)")) { filter { eq("event_id", eventId) } }.decodeList<Participation>()
