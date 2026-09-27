@@ -70,10 +70,11 @@ struct CommunityListView: View {
             if auth.showsAdminTab {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showsAdmin = true } label: {
-                        Image(systemName: "checkmark.seal.fill").foregroundStyle(.white)
+                        // Gefüllt, solange etwas zu tun ist (Anträge, Beitrittsanfragen); sonst nur Umriss.
+                        Image(systemName: auth.adminPendingCount > 0 ? "checkmark.seal.fill" : "checkmark.seal").foregroundStyle(.white)
                     }
                     .tint(.white)
-                    .accessibilityLabel("Admin")
+                    .accessibilityLabel(auth.adminPendingCount > 0 ? "Admin, \(auth.adminPendingCount) offen" : "Admin")
                 }
             }
         }
@@ -87,11 +88,14 @@ struct CommunityListView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
-        .sheet(isPresented: $showsAdmin) { AdminView() }
+        // Zurück aus einer Gruppe: dort bestätigte Anfragen sollen das Siegel sofort leeren.
+        .onAppear { Task { await auth.refreshAdminPending() } }
+        .sheet(isPresented: $showsAdmin, onDismiss: { Task { await auth.refreshAdminPending() } }) { AdminView() }
         .sheet(isPresented: $showsEditor) {
             CommunityEditorView(existing: nil) { _ in Task { await model.load(tenantID: auth.tenant?.id); await auth.refresh() } }
         }
         .task(id: "\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")") {
+            await auth.refreshAdminPending()
             await model.load(tenantID: auth.tenant?.id)
         }
     }

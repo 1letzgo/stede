@@ -22,6 +22,8 @@ object Session {
     var tenant by mutableStateOf<Tenant?>(null); private set
     var isTenantAdmin by mutableStateOf(false); private set
     var memberships by mutableStateOf<List<Member>>(emptyList()); private set
+    /** Offene Admin-Aufgaben: Gruppen-Anträge (App-Admin) plus Beitrittsanfragen der eigenen Gruppen. */
+    var adminPending by mutableStateOf(0); private set
     var error by mutableStateOf<String?>(null)
     private var started = false
 
@@ -62,6 +64,16 @@ object Session {
             memberships = CommunityApi.myMemberships(id)
             tenant?.let { isTenantAdmin = CommunityApi.isTenantAdmin(it.id) }
         }.onFailure { error = it.message }
+        refreshAdminPending()
+    }
+
+    /** Zählt, was im Admin-Bereich wartet — steuert das gefüllte oder leere Siegel. */
+    suspend fun refreshAdminPending() {
+        if (!showsAdmin) { adminPending = 0; return }
+        var count = runCatching { CommunityApi.pendingMemberCount(adminCommunityIds) }.getOrDefault(0)
+        val t = tenant
+        if (isTenantAdmin && t != null) count += runCatching { CommunityApi.pending(t.id).size }.getOrDefault(0)
+        adminPending = count
     }
 
     suspend fun sendMagicLink(email: String): Boolean = runCatching {

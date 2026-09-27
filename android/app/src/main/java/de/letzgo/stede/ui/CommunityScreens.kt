@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,13 +55,20 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     var code by remember { mutableStateOf("") }
     var codeError by remember { mutableStateOf<String?>(null) }
     var showInvite by remember { mutableStateOf(false) }
+    LaunchedEffect(Session.userId, Session.memberships, Changes.version, showAdmin) {
+        if (!showAdmin) Session.refreshAdminPending()
+    }
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
         runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
     }
     val town = Session.tenant?.municipality ?: Tenants.config.municipality
     Scaffold(topBar = {
         StedeTopBar("Gruppen", actions = {
-            if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) { Icon(Icons.Default.Verified, "Admin") }
+            // Gefüllt, solange etwas zu tun ist (Anträge, Beitrittsanfragen); sonst nur Umriss.
+            if (Session.showsAdmin) IconButton(onClick = { showAdmin = true }) {
+                Icon(if (Session.adminPending > 0) Icons.Default.Verified else Icons.Outlined.Verified,
+                    if (Session.adminPending > 0) "Admin, ${Session.adminPending} offen" else "Admin")
+            }
         })
     }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {

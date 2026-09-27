@@ -17,6 +17,8 @@ final class AuthStore {
     private(set) var tenant: Tenant?
     private(set) var isTenantAdmin = false
     private(set) var memberships: [CommunityMember] = []
+    /// Offene Admin-Aufgaben: Gruppen-Anträge (App-Admin) plus Beitrittsanfragen der eigenen Gruppen.
+    private(set) var adminPendingCount = 0
     private(set) var isLoading = false
     var lastError: String?
 
@@ -32,6 +34,16 @@ final class AuthStore {
     }
 
     var showsAdminTab: Bool { isTenantAdmin || !adminCommunityIDs.isEmpty }
+
+    /// Zählt, was im Admin-Bereich wartet — steuert das gefüllte oder leere Siegel.
+    func refreshAdminPending() async {
+        guard showsAdminTab else { adminPendingCount = 0; return }
+        var count = (try? await client.pendingMemberCount(communityIDs: adminCommunityIDs)) ?? 0
+        if isTenantAdmin, let tenant {
+            count += (try? await client.pendingCommunities(tenantID: tenant.id).count) ?? 0
+        }
+        adminPendingCount = count
+    }
 
     func membership(for communityID: UUID) -> CommunityMember? {
         memberships.first { $0.communityId == communityID }
@@ -82,6 +94,7 @@ final class AuthStore {
             profile = try await client.myProfile(userID: userID)
             memberships = try await client.myMemberships(userID: userID)
             if let tenant { isTenantAdmin = try await client.isTenantAdmin(tenantID: tenant.id) }
+            await refreshAdminPending()
         } catch {
             lastError = error.localizedDescription
         }

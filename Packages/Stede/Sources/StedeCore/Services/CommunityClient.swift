@@ -113,6 +113,15 @@ public nonisolated struct CommunityClient: Sendable {
     }
 
     /// App-Admin: Anträge des Mandanten.
+    /// Offene Beitrittsanfragen in den Gruppen, die der Nutzer verwaltet.
+    public func pendingMemberCount(communityIDs: [UUID]) async throws -> Int {
+        guard !communityIDs.isEmpty else { return 0 }
+        struct Row: Decodable { let user_id: UUID }
+        let rows: [Row] = try await client.from("community_members").select("user_id")
+            .in("community_id", values: communityIDs.map(\.uuidString)).eq("status", value: "pending").execute().value
+        return rows.count
+    }
+
     public func pendingCommunities(tenantID: UUID) async throws -> [Community] {
         try await client.from("v_community_overview").select(Self.communityColumns)
             .eq("tenant_id", value: tenantID).eq("status", value: CommunityStatus.pending.rawValue).order("created_at").execute().value

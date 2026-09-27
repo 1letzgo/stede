@@ -142,6 +142,14 @@ object CommunityApi {
     suspend fun communities(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { ownOrCountywide(tenantId) }; order("name", Order.ASCENDING) }.decodeList<Community>()
     suspend fun community(id: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("id", id) } }.decodeSingle<Community>()
     suspend fun byInvite(code: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("invite_code", code) }; limit(1) }.decodeList<Community>().firstOrNull()
+    /** Offene Beitrittsanfragen in den Gruppen, die der Nutzer verwaltet. */
+    suspend fun pendingMemberCount(communityIds: List<String>): Int {
+        if (communityIds.isEmpty()) return 0
+        return db.from("community_members").select(Columns.raw("user_id")) {
+            filter { isIn("community_id", communityIds); eq("status", "pending") }
+        }.decodeList<kotlinx.serialization.json.JsonObject>().size
+    }
+
     suspend fun pending(tenantId: String) = db.from("v_community_overview").select(Columns.raw(COMMUNITY)) { filter { eq("tenant_id", tenantId); eq("status", "pending") } }.decodeList<Community>()
 
     suspend fun createCommunity(tenantId: String, name: String, description: String, visibility: String, joinPolicy: String, countywide: Boolean, userId: String): Community =
