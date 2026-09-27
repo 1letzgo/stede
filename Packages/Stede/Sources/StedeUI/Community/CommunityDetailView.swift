@@ -33,8 +33,9 @@ struct CommunityDetailView: View {
     @State private var showsNewPoll = false
     @State private var commentingPoll: CommunityPoll?
     @State private var commentingEvent: CommunityEvent?
-    /// Erster Termin vor „Frühere Termine“ — danach bleibt die Liste dort stehen.
-    @State private var earlierAnchor: UUID?
+    /// Feste Scroll-Position: beim Einfügen früherer Termine oben bleibt die Liste stehen,
+    /// danach rückt der bisher erste Termin an den unteren Rand — darüber die zuletzt vergangenen.
+    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -55,7 +56,6 @@ struct CommunityDetailView: View {
                         .padding(.top)
                         .padding(.bottom, StedeTheme.cardSpacing)
                 }
-                ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                         if !isActiveMember {
@@ -70,18 +70,11 @@ struct CommunityDetailView: View {
                         }
                         if let error = model.lastError { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
                     }
+                    .scrollTargetLayout()
                     .padding([.horizontal, .bottom])
                     .padding(.top, isActiveMember ? 0 : 16)
                 }
-                .onChange(of: earlierAnchor) {
-                    guard let id = earlierAnchor else { return }
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(60))
-                        proxy.scrollTo(id, anchor: .bottom)
-                        earlierAnchor = nil
-                    }
-                }
-                }
+                .scrollPosition($scrollPosition)
             }
         }
         .toolbar {
@@ -227,7 +220,12 @@ struct CommunityDetailView: View {
             let anchor = model.pastEvents?.last?.id ?? model.events.first?.id
             Task {
                 if model.pastEvents == nil { await model.loadPastEvents() } else { await model.loadMorePastEvents() }
-                earlierAnchor = anchor
+                guard let anchor else { return }
+                // Mehrfach setzen: die neuen Karten werden erst nach und nach gelayoutet.
+                for delay in [0, 120, 350] {
+                    try? await Task.sleep(for: .milliseconds(delay))
+                    scrollPosition.scrollTo(id: anchor, anchor: .bottom)
+                }
             }
         } label: {
             HStack(spacing: 6) {

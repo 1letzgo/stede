@@ -41,7 +41,7 @@ struct EventView: View {
     private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
     /// Tag, der vor „Frühere Termine“ oben stand — danach bleibt die Liste dort stehen,
     /// die geladenen Tage stehen darüber (alt → neu), statt zum ältesten zu springen.
-    @State private var earlierAnchor: String?
+    @State private var earlierPosition = ScrollPosition(idType: String.self)
 
     var body: some View {
         TabScreen(title: "Kalender", showsDateNavigator: false) {
@@ -73,16 +73,10 @@ struct EventView: View {
                                 }
                                 laterFooter
                             }
+                            .scrollTargetLayout()
                             .padding([.horizontal, .bottom])
                         }
-                        .onChange(of: earlierAnchor) {
-                            guard let id = earlierAnchor else { return }
-                            Task {
-                                try? await Task.sleep(for: .milliseconds(60))
-                                proxy.scrollTo(id, anchor: .bottom)
-                                earlierAnchor = nil
-                            }
-                        }
+                        .scrollPosition($earlierPosition)
                         .onChange(of: scrollTarget) {
                             scrollToCurrent(scrollTarget, in: proxy)
                             scrollTarget = nil
@@ -187,7 +181,12 @@ struct EventView: View {
             let anchor = days.first.map { dayID($0.date) }
             Task {
                 await model.loadEarlier()
-                earlierAnchor = anchor
+                guard let anchor else { return }
+                // Mehrfach setzen: die neuen Tage werden erst nach und nach gelayoutet.
+                for delay in [0, 120, 350] {
+                    try? await Task.sleep(for: .milliseconds(delay))
+                    earlierPosition.scrollTo(id: anchor, anchor: .bottom)
+                }
             }
         } label: {
             HStack(spacing: 6) {
