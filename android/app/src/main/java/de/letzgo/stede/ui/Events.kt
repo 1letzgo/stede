@@ -75,25 +75,58 @@ fun canEdit(e: EventInfo) = Session.userId != null && (e.createdBy == Session.us
 @Composable
 fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {},
               /** Kommentare wie bei Umfragen: Knopf unten rechts, öffnet den Verlauf als Sheet. */
-              commentCount: Int = 0, onComments: (() -> Unit)? = null, onOpen: () -> Unit) {
+              commentCount: Int = 0, onComments: (() -> Unit)? = null,
+              /** Schnellmenü „…“ rechts oben — nur für Ersteller und Gruppen-Admins (canEdit). */
+              showsMenu: Boolean = false, onOpen: () -> Unit) {
     val going = MyParticipation.byEvent[e.id]?.status == "going"
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var editing by remember { mutableStateOf(false) }
+    var confirmCancel by remember { mutableStateOf(false) }
+    val manageable = showsMenu && e.communityId != null && canEdit(e)
     // Tippen öffnet die Details, langes Drücken teilt (wie das Kontextmenü in iOS).
     Column(Modifier.cardSurface().goingOutline(going)
         .combinedClickable(onClick = onOpen, onLongClick = { scope.launch { EventShare.share(context, e) } })) {
         e.imageUrl?.let { EventPhoto(it, 170.dp) }
-        EventBody(e, helpers, compact = true, onSignIn = onSignIn) {
+        EventBody(e, helpers, compact = true, onSignIn = onSignIn,
+            menu = if (manageable) ({ EventCardMenu(e, onEdit = { editing = true }, onCancel = { confirmCancel = true }) }) else null) {
             if (e.commentsEnabled && onComments != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 CommentsButton(commentCount, C.teal, onClick = onComments)
             }
+        }
+    }
+    if (editing && e.communityId != null) EventEditorSheet(e.communityId, e) { editing = false }
+    if (confirmCancel) AlertDialog(onDismissRequest = { confirmCancel = false },
+        title = { Text("Termin absagen?") }, text = { Text("Der Termin bleibt sichtbar, ist aber als abgesagt markiert.") },
+        confirmButton = { TextButton({ confirmCancel = false; scope.launch { runCatching { CommunityApi.cancelEvent(e.id) }; Changes.bump() } }) { Text("Absagen", color = C.red) } },
+        dismissButton = { TextButton({ confirmCancel = false }) { Text("Zurück") } })
+}
+
+/** Schnellmenü der Terminkarte — Bearbeiten, Kommentare (nur intern), Teilen, Absagen (nur offen); wie bei Umfragen. */
+@Composable
+private fun EventCardMenu(e: EventInfo, onEdit: () -> Unit, onCancel: () -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val isOpen = !e.isCancelled && (e.ends ?: e.starts).isAfter(Town.now())
+    Box {
+        IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreHoriz, "Termin verwalten", tint = C.ink) }
+        DropdownMenu(menu, { menu = false }) {
+            DropdownMenuItem({ Text("Bearbeiten") }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Default.Edit, null) })
+            if (!e.isPublic) DropdownMenuItem({ Text(if (e.commentsEnabled) "Kommentare ausschalten" else "Kommentare erlauben") },
+                { menu = false; scope.launch { runCatching { CommunityApi.setEventComments(e.id, !e.commentsEnabled) }; Changes.bump() } },
+                leadingIcon = { Icon(if (e.commentsEnabled) Icons.Default.CommentsDisabled else Icons.Default.Forum, null) })
+            DropdownMenuItem({ Text("Teilen") }, { menu = false; scope.launch { EventShare.share(context, e) } }, leadingIcon = { Icon(Icons.Default.Share, null) })
+            if (isOpen) DropdownMenuItem({ Text("Termin absagen", color = C.red) }, { menu = false; onCancel() }, leadingIcon = { Icon(Icons.Default.Cancel, null, tint = C.red) })
         }
     }
 }
 
 /** Inhalt unter dem Foto — in Karte (gekürzt) und Detail (voll) gleich aufgebaut. */
 @Composable
-private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit, footer: @Composable () -> Unit = {}) {
+private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: () -> Unit,
+                      /** Schnellmenü rechts oben (nur Karte, nur wer bearbeiten darf). */
+                      menu: (@Composable () -> Unit)? = null, footer: @Composable () -> Unit = {}) {
     val tint = if (e.isCancelled) C.red else C.teal
     val count = helpers ?: 0
     // Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
@@ -110,7 +143,9 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                     if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
             }
-            if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary, modifier = Modifier.size(14.dp))
+            if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary,
+                modifier = Modifier.padding(top = if (menu == null) 0.dp else 9.dp).size(14.dp))
+            menu?.invoke()
         }
         // Karte: Ort linksbündig direkt unter der Kopfzeile, grau, einzeilig — wie bei den Stadt-Terminen.
         if (compact) e.location?.takeIf { it.isNotBlank() }?.let { LocationLine(it) }

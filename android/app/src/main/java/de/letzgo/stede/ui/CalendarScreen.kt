@@ -161,7 +161,7 @@ fun CalendarScreen() {
                             is CalendarRow.Entry -> when (val entry = row.entry) {
                                 is CalendarEntry.City -> CityEventRow(entry.e) { entry.e.detailUrl?.let(openUrl) }
                                 is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true },
-                                    commentCount = commentCounts[entry.e.id] ?: 0, onComments = { commenting = entry.e }) { open = entry.e }
+                                    commentCount = commentCounts[entry.e.id] ?: 0, onComments = { commenting = entry.e }, showsMenu = true) { open = entry.e }
                             }
                             is CalendarRow.Later -> {
                                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }

@@ -185,6 +185,8 @@ object CommunityApi {
 
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }
     suspend fun updateEvent(id: String, d: EventDraft) { db.from("community_events").update(d) { filter { eq("id", id) } } }
+    /** Kommentare eines internen Termins ein- oder ausschalten (Schnellmenü der Karte). */
+    suspend fun setEventComments(id: String, enabled: Boolean) { db.from("community_events").update({ set("comments_enabled", enabled) }) { filter { eq("id", id) } } }
     suspend fun cancelEvent(id: String) { db.from("community_events").update({ set("cancelled_at", java.time.Instant.now().toString()) }) { filter { eq("id", id) } } }
 
     suspend fun comments(eventId: String) = db.from("event_comments").select(Columns.raw("id,event_id,user_id,body,created_at,profiles(user_id,display_name,avatar_url)")) {

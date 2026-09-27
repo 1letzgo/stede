@@ -204,6 +204,12 @@ public nonisolated struct CommunityClient: Sendable {
         try await client.from("community_events").update(draft).eq("id", value: id).execute()
     }
 
+    /// Kommentare eines internen Termins ein- oder ausschalten (Schnellmenü der Karte).
+    public func setEventComments(id: UUID, enabled: Bool) async throws {
+        struct Patch: Encodable { let comments_enabled: Bool }
+        try await client.from("community_events").update(Patch(comments_enabled: enabled)).eq("id", value: id).execute()
+    }
+
     public func cancelEvent(id: UUID) async throws {
         try await client.from("community_events").update(["cancelled_at": Date().ISO8601Format()]).eq("id", value: id).execute()
     }

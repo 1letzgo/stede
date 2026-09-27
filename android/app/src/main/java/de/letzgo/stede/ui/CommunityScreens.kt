@@ -277,10 +277,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (noMorePast) item(key = "noMorePast") {
                             Text("Keine früheren Termine.", color = C.secondary, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
-                        items(past.orEmpty().asReversed(), key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }) { openEvent = e } }
+                        items(past.orEmpty().asReversed(), key = { "past${it.id}" }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }, showsMenu = true) { openEvent = e } }
                         if (events == null) item { Loading() }
                         else if (events!!.isEmpty()) item { InfoCard("Noch keine anstehenden Termine.") }
-                        items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }) { openEvent = e } }
+                        items(events.orEmpty(), key = { it.id }) { e -> EventCard(e, helpers[e.id], onSignIn = { showAccount = true }, commentCount = commentCounts[e.id] ?: 0, onComments = { commentingEvent = e }, showsMenu = true) { openEvent = e } }
                     }
                     CommunityTab.Polls -> {
                         val list = polls.polls

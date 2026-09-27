@@ -50,6 +50,15 @@ struct CommunityEventInfo: Identifiable, Hashable {
     var longTimeLabel: String { starts.formatted(Self.longDateFormat) + (ends.map { " bis \($0.formatted(Self.timeFormat)) Uhr" } ?? " Uhr") }
 }
 
+/// Schnellmenü „…“ auf der Karte — für Ersteller und Admins, wie bei Umfragen.
+struct EventCardActions {
+    var edit: () -> Void
+    /// Nur bei internen Terminen.
+    var toggleComments: (() -> Void)?
+    /// Nur solange der Termin weder abgesagt noch vorbei ist.
+    var cancel: (() -> Void)?
+}
+
 /// Die eine Terminkarte für Community-Termine — in der Community und im
 /// Kalender-Tab identisch: Foto oben, Logo, Titel, Zeit-Pille, Text, Ort,
 /// Zusage-Pillen, Mithelfen. Tipp auf die Karte öffnet die Detailansicht.
@@ -71,6 +80,8 @@ struct CommunityEventCard: View {
     /// Kommentare wie bei Umfragen: Knopf unten rechts, öffnet den Verlauf als Sheet.
     var commentCount = 0
     var onComments: (() -> Void)?
+    var actions: EventCardActions?
+    @State private var confirmCancel = false
 
     @ScaledMetric(relativeTo: .body) private var imageHeight = 170.0
 
@@ -79,7 +90,8 @@ struct CommunityEventCard: View {
             if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
             VStack(alignment: .leading, spacing: 10) {
                 EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
-                          onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate)
+                          onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate,
+                          menu: actions.map { AnyView(menu($0)) })
                 if info.commentsEnabled, let onComments {
                     HStack {
                         Spacer(minLength: 0)
@@ -100,6 +112,30 @@ struct CommunityEventCard: View {
         .contextMenu {
             EventShareButton(info: info) { Label("Teilen", systemImage: "square.and.arrow.up") }
         }
+        .confirmationDialog("Termin absagen?", isPresented: $confirmCancel, titleVisibility: .visible) {
+            Button("Absagen", role: .destructive) { actions?.cancel?() }
+        } message: {
+            Text("Der Termin bleibt sichtbar, ist aber als abgesagt markiert.")
+        }
+    }
+
+    private func menu(_ actions: EventCardActions) -> some View {
+        Menu {
+            Button("Bearbeiten", systemImage: "pencil", action: actions.edit)
+            if let toggle = actions.toggleComments {
+                Button(info.commentsEnabled ? "Kommentare ausschalten" : "Kommentare erlauben",
+                       systemImage: info.commentsEnabled ? "bubble.left.and.exclamationmark.bubble.right" : "bubble.left.and.bubble.right",
+                       action: toggle)
+            }
+            EventShareButton(info: info) { Label("Teilen", systemImage: "square.and.arrow.up") }
+            if actions.cancel != nil {
+                Button("Termin absagen", systemImage: "xmark.circle", role: .destructive) { confirmCancel = true }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle").font(.title3).foregroundStyle(StedeTheme.ink)
+                .frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .accessibilityLabel("Termin verwalten")
     }
 }
 
@@ -114,6 +150,8 @@ private struct EventBody: View {
     var onEdit: (() -> Void)?
     let compact: Bool
     var showsDate = true
+    /// Schnellmenü rechts oben (nur Karte, nur wer bearbeiten darf).
+    var menu: AnyView?
 
     private var tint: Color { info.isCancelled ? StedeTheme.harborRed : StedeTheme.seaTeal }
     private var isHelping: Bool { participation?.helping == true }
@@ -142,7 +180,9 @@ private struct EventBody: View {
                 if !info.isPublic {
                     Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
                         .accessibilityLabel("Nur für Mitglieder")
+                        .padding(.top, menu == nil ? 0 : 8)
                 }
+                if let menu { menu }
             }
             // Karte: Ort linksbündig direkt unter der Kopfzeile, grau, einzeilig — wie bei den Stadt-Terminen.
             if compact, let location = info.location, !location.isEmpty {

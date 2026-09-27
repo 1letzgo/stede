@@ -262,7 +262,21 @@ struct EventView: View {
             onOpen: { openedEvent = info },
             showsDate: false,
             commentCount: community.commentCounts[info.id] ?? 0,
-            onComments: { commentingEvent = info }
+            onComments: { commentingEvent = info },
+            actions: cardActions(info)
+        )
+    }
+
+    /// Schnellmenü für eigene bzw. verwaltete Gruppen-Termine.
+    private func cardActions(_ info: CommunityEventInfo) -> EventCardActions? {
+        guard canEdit(info), let event = community.memberEvents.first(where: { $0.id == info.id }) else { return nil }
+        let open = event.cancelledAt == nil && (event.endsAt ?? event.startsAt) > Date()
+        return EventCardActions(
+            edit: { editingEvent = event },
+            toggleComments: event.visibility == .members ? {
+                Task { try? await CommunityClient().setEventComments(id: event.id, enabled: !event.commentsEnabled); await loadCommunity() }
+            } : nil,
+            cancel: open ? { Task { try? await CommunityClient().cancelEvent(id: event.id); await loadCommunity() } } : nil
         )
     }
 }

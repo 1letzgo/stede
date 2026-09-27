@@ -263,7 +263,19 @@ struct CommunityDetailView: View {
             signIn: { showsAccount = true },
             onOpen: { openedEvent = event },
             commentCount: model.commentCounts[event.id] ?? 0,
-            onComments: { commentingEvent = event }
+            onComments: { commentingEvent = event },
+            actions: canEdit(event) ? eventActions(event) : nil
+        )
+    }
+
+    private func eventActions(_ event: CommunityEvent) -> EventCardActions {
+        let open = event.cancelledAt == nil && (event.endsAt ?? event.startsAt) > Date()
+        return EventCardActions(
+            edit: { editingEvent = event },
+            toggleComments: event.visibility == .members ? {
+                Task { try? await CommunityClient().setEventComments(id: event.id, enabled: !event.commentsEnabled); await reload() }
+            } : nil,
+            cancel: open ? { Task { await model.cancel(event: event) } } : nil
         )
     }
 
