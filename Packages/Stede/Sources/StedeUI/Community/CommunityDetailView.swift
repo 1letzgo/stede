@@ -31,6 +31,7 @@ struct CommunityDetailView: View {
     @State private var showsJoinRequest = false
     @State private var polls = PollsModel()
     @State private var showsNewPoll = false
+    @State private var commentingPoll: CommunityPoll?
 
     init(community: Community) {
         _model = State(initialValue: CommunityDetailModel(community: community))
@@ -99,6 +100,9 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(item: $commentingPoll, onDismiss: { Task { await polls.load(communityID: model.community.id) } }) { poll in
+            PollCommentsSheet(poll: poll, canModerate: isAdmin)
+        }
         .sheet(isPresented: $showsNewPoll) {
             PollEditorView { draft in
                 guard let userID = auth.userID else { return false }
@@ -232,7 +236,10 @@ struct CommunityDetailView: View {
                     poll: poll, votes: polls.votes[poll.id] ?? [], userID: auth.userID, isAdmin: isAdmin,
                     onToggle: { option in Task { if let userID = auth.userID { await polls.toggle(option, in: poll, userID: userID) } } },
                     onClose: { Task { await polls.close(poll) } },
-                    onDelete: { Task { await polls.delete(poll) } }
+                    onDelete: { Task { await polls.delete(poll) } },
+                    commentCount: polls.commentCounts[poll.id] ?? 0,
+                    onComments: { commentingPoll = poll },
+                    onToggleComments: { Task { await polls.setComments(poll, enabled: !poll.commentsEnabled) } }
                 )
             }
             if let error = polls.lastError { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }

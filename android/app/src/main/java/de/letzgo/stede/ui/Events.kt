@@ -189,7 +189,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
                     shareScope.launch { EventShare.share(shareContext, e) }
                 }
             }
-            if (e.commentsEnabled && Session.signedIn) item { EventComments(e.id, canModerate = showsPeople) }
+            if (e.commentsEnabled && Session.signedIn) item { EventComments(CommentTarget.Event(e.id), canModerate = showsPeople) }
             if (showsPeople) {
                 val list = people.orEmpty()
                 val loading = people == null
@@ -434,19 +434,32 @@ fun LocationLine(text: String) {
     }
 }
 
-/** Kommentare unter einem internen Termin — wie EventCommentsSection auf iOS. Lange drücken löscht
+/** Wessen Kommentare: ein interner Termin oder eine Umfrage — wie CommentTarget auf iOS. */
+sealed interface CommentTarget {
+    data class Event(val id: String) : CommentTarget
+    data class Poll(val id: String) : CommentTarget
+}
+
+/** Kommentare unter einem internen Termin oder einer Umfrage — wie EventCommentsSection auf iOS. Lange drücken löscht
  *  (eigene immer, fremde nur für Ersteller und Admins; RLS prüft mit). */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun EventComments(eventId: String, canModerate: Boolean) {
+fun EventComments(target: CommentTarget, canModerate: Boolean) {
     val scope = rememberCoroutineScope()
     var comments by remember { mutableStateOf<List<EventComment>?>(null) }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<EventComment?>(null) }
-    suspend fun load() { comments = runCatching { CommunityApi.comments(eventId) }.getOrDefault(comments ?: emptyList()) }
-    LaunchedEffect(eventId) { load() }
+    suspend fun load() {
+        comments = runCatching {
+            when (target) {
+                is CommentTarget.Event -> CommunityApi.comments(target.id)
+                is CommentTarget.Poll -> PollApi.comments(target.id)
+            }
+        }.getOrDefault(comments ?: emptyList())
+    }
+    LaunchedEffect(target) { load() }
     val list = comments.orEmpty()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing)) {
         SectionHeader(if (list.isEmpty()) "Kommentare" else "Kommentare ${list.size}", Icons.Default.Forum)
@@ -470,7 +483,12 @@ fun EventComments(eventId: String, canModerate: Boolean) {
                 val user = Session.userId ?: return@IconButton
                 sending = true; failed = false
                 scope.launch {
-                    runCatching { CommunityApi.addComment(eventId, user, draft.trim()) }
+                    runCatching {
+                        when (target) {
+                            is CommentTarget.Event -> CommunityApi.addComment(target.id, user, draft.trim())
+                            is CommentTarget.Poll -> PollApi.addComment(target.id, user, draft.trim())
+                        }
+                    }
                         .onSuccess { draft = ""; load() }.onFailure { failed = true }
                     sending = false
                 }
@@ -482,7 +500,12 @@ fun EventComments(eventId: String, canModerate: Boolean) {
     }
     confirmDelete?.let { c ->
         AlertDialog(onDismissRequest = { confirmDelete = null }, title = { Text("Kommentar löschen?") },
-            confirmButton = { TextButton({ confirmDelete = null; scope.launch { runCatching { CommunityApi.deleteComment(c.id) }.onFailure { failed = true }; load() } }) { Text("Löschen", color = C.red) } },
+            confirmButton = { TextButton({ confirmDelete = null; scope.launch { runCatching {
+                when (target) {
+                    is CommentTarget.Event -> CommunityApi.deleteComment(c.id)
+                    is CommentTarget.Poll -> PollApi.deleteComment(c.id)
+                }
+            }.onFailure { failed = true }; load() } }) { Text("Löschen", color = C.red) } },
             dismissButton = { TextButton({ confirmDelete = null }) { Text("Abbrechen") } })
     }
 }

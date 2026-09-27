@@ -6,6 +6,7 @@ import SwiftUI
 final class PollsModel {
     var polls: [CommunityPoll]?
     var votes: [UUID: [PollVote]] = [:]
+    var commentCounts: [UUID: Int] = [:]
     var lastError: String?
     private let client = PollClient()
 
@@ -14,6 +15,7 @@ final class PollsModel {
             let list = try await client.polls(communityID: communityID)
             let all = try await client.votes(pollIDs: list.map(\.id))
             votes = Dictionary(grouping: all, by: \.pollId)
+            commentCounts = (try? await client.commentCounts(pollIDs: list.filter(\.commentsEnabled).map(\.id))) ?? commentCounts
             polls = list
             lastError = nil
         } catch {
@@ -53,6 +55,11 @@ final class PollsModel {
         await load(communityID: poll.communityId)
     }
 
+    func setComments(_ poll: CommunityPoll, enabled: Bool) async {
+        do { try await client.setComments(pollID: poll.id, enabled: enabled) } catch { lastError = error.localizedDescription }
+        await load(communityID: poll.communityId)
+    }
+
     func delete(_ poll: CommunityPoll) async {
         do { try await client.delete(pollID: poll.id) } catch { lastError = error.localizedDescription }
         await load(communityID: poll.communityId)
@@ -88,9 +95,14 @@ struct PollCard: View {
     let onToggle: (PollOption) -> Void
     let onClose: () -> Void
     let onDelete: () -> Void
+    var commentCount = 0
+    var onComments: () -> Void = {}
+    var onToggleComments: () -> Void = {}
     @State private var confirmDelete = false
 
     private var isOpen: Bool { poll.isOpen() }
+    /// Terminfindung grün, Umfragen mit Antworten magenta — auf einen Blick unterscheidbar.
+    private var tint: Color { poll.kind == .date ? StedeTheme.duneGreen : StedeTheme.heather }
     /// Abstimmende Personen (nicht Stimmen) — Basis für die Prozente bei Mehrfachauswahl.
     private var voterCount: Int { Set(votes.map(\.userId)).count }
     private var maxVotes: Int { poll.options.map { count(for: $0) }.max() ?? 0 }
@@ -101,7 +113,7 @@ struct PollCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                StedeIconChip(symbol: poll.kind == .date ? "calendar.badge.clock" : "chart.bar.fill", color: StedeTheme.heather)
+                StedeIconChip(symbol: poll.kind == .date ? "calendar.badge.clock" : "chart.bar.fill", color: tint)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(poll.question).font(.headline)
                     statusLine
@@ -115,8 +127,20 @@ struct PollCard: View {
             VStack(spacing: 8) {
                 ForEach(poll.options) { option in optionRow(option) }
             }
-            Text(voterCount == 1 ? "1 Person hat abgestimmt" : "\(voterCount) Personen haben abgestimmt")
-                .font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text(voterCount == 1 ? "1 Person hat abgestimmt" : "\(voterCount) Personen haben abgestimmt")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 8)
+                if poll.commentsEnabled {
+                    Button(action: onComments) {
+                        Label(commentCount > 0 ? "\(commentCount)" : "Kommentieren", systemImage: "bubble.left.and.bubble.right.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(tint)
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .accessibilityLabel(commentCount == 1 ? "1 Kommentar" : "\(commentCount) Kommentare")
+                }
+            }
         }
         .padding(StedeTheme.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,6 +168,9 @@ struct PollCard: View {
     private var adminMenu: some View {
         Menu {
             if isOpen { Button("Umfrage beenden", systemImage: "lock", action: onClose) }
+            Button(poll.commentsEnabled ? "Kommentare ausschalten" : "Kommentare erlauben",
+                   systemImage: poll.commentsEnabled ? "bubble.left.and.exclamationmark.bubble.right" : "bubble.left.and.bubble.right",
+                   action: onToggleComments)
             Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
         } label: {
             Image(systemName: "ellipsis.circle").font(.title3).foregroundStyle(StedeTheme.ink)
@@ -164,7 +191,7 @@ struct PollCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 10) {
                     Image(systemName: mine ? (poll.multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (poll.multiple ? "square" : "circle"))
-                        .foregroundStyle(mine ? StedeTheme.heather : Color.secondary)
+                        .foregroundStyle(mine ? tint : Color.secondary)
                     Text(PollFormat.label(option, kind: poll.kind))
                         .fontWeight(leading ? .semibold : .regular)
                         .multilineTextAlignment(.leading)
@@ -173,8 +200,8 @@ struct PollCard: View {
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(StedeTheme.heather.opacity(0.12))
-                        Capsule().fill(StedeTheme.heather.opacity(mine || leading ? 0.8 : 0.45))
+                        Capsule().fill(tint.opacity(0.12))
+                        Capsule().fill(tint.opacity(mine || leading ? 0.8 : 0.45))
                             .frame(width: max(geo.size.width * share, share > 0 ? 6 : 0))
                     }
                 }
@@ -204,6 +231,7 @@ struct PollEditorView: View {
     @State private var kind: PollKind = .text
     @State private var multiple = false
     @State private var hasDeadline = false
+    @State private var commentsEnabled = false
     @State private var closesAt = IslandTime.day(Date(), adding: 7)
     @State private var texts = ["", ""]
     @State private var slots = [EventEditorView.nextFullHour, EventEditorView.nextFullHour.addingTimeInterval(24 * 3600)]
@@ -253,6 +281,7 @@ struct PollEditorView: View {
                 }
                 Section {
                     Toggle("Mehrfachauswahl", isOn: $multiple)
+                    Toggle("Kommentare erlauben", isOn: $commentsEnabled)
                     Toggle("Enddatum", isOn: $hasDeadline.animation())
                     if hasDeadline { DatePicker("Endet am", selection: $closesAt, in: Date()...) }
                 } footer: {
@@ -278,7 +307,33 @@ struct PollEditorView: View {
             ? cleanTexts.map { ($0, nil) }
             : slots.sorted().map { ("", $0) }
         let draft = PollDraft(question: question.trimmingCharacters(in: .whitespaces), description: description.trimmingCharacters(in: .whitespacesAndNewlines),
-                              kind: kind, multiple: multiple, closesAt: hasDeadline ? closesAt : nil, options: options)
+                              kind: kind, multiple: multiple, closesAt: hasDeadline ? closesAt : nil, commentsEnabled: commentsEnabled, options: options)
         if await onSave(draft) { dismiss() }
+    }
+}
+
+/// Kommentare einer Umfrage als Sheet: oben die Frage, darunter der Verlauf wie bei Terminen.
+struct PollCommentsSheet: View {
+    let poll: CommunityPoll
+    let canModerate: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                    Text(poll.question).font(.title3.weight(.semibold)).fontDesign(.rounded)
+                        .padding(.horizontal, 4)
+                    EventCommentsSection(target: .poll(poll.id), canModerate: canModerate)
+                }
+                .padding()
+            }
+            .background(StedeTheme.sand)
+            .navigationTitle("Kommentare")
+            .stedeBar()
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
+            }
+        }
     }
 }

@@ -27,6 +27,7 @@ import java.time.ZonedDateTime
 class PollsModel(private val communityId: String) {
     var polls by mutableStateOf<List<CommunityPoll>?>(null); private set
     var votes by mutableStateOf<Map<String, List<PollVote>>>(emptyMap()); private set
+    var commentCounts by mutableStateOf<Map<String, Int>>(emptyMap()); private set
     var lastError by mutableStateOf<String?>(null)
 
     suspend fun load() {
@@ -34,7 +35,9 @@ class PollsModel(private val communityId: String) {
             val list = PollApi.polls(communityId)
             list to PollApi.votes(list.map { it.id })
         }.onSuccess { (list, all) ->
-            votes = all.groupBy { it.pollId }; polls = list; lastError = null
+            votes = all.groupBy { it.pollId }
+            commentCounts = runCatching { PollApi.commentCounts(list.filter { it.commentsEnabled }.map { it.id }) }.getOrDefault(commentCounts)
+            polls = list; lastError = null
         }.onFailure {
             if (polls == null) polls = emptyList()
             lastError = it.message
@@ -52,6 +55,9 @@ class PollsModel(private val communityId: String) {
         runCatching { PollApi.create(draft, communityId, userId) }.onFailure { lastError = it.message }.isSuccess.also { if (it) load() }
 
     suspend fun close(poll: CommunityPoll) { runCatching { PollApi.close(poll.id) }.onFailure { lastError = it.message }; load() }
+    suspend fun setComments(poll: CommunityPoll, enabled: Boolean) {
+        runCatching { PollApi.setComments(poll.id, enabled) }.onFailure { lastError = it.message }; load()
+    }
     suspend fun delete(poll: CommunityPoll) { runCatching { PollApi.delete(poll.id) }.onFailure { lastError = it.message }; load() }
 }
 
@@ -66,8 +72,13 @@ object PollFormat {
 
 /** Eine Umfrage als Karte: Frage, Status, Antworten mit Balken und Namen; Tippen stimmt ab. */
 @Composable
-fun PollCard(poll: CommunityPoll, votes: List<PollVote>, userId: String?, isAdmin: Boolean, onToggle: (PollOption) -> Unit, onClose: () -> Unit, onDelete: () -> Unit) {
+fun PollCard(
+    poll: CommunityPoll, votes: List<PollVote>, userId: String?, isAdmin: Boolean, onToggle: (PollOption) -> Unit, onClose: () -> Unit, onDelete: () -> Unit,
+    commentCount: Int = 0, onComments: () -> Unit = {}, onToggleComments: () -> Unit = {},
+) {
     var menu by remember { mutableStateOf(false) }
+    // Terminfindung grün, Umfragen mit Antworten magenta — auf einen Blick unterscheidbar.
+    val tint = if (poll.isDate) C.green else C.heather
     var confirmDelete by remember { mutableStateOf(false) }
     val isOpen = poll.isOpen()
     // Abstimmende Personen (nicht Stimmen) — Basis für die Anteile bei Mehrfachauswahl.
@@ -77,7 +88,7 @@ fun PollCard(poll: CommunityPoll, votes: List<PollVote>, userId: String?, isAdmi
     val maxVotes = counts.values.maxOrNull() ?: 0
     StedeCard {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-            IconChip(if (poll.isDate) Icons.Default.EditCalendar else Icons.Default.BarChart, C.heather)
+            IconChip(if (poll.isDate) Icons.Default.EditCalendar else Icons.Default.BarChart, tint)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(poll.question, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
                 val parts = buildList {
@@ -91,6 +102,8 @@ fun PollCard(poll: CommunityPoll, votes: List<PollVote>, userId: String?, isAdmi
                 IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreHoriz, "Umfrage verwalten", tint = C.ink) }
                 DropdownMenu(menu, { menu = false }) {
                     if (isOpen) DropdownMenuItem({ Text("Umfrage beenden") }, { menu = false; onClose() }, leadingIcon = { Icon(Icons.Default.Lock, null) })
+                    DropdownMenuItem({ Text(if (poll.commentsEnabled) "Kommentare ausschalten" else "Kommentare erlauben") }, { menu = false; onToggleComments() },
+                        leadingIcon = { Icon(if (poll.commentsEnabled) Icons.Default.CommentsDisabled else Icons.Default.Forum, null) })
                     DropdownMenuItem({ Text("Löschen", color = C.red) }, { menu = false; confirmDelete = true }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = C.red) })
                 }
             }
@@ -113,19 +126,29 @@ fun PollCard(poll: CommunityPoll, votes: List<PollVote>, userId: String?, isAdmi
                             mine -> Icons.Default.CheckCircle
                             else -> Icons.Default.RadioButtonUnchecked
                         }
-                        Icon(icon, if (mine) "Gewählt" else null, tint = if (mine) C.heather else C.secondary, modifier = Modifier.size(22.dp))
+                        Icon(icon, if (mine) "Gewählt" else null, tint = if (mine) tint else C.secondary, modifier = Modifier.size(22.dp))
                         Text(PollFormat.label(option, poll), color = C.text, fontWeight = if (leading) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.weight(1f))
                         Text("$here", color = C.secondary, fontSize = 15.sp)
                     }
-                    Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(C.heather.copy(alpha = 0.12f))) {
+                    Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.12f))) {
                         if (share > 0f) Box(Modifier.widthIn(min = 6.dp).fillMaxWidth(share).fillMaxHeight().clip(RoundedCornerShape(50))
-                            .background(C.heather.copy(alpha = if (mine || leading) 0.8f else 0.45f)))
+                            .background(tint.copy(alpha = if (mine || leading) 0.8f else 0.45f)))
                     }
                     if (names.isNotEmpty()) Text(names.joinToString(", "), fontSize = 12.sp, color = C.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
-        Text(if (voterCount == 1) "1 Person hat abgestimmt" else "$voterCount Personen haben abgestimmt", fontSize = 12.sp, color = C.secondary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if (voterCount == 1) "1 Person hat abgestimmt" else "$voterCount Personen haben abgestimmt", fontSize = 12.sp, color = C.secondary, modifier = Modifier.weight(1f))
+            if (poll.commentsEnabled) {
+                val label = if (commentCount == 1) "1 Kommentar" else "$commentCount Kommentare"
+                Row(Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.12f)).clickable(onClickLabel = label, onClick = onComments)
+                    .padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Icon(Icons.Default.Forum, label, tint = tint, modifier = Modifier.size(14.dp))
+                    Text(if (commentCount > 0) "$commentCount" else "Kommentieren", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = tint)
+                }
+            }
+        }
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Umfrage löschen?") },
         text = { Text("Frage, Antworten und alle Stimmen werden entfernt.") },
@@ -144,6 +167,7 @@ fun PollEditorSheet(onDismiss: () -> Unit, onSave: suspend (PollDraft) -> Boolea
     var isDate by remember { mutableStateOf(false) }
     var multiple by remember { mutableStateOf(false) }
     var hasDeadline by remember { mutableStateOf(false) }
+    var commentsEnabled by remember { mutableStateOf(false) }
     var closesAt by remember { mutableStateOf(nextHour.plusDays(7)) }
     val texts = remember { mutableStateListOf("", "") }
     val slots = remember { mutableStateListOf(nextHour, nextHour.plusDays(1)) }
@@ -157,7 +181,7 @@ fun PollEditorSheet(onDismiss: () -> Unit, onSave: suspend (PollDraft) -> Boolea
     fun save() {
         saving = true; error = null
         val options = if (isDate) slots.sorted().map { "" to it } else cleanTexts.map { it to null }
-        val draft = PollDraft(question.trim(), description.trim(), if (isDate) "date" else "text", multiple, if (hasDeadline) closesAt else null, options)
+        val draft = PollDraft(question.trim(), description.trim(), if (isDate) "date" else "text", multiple, if (hasDeadline) closesAt else null, options, commentsEnabled)
         scope.launch {
             if (onSave(draft)) onDismiss() else error = "Die Umfrage konnte nicht angelegt werden."
             saving = false
@@ -209,6 +233,7 @@ fun PollEditorSheet(onDismiss: () -> Unit, onSave: suspend (PollDraft) -> Boolea
             }
             StedeCard {
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("Mehrfachauswahl", color = C.text, modifier = Modifier.weight(1f)); Switch(multiple, { multiple = it }) }
+                Row(verticalAlignment = Alignment.CenterVertically) { Text("Kommentare erlauben", color = C.text, modifier = Modifier.weight(1f)); Switch(commentsEnabled, { commentsEnabled = it }) }
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("Enddatum", color = C.text, modifier = Modifier.weight(1f)); Switch(hasDeadline, { hasDeadline = it }) }
                 if (hasDeadline) {
                     FormRow("Endet am", closesAt.format(Town.dayFull)) { picker = -1 to true }
@@ -224,5 +249,18 @@ fun PollEditorSheet(onDismiss: () -> Unit, onSave: suspend (PollDraft) -> Boolea
         fun set(value: ZonedDateTime) { if (index < 0) closesAt = value else slots[index] = value; picker = null }
         if (isDay) DatePickDialog(current.toLocalDate(), { picker = null }) { day: LocalDate -> set(ZonedDateTime.of(day, current.toLocalTime(), Town.zone)) }
         else TimePickDialog(current.toLocalTime(), { picker = null }) { time: LocalTime -> set(ZonedDateTime.of(current.toLocalDate(), time, Town.zone)) }
+    }
+}
+
+/** Kommentare einer Umfrage als Sheet: oben die Frage, darunter der Verlauf wie bei Terminen — wie PollCommentsSheet in iOS. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PollCommentsSheet(poll: CommunityPoll, canModerate: Boolean, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = C.sand, dragHandle = null) {
+        SheetHeader("Kommentare", trailing = "Fertig" to onDismiss)
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+            Text(poll.question, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.text, modifier = Modifier.padding(horizontal = 4.dp))
+            EventComments(CommentTarget.Poll(poll.id), canModerate)
+        }
     }
 }

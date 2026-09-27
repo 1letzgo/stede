@@ -407,9 +407,26 @@ extension View {
 
 /// Kommentare unter einem internen Termin: Liste plus Eingabezeile. Löschen per langem
 /// Druck — eigene Kommentare immer, fremde nur für Ersteller und Admins (RLS prüft mit).
+/// Wessen Kommentare: ein interner Termin oder eine Umfrage.
+enum CommentTarget: Hashable {
+    case event(UUID)
+    case poll(UUID)
+}
+
 struct EventCommentsSection: View {
-    let eventID: UUID
+    let target: CommentTarget
     let canModerate: Bool
+
+    init(eventID: UUID, canModerate: Bool) {
+        self.target = .event(eventID)
+        self.canModerate = canModerate
+    }
+
+    init(target: CommentTarget, canModerate: Bool) {
+        self.target = target
+        self.canModerate = canModerate
+    }
+
     @Environment(AuthStore.self) private var auth
     @State private var comments: [EventComment] = []
     @State private var draft = ""
@@ -417,6 +434,7 @@ struct EventCommentsSection: View {
     @State private var loading = true
     @State private var failed = false
     private let client = CommunityClient()
+    private let polls = PollClient()
 
     private static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
         .day().month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
@@ -460,7 +478,7 @@ struct EventCommentsSection: View {
                     .font(.footnote).foregroundStyle(StedeTheme.harborRed)
             }
         }
-        .task(id: eventID) { await load() }
+        .task(id: target) { await load() }
     }
 
     private var canSend: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending }
@@ -491,7 +509,10 @@ struct EventCommentsSection: View {
 
     private func load() async {
         loading = true
-        comments = (try? await client.comments(eventID: eventID)) ?? comments
+        switch target {
+        case let .event(id): comments = (try? await client.comments(eventID: id)) ?? comments
+        case let .poll(id): comments = (try? await polls.comments(pollID: id)) ?? comments
+        }
         loading = false
     }
 
@@ -502,7 +523,10 @@ struct EventCommentsSection: View {
         sending = true
         failed = false
         do {
-            try await client.addComment(eventID: eventID, userID: userID, body: String(text.prefix(1000)))
+            switch target {
+            case let .event(id): try await client.addComment(eventID: id, userID: userID, body: String(text.prefix(1000)))
+            case let .poll(id): try await polls.addComment(pollID: id, userID: userID, body: String(text.prefix(1000)))
+            }
             draft = ""
             await load()
         } catch {
@@ -513,7 +537,10 @@ struct EventCommentsSection: View {
 
     private func delete(_ comment: EventComment) async {
         do {
-            try await client.deleteComment(id: comment.id)
+            switch target {
+            case .event: try await client.deleteComment(id: comment.id)
+            case .poll: try await polls.deleteComment(id: comment.id)
+            }
             withAnimation { comments.removeAll { $0.id == comment.id } }
         } catch {
             failed = true

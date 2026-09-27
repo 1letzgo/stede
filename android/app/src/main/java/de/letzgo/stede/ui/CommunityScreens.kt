@@ -184,6 +184,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var noMorePast by remember { mutableStateOf(false) }
     val polls = remember(id) { PollsModel(id) }
     var newPoll by remember { mutableStateOf(false) }
+    var commentingPoll by remember { mutableStateOf<CommunityPoll?>(null) }
     var tab by remember { mutableStateOf(CommunityTab.Events) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
@@ -281,7 +282,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                                 PollCard(poll, polls.votes[poll.id].orEmpty(), Session.userId, isAdmin,
                                     onToggle = { option -> Session.userId?.let { user -> scope.launch { polls.toggle(option, poll, user) } } },
                                     onClose = { scope.launch { polls.close(poll) } },
-                                    onDelete = { scope.launch { polls.delete(poll) } })
+                                    onDelete = { scope.launch { polls.delete(poll) } },
+                                    commentCount = polls.commentCounts[poll.id] ?: 0,
+                                    onComments = { commentingPoll = poll },
+                                    onToggleComments = { scope.launch { polls.setComments(poll, !poll.commentsEnabled) } })
                             }
                             polls.lastError?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
                         }
@@ -337,6 +341,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     if (newPoll) PollEditorSheet({ newPoll = false }) { draft ->
         val user = Session.userId ?: return@PollEditorSheet false
         polls.create(draft, user)
+    }
+    commentingPoll?.let { poll ->
+        // Nach dem Schließen die Zähler unter den Karten auffrischen.
+        PollCommentsSheet(poll, canModerate = isAdmin) { commentingPoll = null; scope.launch { polls.load() } }
     }
     if (editCommunity && community != null) CommunityEditorSheet(community) { editCommunity = false }
     if (joinRequest && community != null) JoinRequestDialog(community.name, { joinRequest = false }) { message ->

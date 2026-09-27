@@ -19,6 +19,8 @@ public nonisolated struct CommunityPoll: Codable, Hashable, Sendable, Identifiab
     public var closesAt: Date?
     /// Von Hand beendet.
     public var closedAt: Date?
+    /// Kommentare der Mitglieder unter der Umfrage (wie bei internen Terminen).
+    public var commentsEnabled: Bool
     public let createdBy: UUID?
     public let createdAt: Date
     /// Per Embed geladen, nach `sort_order`.
@@ -29,6 +31,7 @@ public nonisolated struct CommunityPoll: Codable, Hashable, Sendable, Identifiab
         case communityId = "community_id"
         case closesAt = "closes_at"
         case closedAt = "closed_at"
+        case commentsEnabled = "comments_enabled"
         case createdBy = "created_by"
         case createdAt = "created_at"
         case options = "community_poll_options"
@@ -44,6 +47,7 @@ public nonisolated struct CommunityPoll: Codable, Hashable, Sendable, Identifiab
         multiple = try c.decodeIfPresent(Bool.self, forKey: .multiple) ?? false
         closesAt = try c.decodeIfPresent(Date.self, forKey: .closesAt)
         closedAt = try c.decodeIfPresent(Date.self, forKey: .closedAt)
+        commentsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commentsEnabled) ?? false
         createdBy = try c.decodeIfPresent(UUID.self, forKey: .createdBy)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         options = (try c.decodeIfPresent([PollOption].self, forKey: .options) ?? []).sorted { $0.sortOrder < $1.sortOrder }
@@ -91,10 +95,12 @@ public nonisolated struct PollDraft: Sendable {
     public var kind: PollKind
     public var multiple: Bool
     public var closesAt: Date?
+    public var commentsEnabled: Bool
     /// Text (Antworten) oder Zeitpunkt (Terminfindung) je Möglichkeit, in Reihenfolge.
     public var options: [(label: String, startsAt: Date?)]
 
-    public init(question: String, description: String, kind: PollKind, multiple: Bool, closesAt: Date?, options: [(label: String, startsAt: Date?)]) {
+    public init(question: String, description: String, kind: PollKind, multiple: Bool, closesAt: Date?, commentsEnabled: Bool = false, options: [(label: String, startsAt: Date?)]) {
+        self.commentsEnabled = commentsEnabled
         self.question = question
         self.description = description
         self.kind = kind
