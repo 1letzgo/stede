@@ -476,10 +476,11 @@ fun LocationLine(text: String) {
     }
 }
 
-/** Wessen Kommentare: ein interner Termin oder eine Umfrage — wie CommentTarget auf iOS. */
+/** Wessen Kommentare: ein interner Termin, eine Umfrage oder eine Aufgabe — wie CommentTarget auf iOS. */
 sealed interface CommentTarget {
     data class Event(val id: String) : CommentTarget
     data class Poll(val id: String) : CommentTarget
+    data class Task(val id: String) : CommentTarget
 }
 
 /** Kommentare unter einem internen Termin oder einer Umfrage — wie EventCommentsSection auf iOS. Lange drücken löscht
@@ -498,6 +499,7 @@ fun EventComments(target: CommentTarget, canModerate: Boolean) {
             when (target) {
                 is CommentTarget.Event -> CommunityApi.comments(target.id)
                 is CommentTarget.Poll -> PollApi.comments(target.id)
+                is CommentTarget.Task -> TaskApi.comments(target.id)
             }
         }.getOrDefault(comments ?: emptyList())
     }
@@ -529,6 +531,7 @@ fun EventComments(target: CommentTarget, canModerate: Boolean) {
                         when (target) {
                             is CommentTarget.Event -> CommunityApi.addComment(target.id, user, draft.trim())
                             is CommentTarget.Poll -> PollApi.addComment(target.id, user, draft.trim())
+                            is CommentTarget.Task -> TaskApi.addComment(target.id, user, draft.trim())
                         }
                     }
                         .onSuccess { draft = ""; load() }.onFailure { failed = true }
@@ -546,6 +549,7 @@ fun EventComments(target: CommentTarget, canModerate: Boolean) {
                 when (target) {
                     is CommentTarget.Event -> CommunityApi.deleteComment(c.id)
                     is CommentTarget.Poll -> PollApi.deleteComment(c.id)
+                    is CommentTarget.Task -> TaskApi.deleteComment(c.id)
                 }
             }.onFailure { failed = true }; load() } }) { Text("Löschen", color = C.red) } },
             dismissButton = { TextButton({ confirmDelete = null }) { Text("Abbrechen") } })

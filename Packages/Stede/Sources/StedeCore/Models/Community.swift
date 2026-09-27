@@ -54,9 +54,16 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
     public var countywide: Bool?
 
     public var isCountywide: Bool { countywide ?? false }
+    /// Gruppen-Funktionen, in den Einstellungen schaltbar (fehlen in manchen Abfragen).
+    public var pollsEnabled: Bool?
+    public var tasksEnabled: Bool?
+    public var hasPolls: Bool { pollsEnabled ?? true }
+    public var hasTasks: Bool { tasksEnabled ?? false }
 
     enum CodingKeys: String, CodingKey {
         case id, name, description, visibility, status, countywide
+        case pollsEnabled = "polls_enabled"
+        case tasksEnabled = "tasks_enabled"
         case tenantId = "tenant_id"
         case joinPolicy = "join_policy"
         case inviteCode = "invite_code"

@@ -2,16 +2,28 @@ import PhotosUI
 import StedeCore
 import SwiftUI
 
-/// Eine Community: Umschalter Termine · Umfragen · Mitglieder · Einstellungen wie bei der Bahn;
+/// Eine Community: Umschalter Termine · Umfragen · Aufgaben · Mitglieder · Einstellungen wie bei der Bahn
+/// (Umfragen und Aufgaben nur, wenn in den Einstellungen eingeschaltet);
 /// wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt.
 struct CommunityDetailView: View {
     private enum Section: CaseIterable, Hashable {
-        case events, polls, members, settings
+        case events, polls, tasks, members, settings
+
+        var symbol: String {
+            switch self {
+            case .events: "calendar"
+            case .polls: "chart.bar.fill"
+            case .tasks: "checklist"
+            case .members: "person.2.fill"
+            case .settings: "gearshape.fill"
+            }
+        }
 
         var title: String {
             switch self {
             case .events: "Termine"
             case .polls: "Umfragen"
+            case .tasks: "Aufgaben"
             case .members: "Mitglieder"
             case .settings: "Einstellungen"
             }
@@ -30,6 +42,8 @@ struct CommunityDetailView: View {
     @State private var confirmLeave = false
     @State private var showsJoinRequest = false
     @State private var polls = PollsModel()
+    @State private var tasks = TasksModel()
+    @State private var showsNewProject = false
     @State private var showsNewPoll = false
     @State private var commentingPoll: CommunityPoll?
     @State private var commentingEvent: CommunityEvent?
@@ -52,7 +66,7 @@ struct CommunityDetailView: View {
         } content: {
             VStack(spacing: 0) {
                 if isActiveMember {
-                    SectionSwitcher(selection: $section)
+                    SectionSwitcher(selection: $section, sections: visibleSections)
                         .padding(.top)
                         .padding(.bottom, StedeTheme.cardSpacing)
                 }
@@ -64,6 +78,7 @@ struct CommunityDetailView: View {
                             switch section {
                             case .events: eventsSection
                             case .polls: pollsSection
+                            case .tasks: tasksSection
                             case .members: membersSection
                             case .settings: settingsSection
                             }
@@ -83,6 +98,13 @@ struct CommunityDetailView: View {
                     Button { showsNewEvent = true } label: { Image(systemName: "plus").foregroundStyle(.white) }
                         .tint(.white)
                         .accessibilityLabel("Termin anlegen")
+                }
+            }
+            if isAdmin, section == .tasks {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showsNewProject = true } label: { Image(systemName: "plus").foregroundStyle(.white) }
+                        .tint(.white)
+                        .accessibilityLabel("Projekt anlegen")
                 }
             }
             if isAdmin, section == .polls {
@@ -106,6 +128,16 @@ struct CommunityDetailView: View {
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
+        .sheet(isPresented: $showsNewProject) {
+            ProjectEditorView(existing: nil) { title, description in
+                guard let userID = auth.userID else { return false }
+                return await tasks.run(model.community.id) {
+                    try await TaskClient().createProject(communityID: model.community.id, title: title, description: description, userID: userID)
+                }
+            }
+        }
+        // Ausgeschaltete Funktion: zurück zu den Terminen.
+        .onChange(of: visibleSections) { if !visibleSections.contains(section) { section = .events } }
         .sheet(item: $commentingEvent, onDismiss: { Task { await model.loadCommentCounts() } }) { event in
             CommentsSheet(title: event.title, target: .event(event.id), canModerate: canEdit(event))
         }
@@ -146,6 +178,7 @@ struct CommunityDetailView: View {
     private func reload() async {
         await model.load(userID: auth.userID, isMember: isActiveMember)
         if isActiveMember, polls.polls != nil { await polls.load(communityID: model.community.id) }
+        if isActiveMember, tasks.projects != nil { await tasks.load(communityID: model.community.id) }
     }
 
     // MARK: Kopf (Nicht-Mitglieder)
@@ -238,6 +271,51 @@ struct CommunityDetailView: View {
         }
         .buttonStyle(StedeCardButtonStyle())
         .disabled(model.loadingPast)
+    }
+
+    private var visibleSections: [Section] {
+        Section.allCases.filter { item in
+            switch item {
+            case .polls: model.community.hasPolls
+            case .tasks: model.community.hasTasks
+            default: true
+            }
+        }
+    }
+
+    // MARK: Aufgaben
+
+    @ViewBuilder private var tasksSection: some View {
+        if let projects = tasks.projects {
+            let active = projects.filter { $0.archivedAt == nil }
+            let archived = projects.filter { $0.archivedAt != nil }
+            if active.isEmpty {
+                InfoCard {
+                    Text(isAdmin ? "Noch kein Projekt. Leg eins mit + an – darin sammelt ihr die Aufgaben." : "Noch kein Projekt in dieser Gruppe.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ForEach(active) { project in projectLink(project) }
+            if !archived.isEmpty {
+                StedeSectionHeader(title: "Archiv", symbol: "archivebox")
+                ForEach(archived) { project in projectLink(project) }
+            }
+            if let error = tasks.lastError { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
+        } else {
+            ProgressView().frame(maxWidth: .infinity).padding(.vertical, 24)
+                .task { await tasks.load(communityID: model.community.id) }
+        }
+    }
+
+    private func projectLink(_ project: CommunityProject) -> some View {
+        NavigationLink {
+            ProjectDetailView(project: project, model: tasks, members: model.activeMembers,
+                              permissions: TaskPermissions(userID: auth.userID, isAdmin: isAdmin))
+        } label: {
+            ProjectCard(project: project, tasks: tasks.tasks(in: project), userID: auth.userID)
+        }
+        .buttonStyle(StedeCardButtonStyle())
+        .foregroundStyle(.primary)
     }
 
     // MARK: Umfragen
@@ -391,6 +469,10 @@ struct CommunityDetailView: View {
         }
         .padding(StedeTheme.cardPadding).frame(maxWidth: .infinity, alignment: .leading).stedeCard()
 
+        if isAdmin {
+            featuresCard
+        }
+
         if isAdmin, let userID = auth.userID {
             HeaderImagesManager(communityID: model.community.id, userID: userID)
         }
@@ -411,26 +493,58 @@ struct CommunityDetailView: View {
         }
     }
 
+    /// Funktionen der Gruppe ein- und ausschalten (Admins/Leitung).
+    private var featuresCard: some View {
+        VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+            StedeSectionHeader(title: "Funktionen", symbol: "switch.2")
+            VStack(spacing: 0) {
+                Toggle(isOn: featureBinding(\.hasPolls)) {
+                    Label("Umfragen", systemImage: "chart.bar.fill")
+                }
+                .padding(.vertical, 6)
+                Rectangle().fill(.separator).frame(height: 1)
+                Toggle(isOn: featureBinding(\.hasTasks)) {
+                    Label("Aufgaben", systemImage: "checklist")
+                }
+                .padding(.vertical, 6)
+            }
+            .tint(StedeTheme.ink)
+            .padding(.horizontal, StedeTheme.cardPadding).padding(.vertical, 6)
+            .stedeCard()
+        }
+    }
+
+    private func featureBinding(_ key: KeyPath<Community, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { model.community[keyPath: key] },
+            set: { on in
+                let polls = key == \Community.hasPolls ? on : model.community.hasPolls
+                let tasks = key == \Community.hasTasks ? on : model.community.hasTasks
+                model.community.pollsEnabled = polls
+                model.community.tasksEnabled = tasks
+                Task {
+                    try? await CommunityClient().setFeatures(id: model.community.id, polls: polls, tasks: tasks)
+                    await reload()
+                }
+            }
+        )
+    }
+
     /// Drei gleich breite Chips wie der Richtungsumschalter der Bahn.
     private struct SectionSwitcher: View {
         @Binding var selection: Section
+        let sections: [Section]
 
         var body: some View {
             HStack(spacing: StedeTheme.SelectionRow.spacing) {
-                ForEach(Section.allCases, id: \.self) { item in
+                ForEach(sections, id: \.self) { item in
                     Button {
                         selection = item
                     } label: {
-                        // Einstellungen als schmales Zahnrad, die Reiter teilen sich den Rest.
-                        if item == .settings {
-                            Image(systemName: "gearshape.fill")
-                                .frame(width: StedeTheme.chipHeight)
-                                .stedeSelectionChip(isSelected: selection == item)
-                        } else {
-                            Text(item.title)
-                                .frame(maxWidth: .infinity)
-                                .stedeSelectionChip(isSelected: selection == item)
-                        }
+                        // Nur Symbole, alle gleich breit — Platz für bis zu fünf Reiter.
+                        Image(systemName: item.symbol)
+                            .frame(maxWidth: .infinity)
+                            .stedeSelectionChip(isSelected: selection == item)
                     }
                     .buttonStyle(StedeCardButtonStyle())
                     .accessibilityLabel(item.title)

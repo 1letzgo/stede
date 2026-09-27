@@ -50,7 +50,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Communities
 
-    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count, countywide"
+    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count, countywide, polls_enabled, tasks_enabled"
 
     /// Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland.
     static func ownOrCountywide(_ tenantID: UUID) -> String {
@@ -94,6 +94,12 @@ public nonisolated struct CommunityClient: Sendable {
     public func updateCommunity(id: UUID, name: String, description: String, visibility: CommunityVisibility, joinPolicy: CommunityJoinPolicy, countywide: Bool, logoPath: String?) async throws {
         struct Patch: Encodable { let name: String; let description: String; let visibility: CommunityVisibility; let join_policy: CommunityJoinPolicy; let countywide: Bool; let logo_path: String? }
         try await client.from("communities").update(Patch(name: name, description: description, visibility: visibility, join_policy: joinPolicy, countywide: countywide, logo_path: logoPath)).eq("id", value: id).execute()
+    }
+
+    /// Umfragen und Aufgaben der Gruppe ein- oder ausschalten.
+    public func setFeatures(id: UUID, polls: Bool, tasks: Bool) async throws {
+        struct Patch: Encodable { let polls_enabled: Bool; let tasks_enabled: Bool }
+        try await client.from("communities").update(Patch(polls_enabled: polls, tasks_enabled: tasks)).eq("id", value: id).execute()
     }
 
     public func setCommunityLogo(id: UUID, logoPath: String?) async throws {

@@ -29,7 +29,14 @@ import java.util.UUID
     @SerialName("created_by") val createdBy: String, @SerialName("member_count") val memberCount: Int? = null,
     /** Kreisweit: auch in den anderen Ammerland-Gemeinden gelistet. */
     val countywide: Boolean = false,
-) { val logoUrl get() = Backend.logoUrl(logoPath) }
+    /** Gruppen-Funktionen, in den Einstellungen schaltbar (fehlen in manchen Abfragen). */
+    @SerialName("polls_enabled") val pollsEnabled: Boolean? = null,
+    @SerialName("tasks_enabled") val tasksEnabled: Boolean? = null,
+) {
+    val logoUrl get() = Backend.logoUrl(logoPath)
+    val hasPolls get() = pollsEnabled ?: true
+    val hasTasks get() = tasksEnabled ?: false
+}
 
 @Serializable data class Member(
     @SerialName("community_id") val communityId: String, @SerialName("user_id") val userId: String,
@@ -115,7 +122,7 @@ data class EventInfo(
 /** Alle Zugriffe auf den Community-Teil; RLS entscheidet, was sichtbar ist. */
 object CommunityApi {
     private val db get() = Backend.supabase
-    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide"
+    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled"
     private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
@@ -162,6 +169,10 @@ object CommunityApi {
         db.from("communities").update(buildJsonObject {
             put("name", name); put("description", description); put("visibility", visibility); put("join_policy", joinPolicy); put("countywide", countywide); put("logo_path", logoPath)
         }) { filter { eq("id", id) } }
+    }
+    /** Umfragen und Aufgaben der Gruppe ein- oder ausschalten (Admins/Leitung). */
+    suspend fun setFeatures(id: String, polls: Boolean, tasks: Boolean) {
+        db.from("communities").update(buildJsonObject { put("polls_enabled", polls); put("tasks_enabled", tasks) }) { filter { eq("id", id) } }
     }
     suspend fun setCommunityStatus(id: String, status: String) { db.from("communities").update({ set("status", status) }) { filter { eq("id", id) } } }
 

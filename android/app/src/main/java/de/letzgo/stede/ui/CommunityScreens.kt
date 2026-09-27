@@ -160,25 +160,39 @@ private fun CommunityPills(c: Community, m: Member?, showsPolicy: Boolean) {
     }
 }
 
-enum class CommunityTab(val title: String) { Events("Termine"), Polls("Umfragen"), Members("Mitglieder"), Settings("Einstellungen") }
+enum class CommunityTab(val title: String) { Events("Termine"), Polls("Umfragen"), Tasks("Aufgaben"), Members("Mitglieder"), Settings("Einstellungen") }
 
-/** Reiter wie SectionSwitcher in iOS: drei gleich breite Chips, Einstellungen als schmales Zahnrad. */
+/** Sichtbare Reiter: Umfragen und Aufgaben nur, wenn in den Einstellungen eingeschaltet. */
+private fun visibleTabs(c: Community?) = CommunityTab.entries.filter {
+    when (it) {
+        CommunityTab.Polls -> c?.hasPolls ?: true
+        CommunityTab.Tasks -> c?.hasTasks ?: false
+        else -> true
+    }
+}
+
+/** Reiter wie SectionSwitcher in iOS: nur Symbole, alle gleich breit; der Name bleibt als Beschreibung für Screenreader. */
 @Composable
-private fun CommunityTabs(selected: CommunityTab, onSelect: (CommunityTab) -> Unit) {
+private fun CommunityTabs(tabs: List<CommunityTab>, selected: CommunityTab, onSelect: (CommunityTab) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        CommunityTab.entries.forEach { t ->
-            if (t == CommunityTab.Settings) {
-                Box(Modifier.heightIn(min = ChipHeight).width(56.dp).clip(RoundedCornerShape(50))
-                    .background(if (selected == t) C.deep else C.surface).clickable { onSelect(t) }, contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Settings, t.title, tint = if (selected == t) Color.White else C.ink, modifier = Modifier.size(20.dp))
-                }
-            } else SelectionChip(t.title, selected == t, Modifier.weight(1f), compact = true) { onSelect(t) }
+        tabs.forEach { t ->
+            val icon = when (t) {
+                CommunityTab.Events -> Icons.Default.CalendarMonth
+                CommunityTab.Polls -> Icons.Default.BarChart
+                CommunityTab.Tasks -> Icons.Default.Checklist
+                CommunityTab.Members -> Icons.Default.People
+                CommunityTab.Settings -> Icons.Default.Settings
+            }
+            Box(Modifier.weight(1f).heightIn(min = ChipHeight).clip(RoundedCornerShape(50))
+                .background(if (selected == t) C.deep else C.surface).clickable { onSelect(t) }, contentAlignment = Alignment.Center) {
+                Icon(icon, t.title, tint = if (selected == t) Color.White else C.ink, modifier = Modifier.size(20.dp))
+            }
         }
     }
 }
 
-/** Eine Community wie CommunityDetailView: Umschalter Termine · Umfragen · Mitglieder · Einstellungen wie bei der Bahn;
- *  wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
+/** Eine Community wie CommunityDetailView: Umschalter Termine · Umfragen · Aufgaben · Mitglieder · Einstellungen wie bei der Bahn
+ *  (Umfragen und Aufgaben nur, wenn eingeschaltet); wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
 @Composable
 fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
@@ -194,6 +208,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     // Nach „Frühere Termine“: Schlüssel des Termins, der vorher oben stand und nun unten am Rand stehen soll.
     var pastAnchor by remember { mutableStateOf<String?>(null) }
     val polls = remember(id) { PollsModel(id) }
+    val tasks = remember(id) { TasksModel(id) }
+    var newProject by remember { mutableStateOf(false) }
+    // Geöffnetes Projekt: ersetzt die Gruppenseite wie ein Push; der Zustand hier bleibt erhalten.
+    var openProject by remember { mutableStateOf<String?>(null) }
     var newPoll by remember { mutableStateOf(false) }
     var commentingPoll by remember { mutableStateOf<CommunityPoll?>(null) }
     var commentingEvent by remember { mutableStateOf<EventInfo?>(null) }
@@ -223,6 +241,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
             loadCommentCounts()
             MyParticipation.load()
             if (polls.polls != null) polls.load()
+            if (tasks.projects != null) tasks.load()
         }
     }
     // Frühere Termine: jeder Tipp auf den Chip holt die nächsten 20 (neueste zuerst geladen, oben chronologisch gezeigt).
@@ -258,20 +277,29 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
         val index = keys.indexOf(key)
         if (index >= 0) listState.scrollItemToBottom(index)
     }
-    // Umfragen: erst beim ersten Öffnen des Reiters laden.
+    // Umfragen und Aufgaben: erst beim ersten Öffnen des Reiters laden.
     LaunchedEffect(id, tab) {
         if (tab == CommunityTab.Polls && isMember && polls.polls == null) polls.load()
+        if (tab == CommunityTab.Tasks && isMember && tasks.projects == null) tasks.load()
     }
     val community = c
+    val tabs = visibleTabs(community)
+    // Ausgeschaltete Funktion: zurück zu den Terminen.
+    LaunchedEffect(tabs) { if (tab !in tabs) tab = CommunityTab.Events }
+    openProject?.let { projectId ->
+        ProjectScreen(projectId, tasks, members.orEmpty().filter { it.isActive }, TaskPermissions(Session.userId, isAdmin)) { openProject = null }
+        return
+    }
     Scaffold(topBar = {
         StedeTopBar(community?.name ?: "Gruppe", onBack, actions = {
             if (isMember && tab == CommunityTab.Events) IconButton(onClick = { newEvent = true }) { Icon(Icons.Default.Add, "Termin anlegen") }
             if (isAdmin && tab == CommunityTab.Polls) IconButton(onClick = { newPoll = true }) { Icon(Icons.Default.Add, "Umfrage anlegen") }
+            if (isAdmin && tab == CommunityTab.Tasks) IconButton(onClick = { newProject = true }) { Icon(Icons.Default.Add, "Projekt anlegen") }
         })
     }, containerColor = C.sand) { pad ->
         if (community == null) { Box(Modifier.padding(pad)) { Loading() }; return@Scaffold }
         Column(Modifier.padding(pad).fillMaxSize()) {
-            if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { CommunityTabs(tab) { tab = it } }
+            if (isMember) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { CommunityTabs(tabs, tab) { tab = it } }
             LazyColumn(state = listState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (isMember) 0.dp else 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                 if (!isMember) {
                     item {
@@ -333,6 +361,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                             polls.lastError?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
                         }
                     }
+                    CommunityTab.Tasks -> item { ProjectList(tasks, isAdmin, Session.userId) { openProject = it.id } }
                     CommunityTab.Members -> {
                         val all = members.orEmpty()
                         val pending = all.filter { it.status == "pending" }
@@ -357,6 +386,12 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
                         if (isAdmin) community.inviteCode?.let { code -> item { InviteRow(community.name, code) } }
                     }
                     CommunityTab.Settings -> {
+                        if (isAdmin) item { FeaturesCard(community) { polls, tasks -> c = community.copy(pollsEnabled = polls, tasksEnabled = tasks)
+                            scope.launch {
+                                runCatching { CommunityApi.setFeatures(id, polls, tasks) }
+                                runCatching { CommunityApi.community(id) }.onSuccess { c = it }
+                            }
+                        } }
                         if (isAdmin) item { HeaderImagesManager(id) }
                         item {
                             StedeCard {
@@ -381,6 +416,10 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     }
     openEvent?.let { e -> EventDetailSheet(e, helpers[e.id], onSignIn = { openEvent = null; showAccount = true }) { openEvent = null } }
     if (newEvent) EventEditorSheet(id, null) { newEvent = false }
+    if (newProject) ProjectEditorSheet(null, { newProject = false }) { title, description ->
+        val user = Session.userId ?: return@ProjectEditorSheet false
+        tasks.run { TaskApi.createProject(id, title, description, user) }
+    }
     if (newPoll) PollEditorSheet({ newPoll = false }) { draft ->
         val user = Session.userId ?: return@PollEditorSheet false
         polls.create(draft, user)
@@ -401,6 +440,30 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     if (confirmLeave) AlertDialog(onDismissRequest = { confirmLeave = false }, title = { Text("„${community?.name}“ verlassen?") },
         confirmButton = { TextButton({ confirmLeave = false; scope.launch { runCatching { CommunityApi.removeMember(id, Session.userId!!) }; Session.refresh(); tab = CommunityTab.Events; Changes.bump() } }) { Text("Verlassen", color = C.red) } },
         dismissButton = { TextButton({ confirmLeave = false }) { Text("Abbrechen") } })
+}
+
+/** Funktionen der Gruppe ein- und ausschalten (Admins/Leitung) — wie featuresCard in iOS. */
+@Composable
+private fun FeaturesCard(c: Community, onChange: (polls: Boolean, tasks: Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing)) {
+        SectionHeader("Funktionen", Icons.Default.ToggleOn)
+        StedeCard(padding = 0.dp) {
+            Column(Modifier.padding(horizontal = CardPadding, vertical = 6.dp)) {
+                FeatureRow(Icons.Default.BarChart, "Umfragen", c.hasPolls) { onChange(it, c.hasTasks) }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(C.tertiary.copy(alpha = 0.2f)))
+                FeatureRow(Icons.Default.Checklist, "Aufgaben", c.hasTasks) { onChange(c.hasPolls, it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeatureRow(icon: ImageVector, title: String, on: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(icon, null, tint = C.ink, modifier = Modifier.size(20.dp))
+        Text(title, color = C.text, modifier = Modifier.weight(1f))
+        Switch(on, onToggle)
+    }
 }
 
 /** „Frühere Termine“ wie im Kalender: volle Breite, Pfeil nach oben, beim Laden ein Spinner. */
