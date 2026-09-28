@@ -45,7 +45,9 @@ sealed class Screen {
     data object Bus : Screen()
     data object Waste : Screen()
     data class Category(val name: String) : Screen()
-    data class CommunityDetail(val id: String) : Screen()
+    /** `tasks`: gleich im Reiter „Aufgaben“ öffnen (aus „Meine Aufgaben“). */
+    data class CommunityDetail(val id: String, val tasks: Boolean = false) : Screen()
+    data object MyTasks : Screen()
 }
 
 @Composable
@@ -104,7 +106,8 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
                 Screen.Bus -> BusScreen(back)
                 Screen.Waste -> WasteScreen(back) { stack.clear(); setTab(AppTab.Settings) }
                 is Screen.Category -> CategoryScreen(top.name, back)
-                is Screen.CommunityDetail -> CommunityDetailScreen(top.id, back)
+                Screen.MyTasks -> MyTasksScreen(open, back)
+                is Screen.CommunityDetail -> CommunityDetailScreen(top.id, back, if (top.tasks) CommunityTab.Tasks else CommunityTab.Events)
             }
         }
     }

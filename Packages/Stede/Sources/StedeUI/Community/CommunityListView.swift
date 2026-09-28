@@ -10,10 +10,12 @@ struct CommunityListView: View {
     @State private var showsEditor = false
     @State private var showsAdmin = false
     @State private var showsInvite = false
+    @State private var myTasks = MyTasksModel()
 
     var body: some View {
         TabScreen(title: "Gruppen", showsDateNavigator: false) {
-            await model.load(tenantID: auth.tenant?.id)
+            await model.load(tenantID: auth.tenant?.id, userID: auth.userID)
+            await myTasks.load(userID: auth.userID)
         } content: {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
@@ -36,6 +38,7 @@ struct CommunityListView: View {
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         }
                     }
+                    MyTasksLink(model: myTasks, communities: taskCommunities)
                     if !others.isEmpty {
                         StedeSectionHeader(title: mine.isEmpty ? "Gruppen" : "Weitere", symbol: "person.2.fill")
                         ForEach(others) { community in
@@ -66,6 +69,13 @@ struct CommunityListView: View {
         }
         .navigationDestination(for: Community.self) { CommunityDetailView(community: $0) }
         .navigationDestination(item: $invited) { CommunityDetailView(community: $0) }
+        .navigationDestination(item: $routed) { CommunityDetailView(community: $0.community, initialSection: $0.section) }
+        .task { await consumePushRoute() }
+        #if os(iOS)
+        .onChange(of: PushCenter.shared.pendingRoute) { Task { await consumePushRoute() } }
+        #endif
+        .navigationDestination(for: CommunityTasksDestination.self) { CommunityDetailView(community: $0.community, initialSection: .tasks) }
+        .navigationDestination(for: MyTasksDestination.self) { _ in MyTasksView(model: myTasks, communities: taskCommunities) }
         .toolbar {
             if auth.showsAdminTab {
                 ToolbarItem(placement: .primaryAction) {
@@ -89,14 +99,15 @@ struct CommunityListView: View {
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
         // Zurück aus einer Gruppe: dort bestätigte Anfragen sollen das Siegel sofort leeren.
-        .onAppear { Task { await auth.refreshAdminPending() } }
+        .onAppear { Task { await auth.refreshAdminPending(); await myTasks.load(userID: auth.userID) } }
         .sheet(isPresented: $showsAdmin, onDismiss: { Task { await auth.refreshAdminPending() } }) { AdminView() }
         .sheet(isPresented: $showsEditor) {
-            CommunityEditorView(existing: nil) { _ in Task { await model.load(tenantID: auth.tenant?.id); await auth.refresh() } }
+            CommunityEditorView(existing: nil) { _ in Task { await model.load(tenantID: auth.tenant?.id, userID: auth.userID); await auth.refresh() } }
         }
         .task(id: "\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")") {
             await auth.refreshAdminPending()
-            await model.load(tenantID: auth.tenant?.id)
+            await model.load(tenantID: auth.tenant?.id, userID: auth.userID)
+            await myTasks.load(userID: auth.userID)
         }
     }
 
@@ -104,11 +115,39 @@ struct CommunityListView: View {
         model.communities.filter { auth.membership(for: $0.id) != nil || $0.createdBy == auth.userID }
     }
 
+    /// Eigene Gruppen mit eingeschalteten Aufgaben, in denen der Nutzer aktives Mitglied ist.
+    private var taskCommunities: [Community] {
+        mine.filter { $0.hasTasks && auth.membership(for: $0.id)?.status == .active }
+    }
+
     private var others: [Community] {
         model.communities.filter { auth.membership(for: $0.id) == nil && $0.createdBy != auth.userID && $0.status == .approved }
     }
 
     @State private var invited: Community?
+    /// Aus einer angetippten Benachrichtigung (Termin/Umfrage).
+    @State private var routed: CommunityRoute?
+
+    /// Holt ein Ziel aus `PushCenter` ab: Admin-Bereich oder Gruppe im passenden Reiter.
+    private func consumePushRoute() async {
+        #if os(iOS)
+        guard let route = PushCenter.shared.pendingRoute else { return }
+        PushCenter.shared.pendingRoute = nil
+        switch route {
+        case .admin:
+            showsAdmin = true
+        case .community(let id, let polls):
+            guard let community = try? await CommunityClient().community(id: id) else { return }
+            routed = CommunityRoute(community: community, section: polls ? .polls : .events)
+        }
+        #endif
+    }
+}
+
+/// Gruppe mit Startreiter — Ziel einer Benachrichtigung.
+struct CommunityRoute: Hashable {
+    let community: Community
+    let section: CommunityDetailView.Section
 }
 
 /// Kleines Sheet für den Einladungscode: Erklärung, Feld, Öffnen; Fehler direkt darunter.

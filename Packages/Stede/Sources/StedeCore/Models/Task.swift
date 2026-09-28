@@ -126,3 +126,34 @@ public nonisolated struct TaskDraft: Sendable {
         self.assignees = assignees
     }
 }
+
+/// Eigene Aufgabe für „Meine Aufgaben“: die Aufgabe plus Titel ihres Projekts.
+public nonisolated struct AssignedTask: Codable, Hashable, Sendable, Identifiable {
+    public let task: CommunityTask
+    public let projectTitle: String
+    public let projectArchived: Bool
+
+    public var id: UUID { task.id }
+
+    private struct ProjectRef: Codable {
+        let title: String
+        let archivedAt: Date?
+        enum CodingKeys: String, CodingKey { case title; case archivedAt = "archived_at" }
+    }
+
+    enum CodingKeys: String, CodingKey { case project = "community_projects" }
+
+    public init(from decoder: Decoder) throws {
+        task = try CommunityTask(from: decoder)
+        let project = try decoder.container(keyedBy: CodingKeys.self).decodeIfPresent(ProjectRef.self, forKey: .project)
+        projectTitle = project?.title ?? ""
+        projectArchived = project?.archivedAt != nil
+    }
+
+    /// Gleiche flache Form wie die Abfrage — für `CommunityCache`.
+    public func encode(to encoder: Encoder) throws {
+        try task.encode(to: encoder)
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ProjectRef(title: projectTitle, archivedAt: projectArchived ? Date(timeIntervalSince1970: 0) : nil), forKey: .project)
+    }
+}

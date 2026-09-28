@@ -47,6 +47,17 @@ public nonisolated struct TaskClient: Sendable {
             .eq("community_id", value: communityID).order("created_at").execute().value
     }
 
+    /// Offene und laufende Aufgaben, für die der Nutzer zuständig ist — über alle Gruppen.
+    public func myTasks(userID: UUID) async throws -> [AssignedTask] {
+        try await client.from("community_tasks")
+            .select(Self.taskColumns + ", community_projects(title, archived_at), mine:community_task_assignees!inner(user_id)")
+            .eq("mine.user_id", value: userID)
+            .neq("status", value: TaskStatus.done.rawValue)
+            .order("due_date", ascending: true, nullsFirst: false)
+            .order("created_at")
+            .execute().value
+    }
+
     public func createTask(projectID: UUID, communityID: UUID, draft: TaskDraft, userID: UUID) async throws {
         struct Row: Encodable {
             let project_id: UUID; let community_id: UUID; let title: String; let description: String

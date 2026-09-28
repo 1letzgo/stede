@@ -2,8 +2,10 @@ import SwiftUI
 import StedeCore
 
 public enum StedeTheme {
-    /// Akzent: Petrol aus Logo und Website der Stadt (#294753). Name aus der Inselzeit behalten.
-    public static let iconBlue = Color(red: 41 / 255, green: 71 / 255, blue: 83 / 255)
+    /// Akzent: Petrol aus Logo und Website der Stadt (#294753), im Dark Mode helles Petrol
+    /// (#9FC3D0) wie `StedeInk` — sonst sind Links, Knöpfe und der aktive Tab dort kaum lesbar.
+    /// Name aus der Inselzeit behalten.
+    public static let iconBlue = Color("StedeInk", bundle: .module)
 
     /// Insel-Palette: Sandgrund, Kartenfläche, Hafen, Düne, Sonne, Meer.
     static let sand = Color("StedeSand", bundle: .module)

@@ -43,6 +43,25 @@ struct SettingsView: View {
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
 
+                #if os(iOS)
+                if auth.isSignedIn {
+                    StedeSectionHeader(title: "Benachrichtigungen", symbol: "bell.fill")
+                    NavigationLink {
+                        NotificationSettingsView()
+                    } label: {
+                        HStack(spacing: 12) {
+                            SettingsIcon(symbol: "bell.fill", tint: StedeTheme.sunAmber)
+                            Text("Benachrichtigungen")
+                            Spacer(minLength: 0)
+                            SettingsChevron()
+                        }
+                        .stedeRowCard()
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .foregroundStyle(.primary)
+                }
+                #endif
+
                 StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
                 SettingsCard {
                     pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {

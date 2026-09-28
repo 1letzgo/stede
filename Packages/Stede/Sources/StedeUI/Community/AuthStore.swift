@@ -66,6 +66,7 @@ final class AuthStore {
     func tenantChanged() async {
         tenant = nil
         isTenantAdmin = false
+        if let userID, let cached = CommunityCache.load(Snapshot.self, "account", userID: userID) { isTenantAdmin = cached.isTenantAdmin }
         await loadTenant()
         await refresh()
     }
@@ -74,11 +75,26 @@ final class AuthStore {
         do { tenant = try await client.tenant() } catch { lastError = error.localizedDescription }
     }
 
+    /// Letzter Stand des Kontos für `CommunityCache` — damit Gruppen und Rollen sofort stehen.
+    private struct Snapshot: Codable {
+        let profile: Profile?
+        let memberships: [CommunityMember]
+        let isTenantAdmin: Bool
+    }
+
     private func apply(session: Session?) async {
+        let previous = userID
         userID = session?.user.id
         guard let userID else {
             profile = nil; memberships = []; isTenantAdmin = false
+            // Abgemeldet: nichts von diesem Konto auf dem Gerät lassen.
+            if let previous { CommunityCache.clear(userID: previous) }
             return
+        }
+        if previous != userID, let cached = CommunityCache.load(Snapshot.self, "account", userID: userID) {
+            profile = cached.profile
+            memberships = cached.memberships
+            isTenantAdmin = cached.isTenantAdmin
         }
         await refresh(userID: userID)
     }
@@ -94,7 +110,14 @@ final class AuthStore {
             profile = try await client.myProfile(userID: userID)
             memberships = try await client.myMemberships(userID: userID)
             if let tenant { isTenantAdmin = try await client.isTenantAdmin(tenantID: tenant.id) }
+            CommunityCache.save(Snapshot(profile: profile, memberships: memberships, isTenantAdmin: isTenantAdmin), "account", userID: userID)
             await refreshAdminPending()
+            #if os(iOS)
+            // Push erst, wenn es etwas zu melden gibt: Mitglied einer Gruppe oder Gemeinde-Admin.
+            if isTenantAdmin || memberships.contains(where: { $0.status == .active }) {
+                await PushCenter.shared.enable(userID: userID, tenantID: tenant?.id)
+            }
+            #endif
         } catch {
             lastError = error.localizedDescription
         }
@@ -197,10 +220,16 @@ final class AuthStore {
     }
 
     func signOut() async {
+        #if os(iOS)
+        await PushCenter.shared.unregister()
+        #endif
         do { try await Backend.client.auth.signOut() } catch { lastError = error.localizedDescription }
     }
 
     func deleteAccount() async -> Bool {
+        #if os(iOS)
+        await PushCenter.shared.unregister()
+        #endif
         do {
             try await client.deleteAccount()
             try? await Backend.client.auth.signOut()

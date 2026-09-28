@@ -107,17 +107,17 @@ data class BusStop(val id: String, val name: String) {
 
 private var loadedStops: Pair<String, List<BusStop>>? = null
 
-/** Haltestellen der Gemeinde: Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst (nur Westerstede) die Liste unten. */
+/** Haltestellen der Gemeinde: Tabelle `bus_stops`, sonst `content_files` (`bus-stops.json`), sonst (nur Westerstede) die Liste unten. */
 val busStops: List<BusStop>
     get() = loadedStops?.takeIf { it.first == Tenants.slug }?.second ?: (
-        ContentFiles.text("bus-stops")?.let { text ->
+        listOfNotNull(Store.read(Tenants.folder("content"), "bus-stops.json"), ContentFiles.text("bus-stops")).firstNotNullOfOrNull { text ->
             runCatching {
                 Http.json.parseToJsonElement(text).jsonObject["stops"]!!.jsonArray.map {
                     val o = it.jsonObject
                     BusStop(o["id"]!!.jsonPrimitive.content, o["name"]!!.jsonPrimitive.content)
                 }
-            }.getOrNull()
-        }?.takeIf { it.isNotEmpty() } ?: if (Tenants.usesBundle) bundledBusStops else emptyList()
+            }.getOrNull()?.takeIf { it.isNotEmpty() }
+        } ?: if (Tenants.usesBundle) bundledBusStops else emptyList()
         ).also { loadedStops = Tenants.slug to it }
 
 private val bundledBusStops = listOf(

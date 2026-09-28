@@ -50,6 +50,9 @@ enum class TaskStatus(val raw: String, val title: String) {
     fun isOverdue(today: LocalDate = Town.today()) = status != TaskStatus.Done && due?.isBefore(today) == true
 }
 
+/** Eigene Aufgabe für „Meine Aufgaben“: die Aufgabe plus Titel ihres Projekts — wie AssignedTask in iOS. */
+@Serializable data class AssignedTask(val task: CommunityTask, val projectTitle: String, val projectArchived: Boolean)
+
 /** Eingabe für eine neue oder geänderte Aufgabe. */
 data class TaskDraft(val title: String, val description: String, val status: TaskStatus, val due: LocalDate?, val assignees: List<String>)
 
@@ -89,6 +92,20 @@ object TaskApi {
     suspend fun tasks(communityId: String) = db.from("community_tasks").select(Columns.raw(TASK)) {
         filter { eq("community_id", communityId) }; order("created_at", Order.ASCENDING)
     }.decodeList<CommunityTask>()
+
+    /** Offene und laufende Aufgaben, für die der Nutzer zuständig ist — über alle Gruppen. */
+    suspend fun myTasks(userId: String): List<AssignedTask> =
+        db.from("community_tasks").select(Columns.raw("$TASK,community_projects(title,archived_at),mine:community_task_assignees!inner(user_id)")) {
+            filter { eq("mine.user_id", userId); neq("status", TaskStatus.Done.raw) }
+            order("due_date", Order.ASCENDING, nullsFirst = false); order("created_at", Order.ASCENDING)
+        }.decodeList<kotlinx.serialization.json.JsonObject>().map { row ->
+            val project = row["community_projects"] as? kotlinx.serialization.json.JsonObject
+            AssignedTask(
+                Http.json.decodeFromJsonElement(CommunityTask.serializer(), row),
+                (project?.get("title") as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty(),
+                project?.get("archived_at").let { it != null && it !is kotlinx.serialization.json.JsonNull },
+            )
+        }
 
     @Serializable private data class Created(val id: String)
 

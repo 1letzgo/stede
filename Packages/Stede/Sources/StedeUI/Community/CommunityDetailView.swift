@@ -6,7 +6,7 @@ import SwiftUI
 /// (Umfragen und Aufgaben nur, wenn in den Einstellungen eingeschaltet);
 /// wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt.
 struct CommunityDetailView: View {
-    private enum Section: CaseIterable, Hashable {
+    enum Section: CaseIterable, Hashable {
         case events, polls, tasks, members, settings
 
         var symbol: String {
@@ -51,8 +51,9 @@ struct CommunityDetailView: View {
     /// danach rückt der bisher erste Termin an den unteren Rand — darüber die zuletzt vergangenen.
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
-    init(community: Community) {
+    init(community: Community, initialSection: Section = .events) {
         _model = State(initialValue: CommunityDetailModel(community: community))
+        _section = State(initialValue: initialSection)
     }
 
     private var membership: CommunityMember? { auth.membership(for: model.community.id) }

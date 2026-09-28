@@ -32,12 +32,19 @@ public nonisolated struct GastroPlace: Identifiable, Hashable, Sendable, Decodab
     /// Einmalig per OpenStreetMap aus der Adresse ermittelt.
     public let latitude: Double?
     public let longitude: Double?
+    /// Merkmale aus dem Backend (`places.features`), etwa „Lieferdienst“; im Bundle meist leer.
+    public let features: [String]?
 
-    public init(id: String, name: String, category: String, teaser: String?, street: String?, phone: String?, email: String?, website: String?, detailURL: String?, hours: String?, restDay: String?, seasonNote: String?, imageCredit: String?, extraLinkTitle: String?, extraLinkURL: String?, latitude: Double?, longitude: Double?) {
+    /// Liefert nach Hause (laut Lieferando oder Google Maps) — eigene Filter-Pille unter „Gastro“.
+    public var delivers: Bool { features?.contains(Self.deliveryFeature) ?? false }
+    public static let deliveryFeature = "Lieferdienst"
+
+    public init(id: String, name: String, category: String, teaser: String?, street: String?, phone: String?, email: String?, website: String?, detailURL: String?, hours: String?, restDay: String?, seasonNote: String?, imageCredit: String?, extraLinkTitle: String?, extraLinkURL: String?, latitude: Double?, longitude: Double?, features: [String]? = nil) {
         self.id = id; self.name = name; self.category = category; self.teaser = teaser; self.street = street
         self.phone = phone; self.email = email; self.website = website; self.detailURL = detailURL
         self.hours = hours; self.restDay = restDay; self.seasonNote = seasonNote; self.imageCredit = imageCredit
         self.extraLinkTitle = extraLinkTitle; self.extraLinkURL = extraLinkURL; self.latitude = latitude; self.longitude = longitude
+        self.features = features
     }
 
     public var coordinate: CLLocationCoordinate2D? {

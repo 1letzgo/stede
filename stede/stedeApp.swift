@@ -4,6 +4,11 @@ import SwiftUI
 
 @main
 struct stedeApp: App {
+    #if os(iOS)
+    /// Push: Token von APNs, Banner im Vordergrund, Tipp auf eine Nachricht.
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
+    #endif
+
     var body: some Scene {
         WindowGroup {
             ContentView()

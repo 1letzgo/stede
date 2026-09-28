@@ -54,6 +54,7 @@ object Catalog {
         "Zahnarzt" -> Icons.Default.MedicalInformation; "Apotheke" -> Icons.Default.LocalPharmacy; "Facharzt" -> Icons.Default.MonitorHeart
         "Klinik" -> Icons.Default.LocalHospital; "Tierarzt" -> Icons.Default.Pets; "Therapie & Pflege" -> Icons.Default.Spa
         "Eiscafé" -> Icons.Default.Icecream; "Imbiss" -> Icons.Default.Fastfood; "Bar" -> Icons.Default.LocalBar
+        Place.DELIVERY -> Icons.Default.DeliveryDining
         "Einkaufen" -> Icons.Default.ShoppingCart; "Drogerie" -> Icons.Default.Soap; "Fahrrad" -> Icons.Default.DirectionsBike
         "Sehenswürdigkeiten", DISCOVER -> Icons.Default.Explore; HEALTH -> Icons.Default.MedicalServices
         "Bad" -> Icons.Default.Pool; "Sport" -> Icons.Default.DirectionsRun; "Spiel & Familie" -> Icons.Default.FamilyRestroom
@@ -71,7 +72,7 @@ object Catalog {
         "Café", "Bäckerei", "Spiel & Familie", PLAYGROUNDS, "Spielplatz", "Draisine", "Therapie & Pflege" -> C.amber
         "Eiscafé", "Drogerie", "Apotheke", TRIPS, "Park" -> C.red
         VOLUNTEER -> C.green
-        "Kostenpflichtig" -> C.teal
+        "Kostenpflichtig", Place.DELIVERY -> C.teal
         "Verwaltung" -> C.ink; "Mobilität" -> C.teal; "Handel" -> C.amber; "Übernachtung" -> C.red; "Versicherung" -> C.mudflat
         "Imbiss", "Fahrrad", "Sport", "Tierarzt", "Radtour" -> C.green
         "Bar", "Einkaufen", "Zahnarzt" -> C.ink

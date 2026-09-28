@@ -31,6 +31,12 @@ enum IslandPlace: Identifiable {
         case .bike(let provider): provider.name
         }
     }
+
+    /// Liefert nach Hause — zählt zusätzlich zur eigenen Art für die Pille „Lieferdienst“.
+    var delivers: Bool {
+        if case .gastro(let place) = self { return place.delivers }
+        return false
+    }
 }
 
 /// Kategorien der Rubrik „Stadt" mit Symbol, Farbe und Einträgen —
@@ -161,6 +167,7 @@ enum IslandCatalog {
         case "Therapie & Pflege": "hand.raised.fill"
         case "Eiscafé": "snowflake"
         case "Imbiss": "takeoutbag.and.cup.and.straw.fill"
+        case GastroPlace.deliveryFeature: "scooter"
         case "Bar": "wineglass.fill"
         case "Einkaufen": "cart.fill"
         case "Drogerie": "bubbles.and.sparkles.fill"
@@ -199,6 +206,7 @@ enum IslandCatalog {
         case "Café": StedeTheme.sunAmber
         case "Eiscafé": StedeTheme.harborRed
         case "Imbiss": StedeTheme.duneGreen
+        case GastroPlace.deliveryFeature: StedeTheme.seaTeal
         case "Bar": StedeTheme.ink
         case "Einkaufen": StedeTheme.ink
         case "Drogerie": StedeTheme.harborRed
@@ -456,14 +464,17 @@ struct IslandView: View {
     private var places: [IslandPlace] {
         allPlaces.filter { place in
             (!favoritesOnly || favorites.contains(place.id))
-                && (selectedKinds.isEmpty || selectedKinds.contains(place.category))
+                && (selectedKinds.isEmpty || selectedKinds.contains(place.category)
+                    || (place.delivers && selectedKinds.contains(GastroPlace.deliveryFeature)))
         }
     }
 
-    /// Arten in der Reihenfolge ihres ersten Auftretens.
+    /// Arten in der Reihenfolge ihres ersten Auftretens; „Lieferdienst“ zuletzt,
+    /// wenn ein Ort liefert — die Pille zeigt alle, die liefern, gleich welcher Art.
     private var kinds: [String] {
         var seen = Set<String>()
-        return allPlaces.map(\.category).filter { seen.insert($0).inserted }
+        let kinds = allPlaces.map(\.category).filter { seen.insert($0).inserted }
+        return allPlaces.contains(where: \.delivers) ? kinds + [GastroPlace.deliveryFeature] : kinds
     }
 
     /// Ohne Auswahl sind alle Arten aktiv. Ein Tipp filtert auf genau diese
@@ -588,7 +599,12 @@ private struct GastroCard: View {
                         .font(.headline)
                         .fontDesign(.rounded)
                         .multilineTextAlignment(.leading)
-                    StedeTagPill(text: place.category, color: place.color)
+                    HStack(spacing: 6) {
+                        StedeTagPill(text: place.category, color: place.color)
+                        if place.delivers {
+                            StedeTagPill(text: GastroPlace.deliveryFeature, color: IslandCatalog.color(for: GastroPlace.deliveryFeature))
+                        }
+                    }
                 }
                 Spacer(minLength: 8)
                 FavoriteButton(isFavorite: isFavorite, toggle: toggleFavorite)

@@ -30,13 +30,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun CategoryScreen(category: String, onBack: () -> Unit) {
     val all = remember(category) { Catalog.places(category) }
-    val kinds = remember(all) { all.map { it.category }.distinct() }
+    // „Lieferdienst“ zuletzt, wenn ein Ort liefert — die Pille zeigt alle, die liefern, gleich welcher Art.
+    val kinds = remember(all) { all.map { it.category }.distinct() + if (all.any { it.delivers }) listOf(Place.DELIVERY) else emptyList() }
     var favoritesOnly by remember { mutableStateOf(Store.bool("island.favoritesOnly.$category", false)) }
     var selectedKinds by remember { mutableStateOf(Store.stringSet("island.selectedKinds.$category")) }
     var showsMap by remember { mutableStateOf(Store.bool("island.showsMap", true)) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     val favorites = Favorites.ids
-    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (selectedKinds.isEmpty() || it.category in selectedKinds) }
+    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (selectedKinds.isEmpty() || it.category in selectedKinds || (it.delivers && Place.DELIVERY in selectedKinds)) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val openUrl = rememberOpenUrl(); val openIntent = rememberOpenIntent()
@@ -103,7 +104,7 @@ private fun PlaceCard(p: Place, selected: Boolean, favorite: Boolean, toggleFavo
             IconChip(Catalog.icon(p.category), color)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(p.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(p.category, color); p.features.forEach { Pill(it, color) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(p.category, color); p.features.forEach { Pill(it, if (it == Place.DELIVERY) Catalog.color(it) else color) } }
             }
             IconButton(onClick = toggleFavorite) { Icon(if (favorite) Icons.Default.Star else Icons.Outlined.StarOutline, if (favorite) "Favorit entfernen" else "Als Favorit merken", tint = if (favorite) C.amber else C.tertiary) }
         }
@@ -115,8 +116,10 @@ private fun PlaceCard(p: Place, selected: Boolean, favorite: Boolean, toggleFavo
             p.seasonNote?.let { InfoLine(Icons.Default.CalendarMonth, it) }
         }
         val phone = p.phone; val web = p.website?.takeIf { it.startsWith("http") }
-        if (phone != null || web != null || p.latitude != null) Row(Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val extra = p.extraLinkUrl?.takeIf { it.startsWith("http") && p.extraLinkTitle != null }
+        if (phone != null || web != null || extra != null || p.latitude != null) Row(Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             phone?.let { ActionChip(it, Icons.Default.Phone) { openIntent("tel:" + it.filter { c -> c.isDigit() || c == '+' }) } }
+            extra?.let { ActionChip(p.extraLinkTitle!!, Icons.Default.Description) { openUrl(it) } }
             web?.let { ActionChip("Website", Icons.Default.Language) { openUrl(it) } }
             if (p.latitude != null) ActionChip("Karte", Icons.Default.Map, showOnMap)
         }

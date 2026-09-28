@@ -14,11 +14,12 @@
       "stations": [
         {
           "label": "Westerstede",
-          "street": "Peterstraße 25",
-          "latitude": 53.253982,
-          "longitude": 7.928409
+          "street": "Wilhelm-Geiler-Straße 2",
+          "latitude": 53.254,
+          "longitude": 7.928397
         }
-      ]
+      ],
+      "hours": "Mo-Fr 9–18 Uhr · Sa 9–13 Uhr"
     },
     {
       "id": "lastenrad-ammerland",
@@ -52,7 +53,9 @@
           "latitude": 53.255464,
           "longitude": 7.921331
         }
-      ]
+      ],
+      "website": "http://www.hencobikes.de/",
+      "hours": "Mo-Fr 9–18 Uhr · Sa 9–14 Uhr"
     },
     {
       "id": "fahrradscheune-halstrup",
@@ -65,11 +68,14 @@
       "stations": [
         {
           "label": "Halstrup",
-          "street": "Alte Straße 14a",
+          "street": "Alte Straße 14",
           "latitude": 53.261919,
           "longitude": 7.915051
         }
-      ]
+      ],
+      "phone": "+49 4488 526633",
+      "website": "http://www.fahrradscheune.net/",
+      "hours": "Fr 15–18:30 Uhr · Sa 9–13 Uhr"
     }
   ]
 }

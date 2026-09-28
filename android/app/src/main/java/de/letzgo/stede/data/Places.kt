@@ -23,7 +23,14 @@ data class Place(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val features: List<String> = emptyList(),
-)
+    /** Zusätzlicher Link neben der Website, z. B. ein Programm als PDF — nie Bestellplattformen. */
+    val extraLinkTitle: String? = null,
+    val extraLinkUrl: String? = null,
+) {
+    /** Liefert nach Hause (laut Lieferando oder Google Maps) — eigene Filter-Pille unter „Gastro“. */
+    val delivers get() = DELIVERY in features
+    companion object { const val DELIVERY = "Lieferdienst" }
+}
 
 @Serializable data class PlaceDirectory(val source: String = "", val fetchedAt: String = "", val places: List<Place> = emptyList())
 
@@ -36,7 +43,28 @@ data class Place(
     val teaser: String? = null, val street: String? = null, val phone: String? = null, val email: String? = null, val website: String? = null,
     val hours: String? = null, @SerialName("rest_day") val restDay: String? = null, @SerialName("season_note") val seasonNote: String? = null,
     val features: List<String> = emptyList(), val lat: Double? = null, val lon: Double? = null, @SerialName("sort_order") val sortOrder: Int = 0,
+    @SerialName("extra_link_title") val extraLinkTitle: String? = null, @SerialName("extra_link_url") val extraLinkUrl: String? = null,
 )
+@Serializable private data class BusStopRow(@SerialName("stop_id") val id: String, val name: String, val lat: Double, val lon: Double)
+
+/** Haltestellen aus `bus_stops` — wenige hundert Zeilen, daher jedes Mal komplett; gespeichert in der Form von `bus-stops.json`. */
+private suspend fun syncBusStops(tenantId: String, slug: String) = runCatching {
+    val rows = Backend.supabase.from("bus_stops").select(Columns.raw("stop_id,name,lat,lon")) {
+        filter { eq("tenant_id", tenantId); exact("deleted_at", null) }
+        order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING); order("name", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+        limit(2000)
+    }.decodeList<BusStopRow>()
+    if (rows.isNotEmpty()) Store.write(Tenants.folder("content", slug), "bus-stops.json", kotlinx.serialization.json.buildJsonObject {
+        put("source", kotlinx.serialization.json.JsonPrimitive("bus_stops"))
+        put("stops", kotlinx.serialization.json.buildJsonArray {
+            rows.forEach { r -> add(kotlinx.serialization.json.buildJsonObject {
+                put("id", kotlinx.serialization.json.JsonPrimitive(r.id)); put("name", kotlinx.serialization.json.JsonPrimitive(r.name))
+                put("latitude", kotlinx.serialization.json.JsonPrimitive(r.lat)); put("longitude", kotlinx.serialization.json.JsonPrimitive(r.lon))
+            }) }
+        })
+    }.toString())
+}
+
 @Serializable private data class DirectoryRow(val directory: String, val source: String, @SerialName("fetched_at") val fetchedAt: String)
 
 /**
@@ -70,17 +98,18 @@ object Places {
             val metas = Backend.supabase.from("place_directories").select(Columns.raw("directory,source,fetched_at")) { filter { eq("tenant_id", tenant.id) } }.decodeList<DirectoryRow>()
             for (meta in metas) {
                 if (meta.directory !in assets) continue
-                val rows = Backend.supabase.from("places").select(Columns.raw("external_id,directory,kind,name,teaser,street,phone,email,website,hours,rest_day,season_note,features,lat,lon,sort_order")) {
+                val rows = Backend.supabase.from("places").select(Columns.raw("external_id,directory,kind,name,teaser,street,phone,email,website,hours,rest_day,season_note,features,lat,lon,sort_order,extra_link_title,extra_link_url")) {
                     filter { eq("tenant_id", tenant.id); eq("directory", meta.directory); exact("deleted_at", null) }
                     order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
                 }.decodeList<PlaceRow>()
                 if (rows.isEmpty()) continue
                 val dir = PlaceDirectory(meta.source, meta.fetchedAt, rows.map {
-                    Place(it.externalId, it.name, it.kind, it.teaser, it.street, it.phone, it.email, it.website, it.hours, it.restDay, it.seasonNote, it.lat, it.lon, it.features)
+                    Place(it.externalId, it.name, it.kind, it.teaser, it.street, it.phone, it.email, it.website, it.hours, it.restDay, it.seasonNote, it.lat, it.lon, it.features, it.extraLinkTitle, it.extraLinkUrl)
                 })
                 Store.write(Tenants.folder("content", slug), "${meta.directory}.json", Http.json.encodeToString(dir))
                 cache["$slug/${meta.directory}"] = dir
             }
+            syncBusStops(tenant.id, slug)
         }
     }
 }

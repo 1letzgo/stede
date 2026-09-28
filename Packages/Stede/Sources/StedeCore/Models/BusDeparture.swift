@@ -24,13 +24,15 @@ public nonisolated struct BusStop: Identifiable, Hashable, Sendable {
 
     /// Die Haltestellen im Stadtgebiet mit regelmäßigem Verkehr — ZOB zuerst,
     /// dann alphabetisch; der Bahnhof Ocholt als Umstieg zur Bahn am Ende.
-    /// Stand aus dem Backend (`content_files`, `bus-stops.json`), sonst die Liste unten.
+    /// Stand aus der Tabelle `bus_stops`, sonst aus `content_files` (`bus-stops.json`), sonst die Liste unten.
     public static var all: [BusStop] { store.value }
 
     private static let store = TenantScoped { () -> [BusStop] in
         struct File: Decodable { struct Stop: Decodable { let id: String; let name: String; let latitude: Double; let longitude: Double }; let stops: [Stop] }
-        if let data = ContentFiles.data("bus-stops"), let file = try? JSONDecoder().decode(File.self, from: data), !file.stops.isEmpty {
-            return file.stops.map { BusStop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }
+        for data in [ContentSync.busStopsData(), ContentFiles.data("bus-stops")].compactMap({ $0 }) {
+            if let file = try? JSONDecoder().decode(File.self, from: data), !file.stops.isEmpty {
+                return file.stops.map { BusStop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) }
+            }
         }
         return Tenants.usesBundle ? bundled : []
     }

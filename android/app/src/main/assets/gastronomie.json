@@ -128,25 +128,14 @@
     },
     {
       "id": "leogrande",
-      "name": "Leogrande",
+      "name": "Ristorante Pizzeria Leogrande",
       "category": "Restaurant",
       "street": "Peterstraße 13",
       "phone": "+49 4488 861520",
       "latitude": 53.255808,
       "longitude": 7.927537,
-      "teaser": "Restaurant in Westerstede – italienische Küche."
-    },
-    {
-      "id": "lotos-blute",
-      "name": "Lotos-Blüte",
-      "category": "Restaurant",
-      "street": "Wilhelm-Geiler-Straße 13",
-      "phone": "+49 4488 8604015",
-      "hours": "Mo-Sa 7–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.252402,
-      "longitude": 7.930159,
-      "teaser": "Restaurant in Westerstede."
+      "teaser": "Restaurant in Westerstede – italienische Küche.",
+      "hours": "Mi-Sa 12–14:30 Uhr, 18–22 Uhr · So 12–14:30 Uhr, 18–21:30 Uhr"
     },
     {
       "id": "m5",
@@ -167,7 +156,8 @@
       "street": "Liebfrauenstraße 13",
       "latitude": 53.274664,
       "longitude": 7.904043,
-      "teaser": "Restaurant in Westerstede-Hollwege."
+      "teaser": "Restaurant in Westerstede-Hollwege.",
+      "phone": "+49 4488 5297535"
     },
     {
       "id": "ostfriesischer-hof-moorburg",
@@ -368,19 +358,24 @@
       "street": "Peterstraße 7",
       "latitude": 53.25658,
       "longitude": 7.927385,
-      "teaser": "Imbiss in Westerstede."
+      "teaser": "Imbiss in Westerstede.",
+      "phone": "+49 1521 3915583",
+      "hours": "Mo, Di, Do 11–21:30 Uhr · Fr, Sa 11–22 Uhr · So 12–21:30 Uhr"
     },
     {
       "id": "bistro-pizzeria-aladin",
-      "name": "Bistro Pizzeria Aladin",
+      "name": "Pizzeria Napoli Mangia e Gusta",
       "category": "Imbiss",
       "street": "Lange Straße 11",
       "phone": "+49 4488 842984",
       "email": "info@pizzeria-aladin.de",
-      "website": "http://www.pizzeria-aladin.de/",
       "latitude": 53.257449,
       "longitude": 7.925342,
-      "teaser": "Imbiss in Westerstede."
+      "teaser": "Pizzeria in Westerstede – Pizza, auch mit Lieferung.",
+      "hours": "Mo-So 10–22 Uhr",
+      "features": [
+        "Lieferdienst"
+      ]
     },
     {
       "id": "bistro-vital-moorburg",
@@ -425,7 +420,9 @@
       "latitude": 53.25778,
       "longitude": 7.927947,
       "teaser": "Imbiss in Westerstede.",
-      "street": "Kirchenstraße 4"
+      "street": "Kirchenstraße 4",
+      "phone": "+49 4488 78138",
+      "hours": "Di-So 11–22 Uhr"
     },
     {
       "id": "mcdonald-s",
@@ -444,19 +441,24 @@
       "name": "Pizza 3020",
       "category": "Imbiss",
       "street": "Langebrügger Straße 14",
-      "hours": "Di-So 17–22 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-So 17–21 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.262879,
       "longitude": 7.94282,
-      "teaser": "Imbiss in Westerstede – Pizza."
+      "teaser": "Imbiss in Westerstede – Pizza.",
+      "phone": "+49 4488 3020",
+      "website": "https://pizza3020.de/",
+      "features": [
+        "Lieferdienst"
+      ]
     },
     {
       "id": "pizza-palast",
-      "name": "Pizza Palast",
+      "name": "Pizzapalast",
       "category": "Imbiss",
-      "phone": "+49 4409 9 08 19 97",
-      "hours": "Di-So 16–22 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "phone": "+49 4409 9081997",
+      "hours": "Di-So 16–21:30 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.201099,
       "longitude": 7.883748,
       "teaser": "Imbiss in Westerstede – türkische Küche, Pizza.",
@@ -478,31 +480,31 @@
       "name": "Treffpunkt Pizzeria & Kiosk",
       "category": "Imbiss",
       "street": "Norderstraße 25",
-      "phone": "+49 4488 9836699",
-      "website": "https://treffpunkt-westerstede.jimdosite.com/",
-      "hours": "Mo 11–14 Uhr, 17–22 Uhr, Mi-Fr 11–14 Uhr, 17–22 Uhr · Sa-So, Feiertag 17–22 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "phone": "+49 4488 9836688",
+      "website": "http://treffpunkt-pizzeriaundkiosk.de/",
+      "hours": "Di-Do, So 15:30–21:30 Uhr · Fr, Sa 15:30–22 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.262869,
       "longitude": 7.922284,
-      "teaser": "Imbiss in Westerstede – Pizza."
-    },
-    {
-      "id": "urfa-grill",
-      "name": "Urfa Grill",
-      "category": "Imbiss",
-      "latitude": 53.255278,
-      "longitude": 7.929922,
-      "teaser": "Imbiss in Westerstede – Döner, Pizza.",
-      "street": "Meinardusstraße"
+      "teaser": "Imbiss in Westerstede – Pizza.",
+      "features": [
+        "Lieferdienst"
+      ]
     },
     {
       "id": "westersteder-grill",
-      "name": "Westersteder Grill",
+      "name": "Pizzawerk 01 (Juan's Pizza)",
       "category": "Imbiss",
       "latitude": 53.256847,
       "longitude": 7.93068,
-      "teaser": "Imbiss in Westerstede.",
-      "street": "Gaststraße 19"
+      "teaser": "Pizzeria in Westerstede – Pizza zum Abholen und Liefern.",
+      "street": "Gaststraße 19",
+      "phone": "+49 4488 5349083",
+      "website": "https://pizzawerk-01.de/",
+      "hours": "Mo, Di, Do-Sa 15–21:30 Uhr · So 14–21:30 Uhr",
+      "features": [
+        "Lieferdienst"
+      ]
     },
     {
       "id": "bachmanns",
@@ -577,21 +579,11 @@
       "street": "Lange Straße 55",
       "phone": "+49 4488 842568",
       "website": "https://www.behrens-meyer.de/",
-      "hours": "Mo-Fr 6:30–19 Uhr · Sa 6:30–18 Uhr · So 7–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 6:30–19 Uhr · Sa 6:30–18 Uhr · So 7–11 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.259838,
       "longitude": 7.919339,
       "teaser": "Bäckerei in Westerstede."
-    },
-    {
-      "id": "backerei-bremer-ocholt",
-      "name": "Bäckerei Bremer",
-      "category": "Bäckerei",
-      "street": "Westring 15",
-      "phone": "+49 4409 357",
-      "latitude": 53.203911,
-      "longitude": 7.882401,
-      "teaser": "Bäckerei in Westerstede-Ocholt."
     },
     {
       "id": "backerei-frollje",
@@ -600,17 +592,10 @@
       "latitude": 53.257717,
       "longitude": 7.923042,
       "teaser": "Bäckerei in Westerstede.",
-      "street": "Lange Straße"
-    },
-    {
-      "id": "backerei-grehl",
-      "name": "Bäckerei Grehl",
-      "category": "Bäckerei",
-      "street": "Gaststraße 13",
-      "phone": "+49 4488 2184",
-      "latitude": 53.256287,
-      "longitude": 7.929825,
-      "teaser": "Bäckerei in Westerstede."
+      "street": "Lange Straße 27",
+      "phone": "+49 4488 5294575",
+      "website": "https://www.baeckerei-froellje.de/filialen/westerstede-mit-cafe/",
+      "hours": "Mo-Fr 6:30–18 Uhr · So 7–11 Uhr"
     },
     {
       "id": "backerei-hoppmann",
@@ -622,36 +607,8 @@
       "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.259694,
       "longitude": 7.933348,
-      "teaser": "Bäckerei in Westerstede."
-    },
-    {
-      "id": "backerei-piepers",
-      "name": "Bäckerei Piepers",
-      "category": "Bäckerei",
-      "street": "Am Esch 6",
-      "latitude": 53.261288,
-      "longitude": 7.93143,
-      "teaser": "Bäckerei in Westerstede."
-    },
-    {
-      "id": "backerei-schultze-muhlenfeld",
-      "name": "Bäckerei Schultze Mühlenfeld",
-      "category": "Bäckerei",
-      "street": "Kuhlenstraße 53a",
-      "latitude": 53.253734,
-      "longitude": 7.917596,
-      "teaser": "Bäckerei in Westerstede."
-    },
-    {
-      "id": "backerei-schonhoft",
-      "name": "Bäckerei Schönhöft",
-      "category": "Bäckerei",
-      "hours": "Di-Fr 6–12:30 Uhr, 14–18 Uhr · Sa 6–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.21214,
-      "longitude": 7.931989,
       "teaser": "Bäckerei in Westerstede.",
-      "street": "Torsholter Hauptstraße 49"
+      "website": "http://www.baeckerei-hoppmann.de/"
     },
     {
       "id": "backerei-t-frollje-im-markant-markt-kapels-backerei-und-kond",
@@ -667,12 +624,13 @@
     },
     {
       "id": "hoppmann-kornkammer",
-      "name": "Hoppmann Kornkammer",
+      "name": "Bäckerei Hoppmann (Kornkammer)",
       "category": "Bäckerei",
       "street": "Peterstraße 10",
       "latitude": 53.256268,
       "longitude": 7.927744,
-      "teaser": "Bäckerei in Westerstede."
+      "teaser": "Bäckerei in Westerstede.",
+      "website": "http://www.baeckerei-hoppmann.de/"
     },
     {
       "id": "muller-egerer",
@@ -682,7 +640,9 @@
       "phone": "+49 4488 761778",
       "latitude": 53.253935,
       "longitude": 7.927997,
-      "teaser": "Bäckerei in Westerstede."
+      "teaser": "Bäckerei in Westerstede.",
+      "hours": "Mo-Fr 6:30–18 Uhr · So 7–16 Uhr",
+      "website": "https://www.mueller-egerer.de/"
     },
     {
       "id": "muller-egerer-filiale-ocholt",
@@ -691,21 +651,23 @@
       "street": "Westersteder Straße 157",
       "phone": "+49 4409 970313",
       "website": "https://www.mueller-egerer.de/unsere-filialen/",
-      "hours": "Mo-Fr 6–19 Uhr, Sa 6:30–17 Uhr, So 8–17 Uhr, Feiertag 8–17 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 6–18 Uhr · So 7–17 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.20292,
       "longitude": 7.885571,
       "teaser": "Bäckerei in Westerstede."
     },
     {
       "id": "artful",
-      "name": "ARTFUL",
+      "name": "ARTFUL Teehandel",
       "category": "Einkaufen",
       "website": "https://www.artful-teehandel.de",
-      "latitude": 53.255632,
-      "longitude": 7.927842,
+      "latitude": 53.2574354,
+      "longitude": 7.9262252,
       "teaser": "Teeladen in Westerstede.",
-      "street": "Peterstraße"
+      "street": "Lange Straße 5",
+      "phone": "+49 4488 6587",
+      "hours": "Di-Fr 9–12:30 Uhr, 14–18 Uhr · Sa 9–13 Uhr"
     },
     {
       "id": "aldi",
@@ -713,20 +675,22 @@
       "category": "Einkaufen",
       "street": "Am Esch 3",
       "website": "https://www.aldi-nord.de/filialen-und-oeffnungszeiten.html/l/westerstede/am-esch-3/3181599",
-      "hours": "Mo-Sa 8–20 Uhr · Feiertag geschlossen",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Sa 7–21 Uhr · Feiertag geschlossen",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.25929,
       "longitude": 7.932929,
       "teaser": "Supermarkt in Westerstede."
     },
     {
       "id": "allousch",
-      "name": "Allousch",
+      "name": "Allousch Market",
       "category": "Einkaufen",
-      "street": "Peterstraße 9",
-      "latitude": 53.25646,
-      "longitude": 7.927417,
-      "teaser": "Lebensmittel"
+      "street": "Peterstraße 11",
+      "latitude": 53.2563333,
+      "longitude": 7.9274263,
+      "teaser": "Lebensmittel",
+      "phone": "+49 176 60034074",
+      "hours": "Mo-Fr 8:30–19 Uhr · Sa 8:30–18:30 Uhr"
     },
     {
       "id": "becker-feinkost-gmbh-fikensolt",
@@ -734,11 +698,12 @@
       "category": "Einkaufen",
       "street": "Am Detershof 9",
       "website": "http://becker-feinkost.de/",
-      "hours": "Mo-Fr 7:30–12 Uhr, 12:30–16 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 7:30–14 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.247653,
       "longitude": 7.923429,
-      "teaser": "Geschäft in Westerstede-Fikensolt."
+      "teaser": "Geschäft in Westerstede-Fikensolt.",
+      "phone": "+49 4488 2126"
     },
     {
       "id": "blume-ideal",
@@ -747,26 +712,34 @@
       "street": "Am Esch 7",
       "latitude": 53.259973,
       "longitude": 7.932719,
-      "teaser": "Blumenladen in Westerstede."
+      "teaser": "Blumenladen in Westerstede.",
+      "phone": "+49 4488 840704",
+      "website": "https://www.blume-ideal.com/",
+      "hours": "Mo-Sa 8–19 Uhr"
     },
     {
       "id": "blumenhaus-friedrich",
-      "name": "Blumenhaus Friedrich",
+      "name": "GESA – Westersteder Grün",
       "category": "Einkaufen",
       "street": "Kirchenstraße 6",
       "phone": "+49 4488 2513",
       "latitude": 53.258341,
       "longitude": 7.92931,
-      "teaser": "Blumenladen in Westerstede."
+      "teaser": "Blumenladen in Westerstede.",
+      "website": "http://gesa-westersteder-gruen.de/",
+      "hours": "Di-Do 9–18 Uhr · Fr 8–18 Uhr · Sa 9–13 Uhr"
     },
     {
       "id": "bohlje-g-d-baumschulen-u-pflanzenhandel-gmbh-klamperesch",
-      "name": "Böhlje G.D. Baumschulen u. Pflanzenhandel GmbH",
+      "name": "G. D. Böhlje Baumschulen",
       "category": "Einkaufen",
       "street": "Oldenburger Straße 9",
       "latitude": 53.248965,
       "longitude": 7.932357,
-      "teaser": "Gartencenter in Westerstede-Klamperesch."
+      "teaser": "Gartencenter in Westerstede-Klamperesch.",
+      "phone": "+49 4488 99860",
+      "website": "http://www.pflanzen-boehlje.de/",
+      "hours": "Mo-Fr 9–17 Uhr"
     },
     {
       "id": "bucking-westerstede",
@@ -777,16 +750,17 @@
       "email": "buecking.steenblock@t-online.de",
       "latitude": 53.257169,
       "longitude": 7.925957,
-      "teaser": "Kaufhaus in Westerstede."
+      "teaser": "Kaufhaus in Westerstede.",
+      "hours": "Mo-Do 9–13 Uhr, 14–18 Uhr · Fr 9–18 Uhr · Sa 9–13 Uhr"
     },
     {
       "id": "edeka-ocholt",
-      "name": "EDEKA",
+      "name": "EDEKA Masla",
       "category": "Einkaufen",
       "street": "Westring 4A",
       "phone": "+49 4409 970172",
       "email": "info@edeka-masla.de",
-      "website": "https://www.edeka-masla.de/",
+      "website": "https://www.edeka.de/eh/minden-hannover/edeka-masla-westring-4a/index.jsp",
       "hours": "Mo-Fr 7:30–20 Uhr, Sa 7:30–19 Uhr",
       "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.202963,
@@ -808,26 +782,28 @@
     },
     {
       "id": "eine-weltladen-aquator-westerstede",
-      "name": "Eine Weltladen Äquator Westerstede",
+      "name": "Weltladen Äquator",
       "category": "Einkaufen",
       "street": "Peterstraße 8",
       "phone": "+49 4488 528552",
-      "website": "https://www.weltladen.de/westerstede",
-      "hours": "Mo-Do 10–12:30 Uhr, Mo-Fr 15–18 Uhr, Sa 10–13 Uhr, Fr 9–12:30 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "website": "https://www.weltlaeden.de/westerstede",
+      "hours": "Mo-Do 10–12:30 Uhr, 15–18 Uhr · Fr 9–12:30 Uhr, 15–18 Uhr · Sa 10–13 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.256551,
       "longitude": 7.927734,
       "teaser": "Kaufhaus in Westerstede."
     },
     {
       "id": "fleischerei-luers",
-      "name": "Fleischerei Luers",
+      "name": "Fleischerei Malte Luers",
       "category": "Einkaufen",
       "street": "Am Esch 4",
       "website": "https://fleischerei-luers.de",
       "latitude": 53.260991,
       "longitude": 7.931326,
-      "teaser": "Fleischerei in Westerstede."
+      "teaser": "Fleischerei in Westerstede.",
+      "phone": "+49 4488 3130",
+      "hours": "Di-Do 6:45–12:30 Uhr, 14:30–18 Uhr · Fr 6:45–18 Uhr · Sa 6:30–12:30 Uhr"
     },
     {
       "id": "gartnerei-gigas-ocholterfeld",
@@ -836,26 +812,12 @@
       "street": "Godensholter Straße 70",
       "phone": "+49 4409 245",
       "email": "info@gigas-ocholt.de",
-      "website": "https://www.gigas-ocholt.de/",
-      "hours": "Mo-Fr 8–18 Uhr, Sa 8–14 Uhr, So 10–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "website": "https://www.gaertnereigigas.de/",
+      "hours": "Mo-Fr 8–18 Uhr · Sa 8–16 Uhr · So 10–12 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.191864,
       "longitude": 7.868713,
       "teaser": "Gartencenter in Westerstede-Ocholterfeld."
-    },
-    {
-      "id": "hollweger-traumgarten-schaugartenanlage-hollwege",
-      "name": "Hollweger Traumgarten - Schaugartenanlage",
-      "category": "Einkaufen",
-      "street": "Am Wehlen 8",
-      "phone": "+49 4488 2279",
-      "email": "hollweger-traumgarten@t-online.de",
-      "website": "https://hollweger-traumgarten.de",
-      "hours": "Di-So 9:30–18 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.27606,
-      "longitude": 7.905298,
-      "teaser": "Gartencenter in Westerstede-Hollwege."
     },
     {
       "id": "josephines-confiserie-halsbek",
@@ -875,10 +837,11 @@
       "category": "Einkaufen",
       "hours": "Mo-Fr 9–18:30 Uhr · Sa 9–16 Uhr · So 10–12 Uhr",
       "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.255961,
-      "longitude": 7.929535,
+      "latitude": 53.2559305,
+      "longitude": 7.9294423,
       "teaser": "Blumenladen in Westerstede.",
-      "street": "Meinardusstraße"
+      "street": "Meinardusstraße 1",
+      "phone": "+49 4488 840987"
     },
     {
       "id": "kiosk-lange-strae",
@@ -900,7 +863,8 @@
       "phone": "+49 4488 527669",
       "latitude": 53.263823,
       "longitude": 7.933666,
-      "teaser": "Kiosk in Westerstede."
+      "teaser": "Kiosk in Westerstede.",
+      "hours": "Mo-Do 6–22 Uhr · Fr 6–23 Uhr · Sa 8–23 Uhr · So 9–22 Uhr"
     },
     {
       "id": "krekes-kasehof",
@@ -914,15 +878,15 @@
       "latitude": 53.212155,
       "longitude": 7.897756,
       "teaser": "Käsehof in Westerstede.",
-      "street": "Osterfeld"
+      "street": "Osterfeld 14"
     },
     {
       "id": "lidl",
       "name": "Lidl",
       "category": "Einkaufen",
       "street": "Lange Straße 59",
-      "hours": "Mo-Sa 8–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Sa 7–21 Uhr · Feiertag geschlossen",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.260271,
       "longitude": 7.919155,
       "teaser": "Supermarkt in Westerstede."
@@ -934,33 +898,22 @@
       "street": "Goethestraße 21",
       "phone": "+49 4488 1636",
       "website": "https://www.mein-markant.de/mein-markt/unsere-dienstleistungen/kapels-westerstede/",
-      "hours": "Mo-Sa 7–19 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 8–19 Uhr · Sa 8–18 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.251493,
       "longitude": 7.939983,
       "teaser": "Supermarkt in Westerstede."
     },
     {
       "id": "milchkanne-langosch",
-      "name": "Milchkanne Langosch",
+      "name": "Milchkanne",
       "category": "Einkaufen",
       "street": "Wilhelm-Geiler-Straße 16",
       "phone": "+49 4488 859110",
       "latitude": 53.252697,
       "longitude": 7.931034,
-      "teaser": "Lebensmittelladen in Westerstede."
-    },
-    {
-      "id": "naschwerk-24-7-halsbek",
-      "name": "Naschwerk 24/7",
-      "category": "Einkaufen",
-      "street": "Halsbeker Hauptstraße 20",
-      "phone": "+491517063531",
-      "hours": "Rund um die Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.316206,
-      "longitude": 7.923811,
-      "teaser": "Automatenladen"
+      "teaser": "Lebensmittelladen in Westerstede.",
+      "hours": "Mo-Mi 8–13 Uhr, 14:30–18 Uhr · Fr 8–18 Uhr · Sa 8–12:30 Uhr"
     },
     {
       "id": "netto-marken-discount",
@@ -969,8 +922,8 @@
       "street": "Am Esch 16",
       "phone": "+49 4488 761877",
       "website": "https://www.netto-online.de/filialen/Westerstede/Am-Esch-16/7091/",
-      "hours": "Mo-Sa 7–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Sa 7–21 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.262927,
       "longitude": 7.932338,
       "teaser": "Supermarkt in Westerstede."
@@ -989,12 +942,14 @@
     },
     {
       "id": "orient-basar",
-      "name": "Orient-Basar",
+      "name": "Orient Bazar",
       "category": "Einkaufen",
-      "latitude": 53.257407,
-      "longitude": 7.925771,
+      "latitude": 53.2574217,
+      "longitude": 7.9259743,
       "teaser": "Lebensmittelladen in Westerstede.",
-      "street": "Lange Straße"
+      "street": "Lange Straße 9A",
+      "phone": "+49 176 87599484",
+      "hours": "Mo-Fr 9:30–18 Uhr · Sa 9:30–17 Uhr"
     },
     {
       "id": "papeterie-wehlau",
@@ -1002,42 +957,37 @@
       "category": "Einkaufen",
       "street": "Poststraße 1",
       "phone": "+49 4488 2644",
-      "hours": "Mo-Fr 9–18 Uhr · Sa 9–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 9–13 Uhr, 14–18 Uhr · Sa 9–13 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.256195,
       "longitude": 7.927326,
-      "teaser": "Buchhandlung in Westerstede."
+      "teaser": "Buchhandlung in Westerstede.",
+      "website": "https://libellus-gmbh.de/"
     },
     {
       "id": "q1-station",
-      "name": "Q1-Station",
+      "name": "Q1 Tankstelle",
       "category": "Einkaufen",
-      "street": "Lange Straße 55",
-      "phone": "+49 4488 3003",
-      "hours": "Mo-Sa 6:30–22 Uhr, So, Feiertag 9–22 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "street": "Lange Straße 55–57",
+      "phone": "+49 4488 842151",
+      "hours": "Mo-Fr 5:30–22 Uhr · Sa 6–22 Uhr · So 7–22 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.259708,
       "longitude": 7.919329,
-      "teaser": "Lebensmittelladen in Westerstede."
-    },
-    {
-      "id": "rumanische-lebensmittel",
-      "name": "Rumänische Lebensmittel",
-      "category": "Einkaufen",
-      "latitude": 53.257383,
-      "longitude": 7.92621,
       "teaser": "Lebensmittelladen in Westerstede.",
-      "street": "Lange Straße"
+      "website": "https://www.q1.eu/de/tankstellen/westerstede-lange-strasse-55-57-tankstelle"
     },
     {
       "id": "score",
-      "name": "SCORE",
+      "name": "SCORE SB-Station",
       "category": "Einkaufen",
-      "street": "Lange Straße 45",
+      "street": "Lange Straße 43",
       "phone": "+49 4488 2254",
       "latitude": 53.259011,
       "longitude": 7.920449,
-      "teaser": "Lebensmittelladen in Westerstede."
+      "teaser": "Lebensmittelladen in Westerstede.",
+      "website": "https://www.score-emden.de/store/westerstede/",
+      "hours": "Mo-Fr 6–22 Uhr · Sa 7–22 Uhr · So 7:30–22 Uhr"
     },
     {
       "id": "snackeck-ocholter-kreuz",
@@ -1059,29 +1009,7 @@
       "latitude": 53.255824,
       "longitude": 7.929115,
       "teaser": "Lebensmittelladen in Westerstede.",
-      "street": "Meinardusstraße"
-    },
-    {
-      "id": "treffpunkt-westerstede",
-      "name": "Treffpunkt Westerstede",
-      "category": "Einkaufen",
-      "street": "Norderstraße 25",
-      "phone": "+49 4488 9836699",
-      "website": "https://treffpunkt-westerstede.jimdosite.com/",
-      "hours": "Mi, Do, So, Mo, Feiertag 16:30–22 Uhr · Fr, Sa 16:30–23 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.262887,
-      "longitude": 7.922319,
-      "teaser": "Kiosk in Westerstede."
-    },
-    {
-      "id": "ursula-sander-buchhandlung",
-      "name": "Ursula Sander Buchhandlung",
-      "category": "Einkaufen",
-      "street": "Peterstraße 22",
-      "latitude": 53.255185,
-      "longitude": 7.927904,
-      "teaser": "Buchhandlung in Westerstede."
+      "street": "Meinardusstraße 14"
     },
     {
       "id": "warband-erdbeer-u-spargelhof-klamperesch",
@@ -1090,25 +1018,28 @@
       "street": "Oldenburger Straße 36",
       "latitude": 53.245832,
       "longitude": 7.936293,
-      "teaser": "Obst- und Gemüseladen in Westerstede-Klamperesch."
+      "teaser": "Obst- und Gemüseladen in Westerstede-Klamperesch.",
+      "phone": "+49 4488 7614145",
+      "website": "http://www.warband.de/",
+      "hours": "Mo-So 9–18 Uhr"
     },
     {
       "id": "weindiele-m-k-weinhandel-ug-haftungsbeschrankt-ihorst",
-      "name": "Weindiele® M.K. Weinhandel UG (haftungsbeschränkt)",
+      "name": "Weindiele",
       "category": "Einkaufen",
       "street": "Lange Wischen 10",
-      "phone": "+49 4489 94109 0",
+      "phone": "+49 4489 941090",
       "email": "info@weindiele.de",
       "website": "https://www.weindiele.de/",
-      "hours": "Mo-Fr 9–17 Uhr, Do 9–19 Uhr, Sa 9–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Fr 9–17 Uhr · Sa 9–13 Uhr",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.248829,
       "longitude": 7.834858,
       "teaser": "Biowein Fachhandel, Bioland und Demeter zertifiziert, Ab Hof Verkauf, Einzelhandel und Großhandel"
     },
     {
       "id": "westersteder-blumenhof",
-      "name": "Westersteder Blumenhof",
+      "name": "Westersteder Blumenhof (Gartenbau Wolf)",
       "category": "Einkaufen",
       "street": "Moosbroksweg 10",
       "phone": "+49 4488 2769",
@@ -1128,20 +1059,62 @@
       "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.260146,
       "longitude": 7.933581,
-      "teaser": "Supermarkt in Westerstede."
+      "teaser": "Supermarkt in Westerstede.",
+      "website": "http://www.famila-nordwest.de/"
     },
     {
       "id": "rossmann",
       "name": "Rossmann",
       "category": "Drogerie",
-      "street": "Meinardusstraße 18",
+      "street": "Meinardusstraße 16",
       "phone": "+49 4488 8604205",
       "website": "https://www.rossmann.de",
-      "hours": "Mo-Fr 8:30–20 Uhr · Sa 8:30–19 Uhr · Feiertag geschlossen",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
+      "hours": "Mo-Sa 8–20 Uhr · Feiertag geschlossen",
+      "seasonNote": "Laut Google Maps (Sept. 2026), ohne Gewähr",
       "latitude": 53.255334,
       "longitude": 7.929319,
       "teaser": "Drogeriemarkt in Westerstede."
+    },
+    {
+      "id": "juans-pizza-westerstede",
+      "name": "Juan's Pizza",
+      "category": "Imbiss",
+      "teaser": "Pizzeria in Westerstede – Pizza zum Abholen und Liefern.",
+      "street": "Kuhlenstraße 51",
+      "phone": "+49 1556 5905475",
+      "hours": "Mo-Sa 11–20 Uhr",
+      "latitude": 53.2540275,
+      "longitude": 7.9175297,
+      "features": [
+        "Lieferdienst"
+      ]
+    },
+    {
+      "id": "master-kebab",
+      "name": "Master Kebab",
+      "category": "Imbiss",
+      "teaser": "Döner und Kebab in Westerstede, auch mit Lieferung.",
+      "street": "Meinardusstraße 21",
+      "phone": "+49 4488 8605808",
+      "hours": "Mo-Sa 11:30–21 Uhr",
+      "latitude": 53.2552519,
+      "longitude": 7.9298479,
+      "features": [
+        "Lieferdienst"
+      ],
+      "website": "https://master-kebab.vercel.app/"
+    },
+    {
+      "id": "dao-asiafood",
+      "name": "Dao Asiafood",
+      "category": "Restaurant",
+      "teaser": "Asiatisches Restaurant in Westerstede.",
+      "street": "Meinardusstraße 3",
+      "phone": "+49 4488 5270420",
+      "website": "http://www.dao-westerstede.de/",
+      "hours": "Mo, Mi-Fr 11–15 Uhr, 17–22 Uhr · Sa, So 12–22 Uhr",
+      "latitude": 53.2558585,
+      "longitude": 7.9294613
     }
   ]
 }

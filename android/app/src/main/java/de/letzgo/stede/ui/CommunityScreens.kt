@@ -47,7 +47,8 @@ fun statusLabel(status: String) = when (status) { "pending" -> "Wartet auf Freig
 @Composable
 fun CommunityScreen(open: (Screen) -> Unit) {
     val scope = rememberCoroutineScope()
-    var list by remember { mutableStateOf<List<Community>?>(null) }
+    // Zuerst der letzte Stand (CommunityCache), dann das Netz.
+    var list by remember { mutableStateOf(CommunityCache.read<List<Community>>("communities", Session.userId)) }
     var error by remember { mutableStateOf<String?>(null) }
     var showAccount by remember { mutableStateOf(false) }
     var showAdmin by remember { mutableStateOf(false) }
@@ -55,11 +56,17 @@ fun CommunityScreen(open: (Screen) -> Unit) {
     var code by remember { mutableStateOf("") }
     var codeError by remember { mutableStateOf<String?>(null) }
     var showInvite by remember { mutableStateOf(false) }
+    var myTasks by remember { mutableStateOf(CommunityCache.read<List<AssignedTask>>("my-tasks", Session.userId)) }
+    suspend fun loadMyTasks() {
+        val me = Session.userId ?: run { myTasks = null; return }
+        runCatching { TaskApi.myTasks(me).filter { !it.projectArchived } }.onSuccess { myTasks = it; CommunityCache.write("my-tasks", me, it) }
+    }
+    LaunchedEffect(Session.userId, Session.memberships, Changes.version) { loadMyTasks() }
     LaunchedEffect(Session.userId, Session.memberships, Changes.version, showAdmin) {
         if (!showAdmin) Session.refreshAdminPending()
     }
     LaunchedEffect(Session.userId, Session.memberships, Changes.version) {
-        runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
+        runCatching { CommunityApi.communities(Tenants.current().id) }.onSuccess { list = it; error = null; CommunityCache.write("communities", Session.userId, it) }.onFailure { if (list == null) error = "Gruppen konnten nicht geladen werden." }
     }
     val town = Session.tenant?.municipality ?: Tenants.config.municipality
     Scaffold(topBar = {
@@ -86,6 +93,15 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             if (mine.isNotEmpty()) {
                 item { SectionHeader("Meine Gruppen", Icons.Default.Groups) }
                 items(mine, key = { "m${it.id}" }) { c -> CommunityRow(c, Session.membership(c.id)) { open(Screen.CommunityDetail(c.id)) } }
+                // Eigene Kategorie „Meine Aufgaben“: eine Karte mit der Anzahl, öffnet die Übersicht nach Gruppen.
+                val taskGroups = mine.filter { it.hasTasks && Session.membership(it.id)?.isActive == true }.map { it.id }.toSet()
+                val assigned = myTasks?.filter { it.task.communityId in taskGroups }
+                if (assigned != null && taskGroups.isNotEmpty()) item(key = "mytasksHeader") { SectionHeader("Meine Aufgaben", Icons.Default.Checklist) }
+                if (assigned != null && taskGroups.isNotEmpty()) item(key = "mytasks") {
+                    val groups = assigned.map { it.task.communityId }.toSet().size
+                    JoinRow(Icons.Default.Checklist, C.amber, "Aufgaben",
+                        if (assigned.isEmpty()) "Keine offenen Aufgaben" else "${assigned.size} offen · ${if (groups == 1) "1 Gruppe" else "$groups Gruppen"}") { open(Screen.MyTasks) }
+                }
             }
             if (others.isNotEmpty()) {
                 item { SectionHeader(if (mine.isEmpty()) "Gruppen" else "Weitere", Icons.Default.People) }
@@ -194,11 +210,15 @@ private fun CommunityTabs(tabs: List<CommunityTab>, selected: CommunityTab, onSe
 /** Eine Community wie CommunityDetailView: Umschalter Termine · Umfragen · Aufgaben · Mitglieder · Einstellungen wie bei der Bahn
  *  (Umfragen und Aufgaben nur, wenn eingeschaltet); wer nicht Mitglied ist, sieht nur den Kopf mit Beitritt. */
 @Composable
-fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
+fun CommunityDetailScreen(id: String, onBack: () -> Unit, initialTab: CommunityTab = CommunityTab.Events) {
     val scope = rememberCoroutineScope()
-    var c by remember { mutableStateOf<Community?>(null) }
-    var events by remember { mutableStateOf<List<EventInfo>?>(null) }
-    var members by remember { mutableStateOf<List<Member>?>(null) }
+    // Zuerst der letzte Stand der Gruppenseite (CommunityCache), dann das Netz.
+    val cached = remember(id) { CommunityCache.read<GroupSnapshot>("group-${id.lowercase()}", Session.userId) }
+    val today = remember { Town.today() }
+    var c by remember { mutableStateOf(cached?.community) }
+    var events by remember { mutableStateOf(cached?.events?.map { EventInfo.of(it, cached.community.name, cached.community.logoUrl) }
+        ?.filter { !(it.ends ?: it.starts).withZoneSameInstant(Town.zone).toLocalDate().isBefore(today) }) }
+    var members by remember { mutableStateOf(cached?.members) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var past by remember { mutableStateOf<List<EventInfo>?>(null) }
     var hasMorePast by remember { mutableStateOf(true) }
@@ -216,7 +236,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     var commentingPoll by remember { mutableStateOf<CommunityPoll?>(null) }
     var commentingEvent by remember { mutableStateOf<EventInfo?>(null) }
     var commentCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var tab by remember { mutableStateOf(CommunityTab.Events) }
+    var tab by remember { mutableStateOf(initialTab) }
     var openEvent by remember { mutableStateOf<EventInfo?>(null) }
     var newEvent by remember { mutableStateOf(false) }
     var editCommunity by remember { mutableStateOf(false) }
@@ -235,8 +255,11 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
         runCatching { CommunityApi.community(id) }.onSuccess { c = it }
         if (isMember) {
             val from = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
-            runCatching { CommunityApi.events(id, from) }.onSuccess { list -> events = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) } }
-            runCatching { CommunityApi.members(id) }.onSuccess { members = it }
+            val rawEvents = runCatching { CommunityApi.events(id, from) }.onSuccess { list -> events = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) } }.getOrNull()
+            val rawMembers = runCatching { CommunityApi.members(id) }.onSuccess { members = it }.getOrNull()
+            val community = c
+            if (rawEvents != null && rawMembers != null && community != null)
+                CommunityCache.write("group-${id.lowercase()}", Session.userId, GroupSnapshot(community, rawMembers, rawEvents))
             helpers = runCatching { CommunityApi.helperCounts(events.orEmpty().filter { it.helpersNeeded > 0 }.map { it.id }) }.getOrDefault(emptyMap())
             loadCommentCounts()
             MyParticipation.load()
@@ -285,7 +308,8 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit) {
     val community = c
     val tabs = visibleTabs(community)
     // Ausgeschaltete Funktion: zurück zu den Terminen.
-    LaunchedEffect(tabs) { if (tab !in tabs) tab = CommunityTab.Events }
+    // Erst nach dem Laden der Gruppe, sonst fiele ein Start im Reiter „Aufgaben“ sofort zurück.
+    LaunchedEffect(tabs) { if (community != null && tab !in tabs) tab = CommunityTab.Events }
     openProject?.let { projectId ->
         ProjectScreen(projectId, tasks, members.orEmpty().filter { it.isActive }, TaskPermissions(Session.userId, isAdmin)) { openProject = null }
         return

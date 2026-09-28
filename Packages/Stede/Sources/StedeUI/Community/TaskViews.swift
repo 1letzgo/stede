@@ -261,9 +261,12 @@ struct TaskCard: View {
     let onStatus: (TaskStatus) -> Void
     let onTake: () -> Void
     let onRelease: () -> Void
-    let onEdit: () -> Void
+    /// Ohne Editor (etwa in „Meine Aufgaben“, wo die Mitgliederliste fehlt) entfällt „Bearbeiten“.
+    let onEdit: (() -> Void)?
     let onDelete: () -> Void
     let onComments: () -> Void
+    /// Projekttitel über der Aufgabe, wenn sie außerhalb ihres Projekts steht.
+    var context: String? = nil
     @State private var confirmDelete = false
 
     private var mine: Bool { task.isAssigned(permissions.userID) }
@@ -273,6 +276,9 @@ struct TaskCard: View {
             HStack(alignment: .top, spacing: 12) {
                 statusControl
                 VStack(alignment: .leading, spacing: 4) {
+                    if let context, !context.isEmpty {
+                        Text(context).font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
+                    }
                     Text(task.title).font(.headline).strikethrough(task.status == .done)
                         .foregroundStyle(task.status == .done ? .secondary : .primary)
                     HStack(spacing: 6) {
@@ -330,7 +336,7 @@ struct TaskCard: View {
                 }
                 if mine { Button("Abgeben", systemImage: "hand.raised.slash", action: onRelease) }
                 if permissions.canEdit(task) {
-                    Button("Bearbeiten", systemImage: "pencil", action: onEdit)
+                    if let onEdit { Button("Bearbeiten", systemImage: "pencil", action: onEdit) }
                     Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
                 }
             } label: {

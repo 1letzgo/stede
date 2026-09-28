@@ -9,6 +9,8 @@ import de.letzgo.stede.data.Member
 import de.letzgo.stede.data.Profile
 import de.letzgo.stede.data.Tenant
 import de.letzgo.stede.data.Tenants
+import de.letzgo.stede.data.CommunityCache
+import de.letzgo.stede.data.AccountSnapshot
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -40,8 +42,18 @@ object Session {
         scope.launch {
             Backend.supabase.auth.sessionStatus.collect { status ->
                 when (status) {
-                    is SessionStatus.Authenticated -> { userId = status.session.user?.id; refresh() }
-                    is SessionStatus.NotAuthenticated -> { userId = null; profile = null; memberships = emptyList(); isTenantAdmin = false }
+                    is SessionStatus.Authenticated -> {
+                        val id = status.session.user?.id
+                        if (id != userId && id != null) CommunityCache.read<AccountSnapshot>("account", id)?.let {
+                            profile = it.profile; memberships = it.memberships; isTenantAdmin = it.isTenantAdmin
+                        }
+                        userId = id; refresh()
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        // Abgemeldet: nichts von diesem Konto auf dem Gerät lassen.
+                        if (userId != null) CommunityCache.clear()
+                        userId = null; profile = null; memberships = emptyList(); isTenantAdmin = false
+                    }
                     else -> {}
                 }
             }
@@ -63,6 +75,7 @@ object Session {
             profile = CommunityApi.profile(id)
             memberships = CommunityApi.myMemberships(id)
             tenant?.let { isTenantAdmin = CommunityApi.isTenantAdmin(it.id) }
+            CommunityCache.write("account", id, AccountSnapshot(profile, memberships, isTenantAdmin))
         }.onFailure { error = it.message }
         refreshAdminPending()
     }

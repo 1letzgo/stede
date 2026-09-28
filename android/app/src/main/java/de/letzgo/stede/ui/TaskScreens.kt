@@ -212,7 +212,9 @@ fun ProjectScreen(projectId: String, model: TasksModel, members: List<Member>, p
 @Composable
 fun TaskCard(
     task: CommunityTask, permissions: TaskPermissions, commentCount: Int, onStatus: (TaskStatus) -> Unit, onTake: () -> Unit,
-    onRelease: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onComments: () -> Unit,
+    onRelease: () -> Unit, onEdit: (() -> Unit)?, onDelete: () -> Unit, onComments: () -> Unit,
+    /** Projekttitel über der Aufgabe, wenn sie außerhalb ihres Projekts steht (Meine Aufgaben). */
+    context: String? = null,
 ) {
     var menu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -228,6 +230,7 @@ fun TaskCard(
                     Icon(TaskFormat.icon(task.status), if (done) "Wieder öffnen" else "Als erledigt markieren", tint = tint, modifier = Modifier.size(28.dp))
                 } else Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(TaskFormat.icon(task.status), null, tint = tint, modifier = Modifier.size(28.dp)) }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (!context.isNullOrBlank()) Text(context, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = C.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(task.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = if (done) C.secondary else C.text,
                         textDecoration = if (done) TextDecoration.LineThrough else null)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -243,7 +246,7 @@ fun TaskCard(
                         }
                         if (mine) DropdownMenuItem({ Text("Abgeben") }, { menu = false; onRelease() }, leadingIcon = { Icon(Icons.Default.DoNotTouch, null) })
                         if (permissions.canEdit(task)) {
-                            DropdownMenuItem({ Text("Bearbeiten") }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Default.Edit, null) })
+                            if (onEdit != null) DropdownMenuItem({ Text("Bearbeiten") }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Default.Edit, null) })
                             DropdownMenuItem({ Text("Löschen", color = C.red) }, { menu = false; confirmDelete = true }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = C.red) })
                         }
                     }

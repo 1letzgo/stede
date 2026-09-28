@@ -79,6 +79,10 @@ public struct ContentView: View {
             Task { await auth.tenantChanged() }
         }
         .onOpenURL { url in Task { await auth.handle(url: url) } }
+        #if os(iOS)
+        // Angetippte Benachrichtigung: zum Gruppen-Reiter, dort öffnet CommunityListView das Ziel.
+        .onChange(of: PushCenter.shared.pendingRoute) { if PushCenter.shared.pendingRoute != nil { navigation.tab = .community } }
+        #endif
         .task {
             // Ohne diesen Startwert hat der Vorwärtspfeil keine Obergrenze,
             // solange Wetter noch nicht geöffnet war.

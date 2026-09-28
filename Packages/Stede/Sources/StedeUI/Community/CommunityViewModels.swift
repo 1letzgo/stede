@@ -8,11 +8,17 @@ final class CommunityListModel {
     var state: LoadState = .idle
     private let client = CommunityClient()
 
-    func load(tenantID: UUID?) async {
+    /// Zuerst der letzte Stand von der Platte, dann das Netz (`CommunityCache`).
+    func load(tenantID: UUID?, userID: UUID?) async {
         guard let tenantID else { return }
+        if communities.isEmpty, let cached = CommunityCache.load([Community].self, "communities", userID: userID) {
+            communities = cached
+            state = cached.isEmpty ? .empty : .loaded
+        }
         if communities.isEmpty { state = .loading }
         do {
             communities = try await client.communities(tenantID: tenantID).filter { $0.status != .rejected && $0.status != .archived }
+            CommunityCache.save(communities, "communities", userID: userID)
             state = communities.isEmpty ? .empty : .loaded
         } catch {
             if communities.isEmpty { state = .failed(error.localizedDescription) }
@@ -42,8 +48,24 @@ final class CommunityDetailModel {
         self.community = community
     }
 
+    /// Letzter Stand einer Gruppenseite für `CommunityCache`.
+    private struct Snapshot: Codable {
+        let community: Community
+        let members: [CommunityMember]
+        let events: [CommunityEvent]
+    }
+
+    private var cacheName: String { "group-\(community.id.uuidString.lowercased())" }
+
     func load(userID: UUID?, isMember: Bool) async {
-        state = .loading
+        if isMember, members.isEmpty, events.isEmpty, let cached = CommunityCache.load(Snapshot.self, cacheName, userID: userID) {
+            let today = IslandTime.startOfDay(Date())
+            community = cached.community
+            members = cached.members
+            events = cached.events.filter { ($0.endsAt ?? $0.startsAt) >= today }
+            state = .loaded
+        }
+        if members.isEmpty, events.isEmpty { state = .loading }
         do {
             community = try await client.community(id: community.id)
             if isMember {
@@ -51,6 +73,7 @@ final class CommunityDetailModel {
                 async let eventsTask = client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
                 members = try await membersTask
                 events = try await eventsTask
+                CommunityCache.save(Snapshot(community: community, members: members, events: events), cacheName, userID: userID)
                 if let userID {
                     let mine = try await client.myParticipations(userID: userID)
                     myParticipations = Dictionary(uniqueKeysWithValues: mine.map { ($0.eventId, MyParticipation(status: $0.status, helping: $0.helping)) })
@@ -64,7 +87,8 @@ final class CommunityDetailModel {
             }
             state = .loaded
         } catch {
-            state = .failed(error.localizedDescription)
+            // Offline: der letzte Stand bleibt stehen.
+            if members.isEmpty, events.isEmpty { state = .failed(error.localizedDescription) } else { lastError = error.localizedDescription }
         }
     }
 

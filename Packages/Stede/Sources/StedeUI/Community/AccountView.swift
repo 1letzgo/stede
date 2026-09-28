@@ -36,15 +36,19 @@ struct AccountView: View {
 
     private var form: some View {
         Form {
-            if auth.isSignedIn {
-                signedInSections
-            } else {
-                signInSections
+            // Helles Petrol im Dark Mode nur für die Zeilen — die Leiste behält ihr dunkles Petrol.
+            Group {
+                if auth.isSignedIn {
+                    signedInSections
+                } else {
+                    signInSections
+                }
+                // Fehler nur beim Anmelden zeigen; angemeldet sind sie überholt.
+                if !auth.isSignedIn, let error = auth.lastError {
+                    Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
+                }
             }
-            // Fehler nur beim Anmelden zeigen; angemeldet sind sie überholt.
-            if !auth.isSignedIn, let error = auth.lastError {
-                Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) }
-            }
+            .tint(StedeTheme.ink)
         }
         .navigationTitle(auth.isSignedIn ? "Konto" : "Anmelden")
         .stedeSheetForm()

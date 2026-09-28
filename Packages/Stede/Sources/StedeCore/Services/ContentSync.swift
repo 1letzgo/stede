@@ -119,6 +119,7 @@ public actor ContentSync {
             for meta in directories where Self.directories.contains(meta.directory) {
                 try await sync(directory: meta, tenantID: tenantID, slug: slug)
             }
+            try? await syncBusStops(tenantID: tenantID, slug: slug)
         } catch {
             // Offline oder Backend nicht erreichbar: der letzte Stand bleibt.
         }
@@ -141,6 +142,38 @@ public actor ContentSync {
         try data.write(to: file(meta.directory, slug), options: .atomic)
     }
 
+    // MARK: Bushaltestellen
+
+    /// Zeile aus `bus_stops`; gespeichert in der Form von `bus-stops.json`, die `BusStop.all` liest.
+    nonisolated struct BusStopRow: Codable, Sendable {
+        let id: String
+        let name: String
+        let latitude: Double
+        let longitude: Double
+        enum CodingKeys: String, CodingKey {
+            case id = "stop_id", name
+            case latitude = "lat", longitude = "lon"
+        }
+    }
+
+    /// Alle Haltestellen der Gemeinde — wenige hundert Zeilen, daher jedes Mal komplett.
+    private func syncBusStops(tenantID: UUID, slug: String) async throws {
+        let rows: [BusStopRow] = try await client.from("bus_stops").select("stop_id, name, lat, lon")
+            .eq("tenant_id", value: tenantID).is("deleted_at", value: nil)
+            .order("sort_order").order("name").limit(2000).execute().value
+        guard !rows.isEmpty else { return }
+        struct Stop: Encodable { let id: String; let name: String; let latitude: Double; let longitude: Double }
+        struct File: Encodable { let source: String; let stops: [Stop] }
+        let file = File(source: "bus_stops", stops: rows.map { Stop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) })
+        try fileManager.createDirectory(at: Tenants.contentFolder(slug), withIntermediateDirectories: true)
+        try JSONEncoder().encode(file).write(to: self.file("bus-stops", slug), options: .atomic)
+    }
+
+    /// Haltestellen aus der Tabelle `bus_stops` für die aktuelle Gemeinde, sonst nil.
+    public nonisolated static func busStopsData() -> Data? {
+        try? Data(contentsOf: Tenants.contentFolder(Tenants.currentSlug).appendingPathComponent("bus-stops.json"))
+    }
+
     private func loadSnapshot(_ name: String, _ slug: String) -> Snapshot? {
         guard let data = try? Data(contentsOf: file(name, slug)) else { return nil }
         return try? JSONDecoder().decode(Snapshot.self, from: data)
@@ -154,7 +187,8 @@ extension GastroPlace {
             id: row.externalId, name: row.name, category: row.kind, teaser: row.teaser, street: row.street,
             phone: row.phone, email: row.email, website: row.website, detailURL: nil,
             hours: row.hours, restDay: row.restDay, seasonNote: row.seasonNote, imageCredit: row.imageCredit,
-            extraLinkTitle: row.extraLinkTitle, extraLinkURL: row.extraLinkUrl, latitude: row.lat, longitude: row.lon
+            extraLinkTitle: row.extraLinkTitle, extraLinkURL: row.extraLinkUrl, latitude: row.lat, longitude: row.lon,
+            features: row.features.isEmpty ? nil : row.features
         )
     }
 }
