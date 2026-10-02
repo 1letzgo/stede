@@ -154,6 +154,19 @@ Parser-Fixture + Test in `StedeCoreTests`:
 - Optional später: Package/Targets neutral umbenennen (`Stede` → z. B. `Lokal`). Nicht jetzt,
   bringt viel Churn und keinen Nutzen.
 
+## Neue Region anlegen
+
+Skill `new-region-app` (`.claude/skills/new-region-app/SKILL.md`) — fragt Marke, Gemeinden, Bausteine und
+Farben ab, erzeugt Inhalte aus OpenStreetMap (`tools/region_data.py`), legt Tenants und Daten im Backend an
+und baut Marke, iOS-Target und Android-Flavor. Die Checkliste unten beschreibt, was er tut.
+
+## Regionen
+
+| Region | App | Gemeinden | Seit |
+|---|---|---|---|
+| ammerland | stede (`de.letzgo.stede`) | 6 | 09/2026 |
+| langeoog | Loog (`de.letzgo.loog`) | 1 | 10/2026 (vorher eigenes Repo) |
+
 ## Checkliste „Neue Region“ (Ziel nach Phase 5)
 
 1. Tenant(s) anlegen: `slug`, `region`, `config` (center, bbox, events_source, features …).

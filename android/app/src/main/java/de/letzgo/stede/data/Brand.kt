@@ -79,8 +79,9 @@ data class Brand(
 
     companion object {
         val allDirectories = setOf("gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer")
-        private val islandDirectories = setOf("gastro", "health", "leisure", "sights", "trips", "bikes")
+        val islandDirectories = setOf("gastro", "health", "leisure", "sights", "trips", "bikes")
 
+        // brands: start
         val stede = Brand("stede", "stede", "ammerland", "Ammerland", "stede", true,
             FeatureSet(Feature.entries.toSet(), allDirectories),
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Train, Feature.Bus, Feature.Waste, Feature.Groups), allDirectories),
@@ -91,7 +92,10 @@ data class Brand(
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), islandDirectories),
             "Insel", false, "https://loog.shelf.am/datenschutz.html")
 
-        val current: Brand = listOf(stede, loog).firstOrNull { it.id == BuildConfig.BRAND } ?: stede
+        val all = listOf(stede, loog)
+        // brands: end
+
+        val current: Brand = all.firstOrNull { it.id == BuildConfig.BRAND } ?: stede
     }
 }
 

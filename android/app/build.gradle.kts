@@ -36,6 +36,7 @@ android {
             resValue("string", "app_name", "Loog")
             manifestPlaceholders["urlScheme"] = "loog"
         }
+        // brands: end (neue Flavors fügt der Skill `new-region-app` davor ein)
     }
     // Upload-Schlüssel liegt außerhalb von Repo und iCloud; ohne die Datei
     // entsteht ein unsignierter Release-Build.

@@ -35,6 +35,13 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     /// „loog+“ — Name des Bausteins `plus`, immer klein wie der App-Name.
     public var plusName: String { "\(displayName)+" }
 
+    /// Alle `places.directory`-Schlüssel.
+    public static let allDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer"]
+    /// Verzeichnisse ohne Spielplätze und Ehrenamtskarte (Inseln).
+    public static let islandDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "trips", "bikes"]
+
+    // Neue Marken fügt der Skill `new-region-app` zwischen den Markern ein.
+    // brands: start
     public static let stede = AppBrand(
         id: "stede", displayName: "stede", region: "ammerland", regionName: "Ammerland",
         defaultTenant: "stede", choosesTenant: true, urlScheme: "stede", palette: "Stede",
@@ -42,9 +49,6 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         defaultFeatures: FeatureSet([.weather, .calendar, .train, .bus, .waste, .groups], places: allDirectories),
         placesTitle: "Stadt", bikesInShopping: true, privacyURL: nil
     )
-
-    /// Alle `places.directory`-Schlüssel.
-    public static let allDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer"]
 
     /// Langeoog: eine Gemeinde, keine Wahl, keine Gruppen; Fähre, Gezeiten, Luft und loog+.
     public static let loog = AppBrand(
@@ -56,9 +60,8 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 
-    private static let islandDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "trips", "bikes"]
-
     public static let all: [AppBrand] = [.stede, .loog]
+    // brands: end
 
     /// Die Marke dieser App; ohne Eintrag in der Info.plist stede.
     public static let current: AppBrand = {
