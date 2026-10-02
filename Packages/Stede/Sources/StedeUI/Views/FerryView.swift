@@ -186,7 +186,7 @@ private struct FerryCard: View {
     private var accessibilityText: String {
         let format = Date.FormatStyle(date: .omitted, time: .shortened).locale(IslandTime.germanLocale)
         var parts = [
-            "Abfahrt \(trip.abfahrt.formatted(format)) Uhr, Ankunft \(trip.ankunft.formatted(format)) Uhr",
+            "Abfahrt \(trip.abfahrt.formatted(format)) Uhr" + (trip.ankunft.map { ", Ankunft \($0.formatted(format)) Uhr" } ?? ""),
         ]
         if trip.ausgefallen {
             parts.append("fällt aus")
@@ -206,7 +206,8 @@ private struct FerryCard: View {
 
     private var timeRange: String {
         let format = Date.FormatStyle(date: .omitted, time: .shortened).locale(IslandTime.germanLocale)
-        return "\(trip.abfahrt.formatted(format)) → \(trip.ankunft.formatted(format))"
+        guard let ankunft = trip.ankunft else { return trip.abfahrt.formatted(format) }
+        return "\(trip.abfahrt.formatted(format)) → \(ankunft.formatted(format))"
     }
 }
 

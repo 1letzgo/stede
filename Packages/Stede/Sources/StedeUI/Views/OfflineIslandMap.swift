@@ -62,7 +62,10 @@ struct OfflineIslandMap: UIViewRepresentable {
             // Leere Kacheln ersetzen die Apple-Karte — nichts wird nachgeladen.
             // Deckend in der Grundfarbe: sonst zeigt MapKit dort, wo keine Daten liegen,
             // sein Karo-Raster für fehlende Kacheln.
-            let blank = BlankTileOverlay(color: UIColor(StedeTheme.sand).resolvedColor(with: map.traitCollection))
+            // Inseln: Grundfarbe ist das Meer, das Land liegt als Umriss darüber.
+            let sea = IslandMapData.shared?.hasSea == true
+            let base = sea ? OfflineMapLayers.seaColor : UIColor(StedeTheme.sand)
+            let blank = BlankTileOverlay(color: base.resolvedColor(with: map.traitCollection))
             blank.canReplaceMapContent = true
             map.addOverlay(blank, level: .aboveLabels)
 
@@ -203,6 +206,19 @@ nonisolated final class OfflineMapLayers: @unchecked Sendable {
         Task.detached(priority: .utility) { _ = OfflineMapLayers.shared }
     }
 
+    /// Meer um Inseln: festes Meerblau hell über Sand gemischt — nicht die Akzentfarbe der Marke (spoog: grün).
+    static var seaColor: UIColor {
+        UIColor { traits in
+            let sea = UIColor(red: 0.24, green: 0.56, blue: 0.77, alpha: 1)
+            let sand = UIColor(StedeTheme.sand).resolvedColor(with: traits)
+            var (r1, g1, b1, r2, g2, b2, a): (CGFloat, CGFloat, CGFloat, CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0, 0, 0, 0)
+            sea.getRed(&r1, green: &g1, blue: &b1, alpha: &a)
+            sand.getRed(&r2, green: &g2, blue: &b2, alpha: &a)
+            let t: CGFloat = traits.userInterfaceStyle == .dark ? 0.35 : 0.30
+            return UIColor(red: r2 + (r1 - r2) * t, green: g2 + (g1 - g2) * t, blue: b2 + (b1 - b2) * t, alpha: 1)
+        }
+    }
+
     private init() {
         var base: [(MKOverlay, LayerStyle)] = []
         var detail: [(MKOverlay, LayerStyle)] = []
@@ -212,10 +228,11 @@ nonisolated final class OfflineMapLayers: @unchecked Sendable {
             CLLocationCoordinate2D(latitude: 53.5, longitude: 8.4),
             CLLocationCoordinate2D(latitude: 53.0, longitude: 8.4),
         ], count: 4)
-        // Deckender Grund, außerhalb des Datenausschnitts blass.
-        base.append((ground, .fill(StedeTheme.mudflat, 0.12)))
+        // Deckender Grund, außerhalb des Datenausschnitts blass — bei Inseln ist dort Meer.
+        if IslandMapData.shared?.hasSea != true { base.append((ground, .fill(StedeTheme.mudflat, 0.12))) }
         if let data = IslandMapData.shared {
             func add(_ overlay: MKOverlay?, _ style: LayerStyle) { if let overlay { base.append((overlay, style)) } }
+            add(Self.multiPolygon(data.polygons["tidalflat"]), .fill(StedeTheme.mudflat, 0.22))
             add(Self.multiPolygon(data.land), .fill(StedeTheme.sand, 1))
             add(Self.multiPolygon(data.polygons["settlement"]), .fill(StedeTheme.mudflat, 0.16))
             add(Self.multiPolygon(data.polygons["sand"]), .fill(StedeTheme.sunAmber, 0.20))

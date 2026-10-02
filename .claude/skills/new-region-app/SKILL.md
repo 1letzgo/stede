@@ -24,15 +24,30 @@ Alle Skripte liegen in `.claude/skills/new-region-app/scripts/` und lesen eine S
   - `train`: Bahnhöfe mit EVA-Nummer + dbf-Namen (`stations`, `default_station`).
   - `bus`: nur im VBN-Gebiet (Haltestellen via VBN-Suche, `bus.default_stop`).
   - `waste`: nur appfuhr/Ammerland (`waste.ort`).
-  - `ferry`/`tides`/`air`: Konfiguration wie bei Loog (`tenants.config` von `loog` als Vorlage lesen);
-    Gezeiten brauchen eine Datei im Bucket + `sync-tides`-Anpassung, Pegel einen PEGELONLINE-Eintrag
-    in `sync-water-levels` — sonst weglassen.
+  - `ferry`, zwei Arten (`config.ferry.type`):
+    - `api` (Standard, wie Loog): Live-Fahrten über api.langeoog.de (`routes`, `mainland`).
+    - `pdf` (wie spoog/Spiekeroog): fester Fahrplan als PDF der Reederei. `pdf_url` mit `{from}`/`{to}`,
+      `pdf_days` (90), `refresh_days` (30), `vessels` (Kürzel → Schiffsname), `file` („ferry“). Die Edge Function
+      `sync-ferry-pdf` (Cron täglich, lädt nur alle `refresh_days`) liest das PDF mit pdf.js über die
+      Textpositionen. Das Layout muss passen: Tabellenblöcke mit Datum `dd.mm.`, Kopf „Nach …“/„Von …“,
+      Zeilen „HH:MM KÜRZEL“. Vorher lokal prüfen: PDF laden, mit dem Parser aus
+      `supabase/functions/sync-ferry-pdf/index.ts` (pdfjs-dist in Node) zwei Tage gegen das PDF vergleichen.
+      Danach `…/sync-ferry-pdf?force=1&tenant=<slug>` einmal aufrufen.
+    - Beide: `mainland_name`, `island_name`, `booking_url`, `source`.
+  - `tides`: BSH-Nummer (`bshnr`, z. B. „779P“ Spiekeroog — `https://gezeiten.bsh.de/data/DE__<nr>_tides.json`
+    durchprobieren), PEGELONLINE-Pegel (`gauge`, UUID aus der PEGELONLINE-Stationsliste), `path`
+    (`<slug>/tides-<nr>.json`), `gauge_name`. `sync-tides` und `sync-water-levels` lesen alle Tenants mit
+    `config.tides` — kein Code nötig; danach beide einmal aufrufen.
+  - `air`: UBA-Station (`air_station`, z. B. „DENI058“ für die Ostfriesischen Inseln).
   - `calendar`: nur mit einer Quelle, die `sync-city-events` schon kann: `nolis` (URL-Vorlage),
-    `destination_one` (experience, optional city), `langeoog`. Andernfalls Kalender aus und dem Nutzer sagen,
+    `destination_one` (experience, optional city), `langeoog`, `typo3_list` (url, name — Kalenderliste der TYPO3-„Distribution“ wie spiekeroog.de, erkennbar an `<article class="listItem" data-ident="eventdate_…">`). Immer gegen den Kalender der Kurverwaltung prüfen: destination.one hatte für Spiekeroog nur 3 Termine, spiekeroog.de über 900. Andernfalls Kalender aus und dem Nutzer sagen,
     dass eine neue Quelle Code in der Edge Function braucht.
   - `groups`: Push und Login hängen dran (siehe Schritt 8).
 - **Farben**: `colors.bar` (Leiste/Marke) und `colors.accent` — oder eine ganze `palette` (Rollen siehe unten).
-- **Icon**: PNG-Pfad (1024², randlos) oder generieren lassen.
+- **Icon**: PNG-Pfad (1024², randlos; `store/<id>/icon-1024.png`) oder generieren lassen. Fehlt die Datei noch,
+  erzeugt `make_icons.py` einen Platzhalter — später Datei ablegen und erneut ausführen. Ein im Chat
+  eingefügtes Bild liegt nicht auf der Platte: den Nutzer bitten, es zu speichern.
+- **Marken-ID** darf nicht mit „test“ beginnen (Gradle) und nicht `main`/`debug`/`release` heißen.
 
 ## 2. Spec schreiben
 
@@ -72,6 +87,55 @@ Schreibt `tools/out/<slug>/` (Orte, `inselkarte.json`, ggf. `bus-stops.json`/`ab
 Antworten landen im Cache `tools/out/cache.json`. Danach dem Nutzer Anzahlen je Verzeichnis und je drei
 Stichproben zeigen; offensichtlich falsche Einträge (Denkmäler, Schulhallen) in den JSONs entfernen.
 `center` prüfen (liegt er im Ort?), sonst in der Spec setzen.
+
+### 3b. Gegen Google prüfen (geschlossen? Öffnungszeiten?)
+
+OSM kennt oft Läden, die längst zu sind, und veraltete Zeiten. Deshalb jede Gemeinde gegen Google Places
+(API New, Text Search) abgleichen — Gastro (inkl. Einkaufen), Gesundheit, Freizeit, Fahrrad:
+
+```bash
+cd tools
+GOOGLE_PLACES_API_KEY=… python3 google_check.py <slug>                  # Probelauf → google-report.json
+GOOGLE_PLACES_API_KEY=… python3 google_check.py <slug> --apply --hours  # schreibt die JSONs
+```
+
+- Schlüssel: Google-Cloud-Projekt mit „Places API (New)“; den Nutzer danach fragen, nie raten oder ins Repo legen.
+  Kosten: eine Text-Search-Anfrage (Enterprise-SKU, Öffnungszeiten) je Ort, ca. 0,035 $; erste 1000/Monat frei.
+  Antworten im Cache `tools/out/google-cache.json` — Wiederholungen kosten nichts. `--limit=N` zum Antesten.
+- Abgleich: Name + Straße + Ort, Treffer nur ≤ 150 m von der OSM-Koordinate und mit ähnlichem Namen.
+- `CLOSED_PERMANENTLY` → Ort entfällt, `CLOSED_TEMPORARILY` → „Derzeit geschlossen“, abweichende Zeiten →
+  mit `--hours` übernommen (Format wie in der App: „Mo-Fr 9–18 Uhr · Sa 9–13 Uhr“), sonst nur im Bericht.
+- Vor `--apply` dem Nutzer den Bericht zeigen: die dauerhaft geschlossenen (Liste druckt das Skript) und
+  Stichproben aus `hours` und `unmatched`. Fehltreffer (Kette nebenan, gleichnamige Praxis) per Hand
+  zurücknehmen. Ohne Treffer bleibt der OSM-Eintrag unverändert.
+- Einen Hinweis „laut OpenStreetMap“ an Zeiten gibt es nicht mehr (kein `seasonNote` aus OSM).
+- Für bestehende Gemeinden genauso: Orte aus `places` in `tools/out/<slug>/` exportieren, prüfen, per
+  `content-import` (Schritt 5) erneut hochladen.
+
+### 3c. Orte aufwerten (Fotos, Ruhetage, Teaser — wie Loog)
+
+Roh aus OSM sind Orte dünn („Restaurant in Spiekeroog.“, kein Foto). Loog hat Fotos, Teaser mit 1–2 Sätzen,
+Ruhetage und Hinweise — so soll jede neue App starten:
+
+```bash
+python3 tools/enrich_places.py <slug> export                 # nur bei bestehenden Gemeinden: Orte aus `places` holen
+python3 tools/enrich_places.py <slug> collect [--web-images]
+python3 tools/enrich_places.py <slug> teasers tools/out/<slug>/teasers.json
+```
+
+- `collect`: Ruhetag aus den Öffnungszeiten (Gastro), Fotos von Wikimedia Commons (OSM-Tags
+  `wikimedia_commons`/`image`/`wikidata` P18, sonst Commons-Geosuche ≤ 80 m mit markantem gemeinsamem Namenswort)
+  mit Credit „Foto: Urheber · Lizenz · Wikimedia Commons“, JPEG ≤ 1280 px in `tools/out/<slug>/images/`.
+  `--web-images` nimmt zusätzlich das og:image der eigenen Website (Credit „Foto: <domain>“) — das bringt die
+  meisten Gastro-Fotos, aber die Rechte liegen beim Betrieb: nur nach Rückfrage beim Nutzer.
+- Fotos stichprobenartig ansehen (Thumbnails mit `sips -Z 300`, dann Read) — falsche Treffer (Nachbargebäude,
+  Logos) aus der JSON nehmen (`image`/`imageCredit` löschen).
+- `teaser-facts.json` lesen (Website-Beschreibung, Wikipedia-Einleitung, OSM-Merkmale) und selbst je Ort einen
+  Teaser schreiben: 1–2 Sätze, sachlich, deutsch, nur was die Fakten hergeben (Lage/Straße, Küche, Baujahr,
+  Besonderheit) — nichts erfinden, keine Website-Texte abschreiben, keine Bestell-Plattformen nennen. Ohne Fakten
+  reicht „<Art> am <Straße> im <Ortsteil>.“ Ergebnis als `{"<id>": "Teaser"}` in `teasers.json`, dann `teasers`.
+- Hochladen wie Schritt 5: `content-import` lädt `image` nach `content/<slug>/places/` und setzt `image_path`.
+  Bei bestehenden Gemeinden `inselkarte.json` vorher aus dem Ordner nehmen, sonst lädt jedes Gerät die Karte neu.
 
 ## 4. Backend (schreibt in Produktion — vorher bestätigen lassen)
 

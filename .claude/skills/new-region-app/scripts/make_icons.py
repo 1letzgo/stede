@@ -40,7 +40,11 @@ def generated(spec):
 def main(region, dry):
     spec = S.load(region)
     b = spec["brand"]
-    src = Image.open(S.path(b["icon"])).convert("RGB").resize((1024, 1024), Image.LANCZOS) if b.get("icon") else generated(spec)
+    icon = S.path(b["icon"]) if b.get("icon") else None
+    if icon and not __import__("os").path.exists(icon):
+        print(f"! {b['icon']} fehlt — vorerst generiertes Icon; Datei ablegen und erneut ausführen.")
+        icon = None
+    src = Image.open(icon).convert("RGB").resize((1024, 1024), Image.LANCZOS) if icon else generated(spec)
     ios_dir = S.path(b["id"], "Assets.xcassets", "AppIcon.appiconset")
     android = S.path("android", "app", "src", b["id"], "res", "drawable-nodpi", "ic_launcher_back.png")
     small = src.resize((288, 288), Image.LANCZOS)

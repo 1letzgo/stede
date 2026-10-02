@@ -32,7 +32,7 @@ def main(region):
     cfg = json.load(open(path))
     oc.FETCHED = datetime.date.today().isoformat()
     month = datetime.date.today().strftime("%m/%Y")
-    osm = f"OpenStreetMap-Mitwirkende (ODbL), Stand {month} · Öffnungszeiten laut OSM, nicht bestätigt"
+    osm = f"OpenStreetMap-Mitwirkende (ODbL), Stand {month}"
     trips = json.load(open(os.path.join(HERE, "..", cfg["trips"]))) if cfg.get("trips") else \
         {"source": "", "fetchedAt": oc.FETCHED, "places": []}
     summary = {}

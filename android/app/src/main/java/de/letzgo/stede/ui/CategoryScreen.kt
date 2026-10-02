@@ -37,7 +37,9 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
     var showsMap by remember { mutableStateOf(Store.bool("island.showsMap", true)) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     val favorites = Favorites.ids
-    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (selectedKinds.isEmpty() || it.category in selectedKinds || (it.delivers && Place.DELIVERY in selectedKinds)) }
+    // Gespeicherte Arten, die es hier nicht mehr gibt (etwa „Spiel & Familie“ nach „Spiel & Spaß“), filtern nicht.
+    val activeKinds = selectedKinds intersect kinds.toSet()
+    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (activeKinds.isEmpty() || it.category in activeKinds || (it.delivers && Place.DELIVERY in activeKinds)) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val openUrl = rememberOpenUrl(); val openIntent = rememberOpenIntent()
@@ -68,7 +70,7 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
                 }
                 if (kinds.size > 1) Row(Modifier.horizontalScroll(rememberScrollState()).padding(end = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     kinds.forEach { kind ->
-                        ColorChip(kind, Catalog.color(kind), icon = Catalog.icon(kind), selected = selectedKinds == setOf(kind)) {
+                        ColorChip(kind, Catalog.color(kind), icon = Catalog.icon(kind), selected = activeKinds == setOf(kind)) {
                             selectedKinds = if (selectedKinds == setOf(kind)) emptySet() else setOf(kind)
                             Store.setStringSet("island.selectedKinds.$category", selectedKinds)
                         }

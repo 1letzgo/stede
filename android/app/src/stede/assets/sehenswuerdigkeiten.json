@@ -102,7 +102,6 @@
       "email": "info@westerstede.de",
       "website": "https://www.westerstede.de/",
       "hours": "Mo-Fr 8:30–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.256499,
       "longitude": 7.926104,
       "teaser": "Verwaltungssitz der Stadt Westerstede am Stadtpark."
@@ -140,7 +139,6 @@
       "category": "Sehenswürdigkeiten",
       "website": "https://hobbie-rhodo.de/Park/Rhododendronpark_Hobbie",
       "hours": "Mo-So 9:30–19 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.282332,
       "longitude": 8.00936,
       "teaser": "Rhododendronpark in Linswege/Petersfeld – über 70 Hektar, Hauptblüte im Mai und Juni.",
@@ -241,7 +239,6 @@
       "street": "Am Nesterhorn 21",
       "website": "https://www.park-der-raritaeten.de",
       "hours": "Rund um die Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.260367,
       "longitude": 7.970796,
       "teaser": "Schaugarten mit seltenen Gehölzen und Stauden in Ocholt."

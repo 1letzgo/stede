@@ -242,7 +242,7 @@ struct EventView: View {
     @ViewBuilder private var laterFooter: some View {
         if isLocked {
             Button {
-                navigation.tab = .plus
+                navigation.openPlus()
             } label: {
                 Label("Weitere Tage mit \(AppBrand.current.plusName)", systemImage: "lock")
                     .font(.subheadline.weight(.semibold))

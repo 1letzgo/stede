@@ -37,8 +37,8 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
 
     /// Alle `places.directory`-Schlüssel.
     public static let allDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer"]
-    /// Verzeichnisse ohne Spielplätze und Ehrenamtskarte (Inseln).
-    public static let islandDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "trips", "bikes"]
+    /// Verzeichnisse ohne Ehrenamtskarte (Inseln).
+    public static let islandDirectories: Set<String> = ["gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes"]
 
     // Neue Marken fügt der Skill `new-region-app` zwischen den Markern ein.
     // brands: start
@@ -56,11 +56,20 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         defaultTenant: "loog", choosesTenant: false, urlScheme: "loog", palette: "Loog",
         allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: islandDirectories),
         defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: islandDirectories),
-        placesTitle: "Insel", bikesInShopping: false,
+        placesTitle: "Insel", bikesInShopping: true,
         privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 
-    public static let all: [AppBrand] = [.stede, .loog]
+    /// Spiekeroog (Skill new-region-app).
+    public static let spoog = AppBrand(
+        id: "spoog", displayName: "spoog", region: "spiekeroog", regionName: "Spiekeroog",
+        defaultTenant: "spiekeroog", choosesTenant: false, urlScheme: "spoog", palette: "Spoog",
+        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        placesTitle: "Insel", bikesInShopping: false, privacyURL: nil
+    )
+
+    public static let all: [AppBrand] = [.stede, .loog, .spoog]
     // brands: end
 
     /// Die Marke dieser App; ohne Eintrag in der Info.plist stede.

@@ -47,7 +47,6 @@
       "street": "Lange Straße 23",
       "phone": "+49 4488 2474",
       "hours": "Mo 8–13 Uhr, 15:30–18 Uhr · Di 8–13 Uhr, 15:30–18 Uhr · Mi 8–13 Uhr · Do 8–13 Uhr, 15:30–19 Uhr · Fr 8–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257592,
       "longitude": 7.923717,
       "teaser": "Hausarztpraxis in Westerstede."
@@ -69,7 +68,6 @@
       "email": "info@nierenzentrum-ammerland.de",
       "website": "https://www.dialysewesterstede.info",
       "hours": "Mo, Mi, Fr 6:30–16 Uhr · Do, Di, Sa 6:30–13:30 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257303,
       "longitude": 7.916734,
       "teaser": "Dialysezentrum in Westerstede.",
@@ -103,7 +101,6 @@
       "email": "info@strahlentherapie-nord.com",
       "website": "https://strahlentherapie-nord.com/",
       "hours": "Mo-Do 7:30–16 Uhr, Fr 7:30–14 Uhr, Feiertag geschlossen",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257415,
       "longitude": 7.917009,
       "teaser": "Facharztpraxis – Onkologie, Strahlentherapie, Radioonkologie in Westerstede."
@@ -172,7 +169,6 @@
       "phone": "+49 4488 9839830",
       "email": "info-apo-aapp@t-online.de",
       "hours": "Mo-Fr 8–18:30 Uhr · Sa 9–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.258025,
       "longitude": 7.928038,
       "teaser": "Apotheke in Westerstede."
@@ -185,7 +181,6 @@
       "phone": "+49 4488 71401",
       "email": "kopernikus.apotheke@t-online.de",
       "hours": "Mo-Sa 8–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.259913,
       "longitude": 7.932399,
       "teaser": "Apotheke in Westerstede."
@@ -208,7 +203,6 @@
       "phone": "+49 4488 1854",
       "website": "http://www.peter-apotheke.de/",
       "hours": "Mo-Do 8–13 Uhr, 14:30–19 Uhr · Mi 8–13 Uhr, 14:30–18 Uhr · Fr 8–19 Uhr · Sa 9–13 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.254137,
       "longitude": 7.927783,
       "teaser": "Apotheke in Westerstede."

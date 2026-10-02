@@ -4,7 +4,8 @@ public nonisolated struct FerryTrip: Identifiable, Hashable, Sendable {
     public var id: Int { fahrtnummer }
     public let fahrtnummer: Int
     public let abfahrt: Date
-    public let ankunft: Date
+    /// Ankunft — fehlt bei festen Fahrplänen aus einem PDF.
+    public let ankunft: Date?
     public let ausgangshafen: String
     public let ausgangshafenBezeichnung: String
     public let zielhafen: String

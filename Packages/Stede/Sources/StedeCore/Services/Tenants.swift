@@ -45,8 +45,15 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
     /// Fährverbindung über api.langeoog.de: `routes` sind die Pfade „von/nach“ (beide Richtungen),
     /// `mainland` das Hafenkürzel des Festlands — Fahrten von dort gehen „zur Insel“.
     public nonisolated struct FerryConfig: Codable, Sendable, Hashable {
-        public let routes: [String]
-        public let mainland: String
+        /// „api“ (Standard): Live-Fahrten über api.langeoog.de; „pdf“: fester Fahrplan, den der Server
+        /// (Edge Function `sync-ferry-pdf`) aus dem PDF der Reederei liest und als `content_files`-Datei `file` ablegt.
+        public let type: String?
+        public let routes: [String]?
+        public let mainland: String?
+        /// Datei des festen Fahrplans (`content_files`-Name, Standard „ferry“).
+        public let file: String?
+        /// Schiffskürzel → Name, etwa „SP1“ → „Spiekeroog I“.
+        public let vessels: [String: String]?
         /// „Bensersiel“ / „Langeoog“ — Umschalter im Fährplan.
         public let mainlandName: String
         public let islandName: String
@@ -55,8 +62,10 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
         /// Quellenzeile unter dem Fahrplan.
         public let source: String?
 
+        public var isTimetable: Bool { type == "pdf" }
+
         enum CodingKeys: String, CodingKey {
-            case routes, mainland, source
+            case type, routes, mainland, source, file, vessels
             case mainlandName = "mainland_name"
             case islandName = "island_name"
             case bookingURL = "booking_url"

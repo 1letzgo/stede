@@ -1,5 +1,5 @@
 {
-  "source": "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Öffnungszeiten laut OSM, nicht bestätigt · Kartendaten © OpenStreetMap",
+  "source": "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Kartendaten © OpenStreetMap",
   "fetchedAt": "2026-09-21",
   "places": [
     {
@@ -43,7 +43,6 @@
       "category": "Restaurant",
       "street": "Peterstraße",
       "hours": "Mo-Sa 11:30–14:30 Uhr, 17–0 Uhr · So 16–22 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.256655,
       "longitude": 7.927288,
       "teaser": "Restaurant in Westerstede."
@@ -66,7 +65,6 @@
       "phone": "+49 4488 71871",
       "website": "https://www.fikensolter-bueckelkroog.de/",
       "hours": "Mo-Sa 17:00+ · So 11–14 Uhr, 17:00+",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.244283,
       "longitude": 7.921504,
       "teaser": "Restaurant in Westerstede-Fikensolt – deutsche Küche."
@@ -144,7 +142,6 @@
       "street": "Am Markt 5",
       "phone": "+49 4488 8608181",
       "hours": "Mo-So 17–24 Uhr · So 12–14 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257097,
       "longitude": 7.926973,
       "teaser": "Restaurant in Westerstede."
@@ -201,7 +198,6 @@
       "email": "info@diakopes-westerstede.de",
       "website": "https://www.diakopes-westerstede.de/",
       "hours": "Mi-Sa 17:30–22 Uhr · So 17:30–21 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.250646,
       "longitude": 7.934374,
       "teaser": "Restaurant in Westerstede – griechische Küche."
@@ -259,7 +255,6 @@
       "street": "Am Bahnhof 1",
       "phone": "+49 4488 6357",
       "hours": "So-Di, Do, Fr 12–14 Uhr, So-Di, Do 18–22 Uhr, Fr, Sa 18–23 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.254462,
       "longitude": 7.932483,
       "teaser": "Restaurant in Westerstede – griechische Küche."
@@ -292,7 +287,6 @@
       "street": "Lange Straße 38",
       "website": "https://www.ammerland-klinik.de/besucher/cafe-kiosk/",
       "hours": "Mo-Fr 8–21 Uhr · Sa 8–20 Uhr · So, Feiertag 9–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.258627,
       "longitude": 7.917691,
       "teaser": "Café in Westerstede."
@@ -313,7 +307,6 @@
       "category": "Café",
       "street": "Am Damm 60",
       "hours": "So 14:30–19 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.239546,
       "longitude": 7.877496,
       "teaser": "Café in Westerstede-Westerloy."
@@ -335,7 +328,6 @@
       "street": "Am Markt 6",
       "phone": "+49 4488 71200",
       "hours": "Mo-Do 10–20 Uhr · Fr 9:30–20 Uhr · Sa, So, Feiertag 10–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.256945,
       "longitude": 7.92703,
       "teaser": "Eiscafé in Westerstede."
@@ -345,7 +337,6 @@
       "name": "Ital. Eis-Café Claudio",
       "category": "Eiscafé",
       "hours": "Mo-So, Feiertag 10:30–20:30 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257402,
       "longitude": 7.926597,
       "teaser": "Eiscafé in Westerstede.",
@@ -396,7 +387,6 @@
       "phone": "+49 4488 860999",
       "website": "https://www.essbarwst.de/",
       "hours": "Mo-Sa 11–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.258751,
       "longitude": 7.920949,
       "teaser": "Imbiss in Westerstede – Sandwiches, deutsche Küche, Burger."
@@ -408,7 +398,6 @@
       "street": "Am Esch 30",
       "phone": "+49 4488 527652",
       "hours": "Feiertag, Mi-Fr, So, Mo 11:30–20 Uhr · Di, Sa geschlossen",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.263907,
       "longitude": 7.933497,
       "teaser": "Imbiss in Westerstede."
@@ -431,7 +420,6 @@
       "street": "Ammerlandallee 16",
       "phone": "+49 4488 859190",
       "hours": "Rund um die Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.252434,
       "longitude": 7.933322,
       "teaser": "Imbiss in Westerstede – Burger."
@@ -469,7 +457,6 @@
       "name": "StrandStulle",
       "category": "Imbiss",
       "hours": "Mo-Fr 11–21 Uhr · So 14–21 Uhr · Sa geschlossen",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.255776,
       "longitude": 7.929479,
       "teaser": "Imbiss in Westerstede.",
@@ -604,7 +591,6 @@
       "street": "Am Esch 7",
       "phone": "+49 4488 5207173",
       "hours": "Mo-Sa 10–19 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.259694,
       "longitude": 7.933348,
       "teaser": "Bäckerei in Westerstede.",
@@ -617,7 +603,6 @@
       "street": "Goethestraße 21",
       "phone": "+49 4488 521354",
       "hours": "Mo-Fr 7–19:30 Uhr · Sa 7–19:30 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.251624,
       "longitude": 7.940228,
       "teaser": "Bäckerei in Westerstede."
@@ -762,7 +747,6 @@
       "email": "info@edeka-masla.de",
       "website": "https://www.edeka.de/eh/minden-hannover/edeka-masla-westring-4a/index.jsp",
       "hours": "Mo-Fr 7:30–20 Uhr, Sa 7:30–19 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.202963,
       "longitude": 7.884233,
       "teaser": "Supermarkt in Westerstede-Ocholt."
@@ -775,7 +759,6 @@
       "phone": "+49 4488 71809",
       "website": "https://www.edeka.de/eh/minden-hannover/edeka-tiemann-kuhlenstr.-51/index.jsp",
       "hours": "Mo-Fr 7:30–21 Uhr · Sa 7:30–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.254027,
       "longitude": 7.91753,
       "teaser": "Supermarkt in Westerstede."
@@ -836,7 +819,6 @@
       "name": "Kim's Blumen",
       "category": "Einkaufen",
       "hours": "Mo-Fr 9–18:30 Uhr · Sa 9–16 Uhr · So 10–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.2559305,
       "longitude": 7.9294423,
       "teaser": "Blumenladen in Westerstede.",
@@ -850,7 +832,6 @@
       "street": "Lange Straße 26",
       "phone": "+49 4488 72384",
       "hours": "Mo-Fr 6–21 Uhr, Sa-So 8–21 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.257546,
       "longitude": 7.922726,
       "teaser": "Kiosk in Westerstede."
@@ -874,7 +855,6 @@
       "email": "arnold.kreke@ewetel.net",
       "website": "http://www.krekes-kaese-hof.de/",
       "hours": "Rund um die Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.212155,
       "longitude": 7.897756,
       "teaser": "Käsehof in Westerstede.",
@@ -935,7 +915,6 @@
       "street": "Wilhelm-Geiler-Straße 13",
       "website": "https://www.netto-online.de/filialen/Westerstede/Wilhelm-Geiler-Str-13/2022/",
       "hours": "Mo-Sa 7–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.252329,
       "longitude": 7.930066,
       "teaser": "Supermarkt in Westerstede."
@@ -994,7 +973,6 @@
       "name": "SnackEck Ocholter Kreuz",
       "category": "Einkaufen",
       "hours": "Rund um die Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.198809,
       "longitude": 7.879189,
       "teaser": "Lebensmittelladen in Westerstede.",
@@ -1005,7 +983,6 @@
       "name": "Tedi",
       "category": "Einkaufen",
       "hours": "Mo-Sa 9–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.255824,
       "longitude": 7.929115,
       "teaser": "Lebensmittelladen in Westerstede.",
@@ -1056,7 +1033,6 @@
       "street": "Am Esch 7",
       "phone": "+49 4488 84480",
       "hours": "Mo-Fr 8–21 Uhr · Sa 8–20 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.260146,
       "longitude": 7.933581,
       "teaser": "Supermarkt in Westerstede.",

@@ -57,9 +57,13 @@ import kotlinx.serialization.json.JsonObject
     val officialName get() = if (slug == Tenants.BUNDLE) "Stadt $municipality" else "Gemeinde $municipality"
 }
 
-/** Fähre über api.langeoog.de: `routes` „von/nach“, `mainland` das Hafenkürzel des Festlands. */
+/**
+ * Fähre: `type` „api“ (Standard, api.langeoog.de mit `routes` „von/nach“ und `mainland`-Hafenkürzel) oder „pdf“ —
+ * fester Fahrplan, den `sync-ferry-pdf` aus dem PDF der Reederei als Datei `file` ablegt; `vessels` Kürzel → Name.
+ */
 @Serializable data class FerryConfig(
-    val routes: List<String>, val mainland: String,
+    val type: String? = null, val routes: List<String> = emptyList(), val mainland: String = "",
+    val file: String? = null, val vessels: Map<String, String> = emptyMap(),
     @SerialName("mainland_name") val mainlandName: String, @SerialName("island_name") val islandName: String,
     @SerialName("booking_url") val bookingUrl: String? = null, val source: String? = null,
 )

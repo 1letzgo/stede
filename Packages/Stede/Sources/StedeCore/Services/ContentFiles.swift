@@ -40,7 +40,11 @@ public actor ContentFiles {
             let before = manifest
             try FileManager.default.createDirectory(at: Self.folder(slug), withIntermediateDirectories: true)
             for row in rows where manifest[row.name] != row.updatedAt || !FileManager.default.fileExists(atPath: Self.file(row.name, slug).path) {
-                let url = Backend.url.appendingPathComponent("storage/v1/object/public/content/\(row.path)")
+                // Der Speicher liefert mit einer Stunde CDN-Cache aus: ohne Versionsparameter käme nach einem
+                // Update noch die alte Datei — und weil `updated_at` dann stimmt, würde nie neu geladen.
+                var components = URLComponents(url: Backend.url.appendingPathComponent("storage/v1/object/public/content/\(row.path)"), resolvingAgainstBaseURL: false)!
+                components.queryItems = [URLQueryItem(name: "v", value: String(Int(row.updatedAt.timeIntervalSince1970)))]
+                let url = components.url!
                 let (data, response) = try await URLSession.shared.data(from: url)
                 guard (response as? HTTPURLResponse)?.statusCode == 200,
                       (try? JSONSerialization.jsonObject(with: data)) != nil else { continue }

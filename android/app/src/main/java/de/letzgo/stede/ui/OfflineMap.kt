@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -39,6 +40,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.double
 import kotlin.math.cos
@@ -55,7 +57,8 @@ object MapData {
     fun x(lon: Double) = ((lon - LON0) * kx).toFloat()
     fun y(lat: Double) = (-(lat - LAT0) * KY).toFloat()
 
-    class Layers(val polygons: Map<String, Path>, val lines: Map<String, Path>, val buildings: Path, val land: Path, val bounds: FloatArray)
+    /** `sea`: Karte mit Küstenlinie (Inseln) — außerhalb von `land` ist Meer. */
+    class Layers(val polygons: Map<String, Path>, val lines: Map<String, Path>, val buildings: Path, val land: Path, val bounds: FloatArray, val sea: Boolean = false)
     @Volatile private var loaded: Pair<String, Layers>? = null
 
     suspend fun load(): Layers {
@@ -90,8 +93,10 @@ object MapData {
         val polys = root["polygons"]?.jsonObject?.mapValues { rings(it.value.jsonArray, true) } ?: emptyMap()
         val lines = root["lines"]?.jsonObject?.mapValues { rings(it.value.jsonArray, false) } ?: emptyMap()
         val land = root["land"]?.jsonArray
+        // Ältere Dateien ohne „sea“: Küstenlinie, wenn `land` mehr ist als das Rechteck des Ausschnitts.
+        val sea = root["sea"]?.jsonPrimitive?.booleanOrNull ?: ((land?.size ?: 0) > 1 || (land?.firstOrNull()?.jsonArray?.size ?: 0) > 5)
         // Keine Einzelgebäude: die Siedlungsfläche reicht (spart Laden und Zeichnen der 11.000 Umrisse).
-        return Layers(polys, lines, Path(), rings(land, true), bounds())
+        return Layers(polys, lines, Path(), rings(land, true), bounds(), sea)
     }
 }
 
@@ -130,7 +135,7 @@ fun OfflineMap(pins: List<MapPin>, selectedId: String?, modifier: Modifier = Mod
         scale = clampScale(max(scale, size.width / 900f)); center(MapData.x(p.lon), MapData.y(p.lat))
     }
 
-    val sand = C.sand; val ground = C.mudflat.copy(alpha = 0.12f); val mud = C.mudflat; val green = C.green; val teal = C.teal; val ink = C.ink; val red = C.red
+    val sand = C.sand; val ground = C.mudflat.copy(alpha = 0.12f); val mud = C.mudflat; val green = C.green; val teal = C.teal; val ink = C.ink; val red = C.red; val amber = C.amber
     Box(modifier.clip(CardShape).background(sand).onSizeChanged { size = it }
         .pointerInput(layers) {
             detectTransformGestures { centroid, pan, zoom, _ ->
@@ -145,7 +150,9 @@ fun OfflineMap(pins: List<MapPin>, selectedId: String?, modifier: Modifier = Mod
             Canvas(Modifier.fillMaxSize()) {
                 drawIntoCanvas { c ->
                     val cv = c.nativeCanvas
-                    cv.drawColor(ground.toArgb())
+                    // Inseln: Meer als Grund, sonst blasser Rand außerhalb des Datenausschnitts.
+                    // Festes Meerblau, nicht die Akzentfarbe der Marke (spoog: grün).
+                    cv.drawColor((if (l.sea) lerp(sand, Color(0xFF3D8FC4), 0.3f) else ground).toArgb())
                     cv.save(); cv.translate(offset.x, offset.y); cv.scale(scale, scale)
                     fun fill(path: Path?, color: Color) { path ?: return; cv.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; this.color = color.toArgb() }) }
                     fun line(path: Path?, color: Color, widthDp: Float, dashed: Boolean = false) {
@@ -156,7 +163,10 @@ fun OfflineMap(pins: List<MapPin>, selectedId: String?, modifier: Modifier = Mod
                             if (dashed) pathEffect = DashPathEffect(floatArrayOf(w * 3, w * 2.5f), 0f)
                         })
                     }
+                    fill(l.polygons["tidalflat"], mud.copy(alpha = 0.22f))
                     fill(l.land, sand)
+                    fill(l.polygons["sand"], amber.copy(alpha = 0.20f))
+                    fill(l.polygons["dune"], green.copy(alpha = 0.28f))
                     fill(l.polygons["settlement"], mud.copy(alpha = 0.16f))
                     fill(l.polygons["green"], green.copy(alpha = 0.16f))
                     fill(l.polygons["wood"], green.copy(alpha = 0.40f))

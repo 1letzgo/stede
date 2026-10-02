@@ -5,7 +5,6 @@ enum AppTab: Hashable, CaseIterable {
     case start
     case events
     case community
-    case plus
     case settings
 
     var title: String {
@@ -13,7 +12,6 @@ enum AppTab: Hashable, CaseIterable {
         case .start: "Start"
         case .events: "Kalender"
         case .community: "Gruppen"
-        case .plus: AppBrand.current.plusName
         case .settings: "Einstellungen"
         }
     }
@@ -23,7 +21,6 @@ enum AppTab: Hashable, CaseIterable {
         case .start: "house.fill"
         case .events: "calendar"
         case .community: "person.3.fill"
-        case .plus: "sparkles"
         case .settings: "gearshape.fill"
         }
     }
@@ -33,6 +30,10 @@ enum AppTab: Hashable, CaseIterable {
 @Observable
 final class AppNavigation {
     var tab: AppTab
+    /// Schloss in Tagesleiste oder Kalender: zu den Einstellungen, dort steht „<App>+“ ganz oben.
+    func openPlus() {
+        tab = .settings
+    }
 
     init(tab: AppTab) { self.tab = tab }
 }
@@ -131,11 +132,6 @@ public struct ContentView: View {
                     screen { CommunityListView() }
                 }
             }
-            if Features.has(.plus) {
-                Tab(AppTab.plus.title, systemImage: AppTab.plus.symbol, value: AppTab.plus) {
-                    screen { PlusView() }
-                }
-            }
             Tab(AppTab.settings.title, systemImage: AppTab.settings.symbol, value: AppTab.settings) {
                 screen { SettingsView() }
             }
@@ -156,7 +152,7 @@ enum LaunchOptions {
         switch UserDefaults.standard.string(forKey: "startScreen") {
         case "events": .events
         case "community": .community
-        case "plus": .plus
+        case "plus": .settings
         case "settings": .settings
         default: .start
         }

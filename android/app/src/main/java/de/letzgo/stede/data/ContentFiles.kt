@@ -31,7 +31,10 @@ object ContentFiles {
             val manifest = (Store.read(folder, "manifest.json")?.let { runCatching { Http.json.decodeFromString(manifestSerializer, it) }.getOrNull() } ?: emptyMap()).toMutableMap()
             for (row in rows) {
                 if (manifest[row.name] == row.updatedAt && Store.read(folder, "${row.name}.json") != null) continue
-                val body = runCatching { Http.direct("${Backend.URL}/storage/v1/object/public/content/${row.path}") }.getOrNull() ?: continue
+                // CDN-Cache (1 h) umgehen: sonst käme nach einem Update die alte Datei, und weil `updated_at` dann stimmt,
+                // würde nie neu geladen.
+                val version = java.net.URLEncoder.encode(row.updatedAt, "UTF-8")
+                val body = runCatching { Http.direct("${Backend.URL}/storage/v1/object/public/content/${row.path}?v=$version") }.getOrNull() ?: continue
                 if (runCatching { Http.json.parseToJsonElement(body) }.isFailure) continue
                 Store.write(folder, "${row.name}.json", body)
                 manifest[row.name] = row.updatedAt

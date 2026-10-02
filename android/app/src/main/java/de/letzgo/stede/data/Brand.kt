@@ -79,7 +79,7 @@ data class Brand(
 
     companion object {
         val allDirectories = setOf("gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes", "volunteer")
-        val islandDirectories = setOf("gastro", "health", "leisure", "sights", "trips", "bikes")
+        val islandDirectories = setOf("gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes")
 
         // brands: start
         val stede = Brand("stede", "stede", "ammerland", "Ammerland", "stede", true,
@@ -90,9 +90,15 @@ data class Brand(
         val loog = Brand("loog", "loog", "langeoog", "Langeoog", "loog", false,
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), islandDirectories),
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), islandDirectories),
-            "Insel", false, "https://loog.shelf.am/datenschutz.html")
+            "Insel", true, "https://loog.shelf.am/datenschutz.html")
 
-        val all = listOf(stede, loog)
+        /** Spiekeroog (Skill new-region-app). */
+        val spoog = Brand("spoog", "spoog", "spiekeroog", "Spiekeroog", "spiekeroog", false,
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            "Insel", false, null)
+
+        val all = listOf(stede, loog, spoog)
         // brands: end
 
         val current: Brand = all.firstOrNull { it.id == BuildConfig.BRAND } ?: stede

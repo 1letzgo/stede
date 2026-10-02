@@ -27,7 +27,7 @@ def main(slugs):
     root = os.path.join(os.path.dirname(__file__), "..", "Packages", "Stede", "Sources", "StedeCore", "Resources")
     trips = json.load(open(os.path.join(root, "ausfluege.json")))
     defaults = {"bad-zwischenahn": "009006433", "edewecht": "009022853", "rastede": "009075805", "wiefelstede": "009099164", "apen": "009003061"}
-    osm = "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026 · Öffnungszeiten laut OSM, nicht bestätigt"
+    osm = "OpenStreetMap-Mitwirkende (ODbL), Stand 09/2026"
     for s in slugs:
         town = TOWNS[s]
         print("==", town["name"], flush=True)

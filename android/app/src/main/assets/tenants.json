@@ -493,6 +493,7 @@
     "gastro",
     "health",
     "leisure",
+    "playgrounds",
     "sights",
     "trips"
    ]
@@ -527,5 +528,64 @@
     "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335"
    }
   ]
+ },
+ {
+  "slug": "spiekeroog",
+  "municipality": "Spiekeroog",
+  "region": "spiekeroog",
+  "center": [
+   53.7711,
+   7.6947
+  ],
+  "bbox": [
+   53.75,
+   7.666,
+   53.782,
+   7.817
+  ],
+  "features": {
+   "weather": true,
+   "calendar": true,
+   "ferry": true,
+   "tides": true,
+   "air": true,
+   "plus": true,
+   "places": [
+    "gastro",
+    "health",
+    "leisure",
+    "playgrounds",
+    "sights"
+   ]
+  },
+  "notes": {
+   "health": "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117.",
+   "events": "Nordseebad Spiekeroog · spiekeroog.de (destination.one)"
+  },
+  "ferry": {
+   "type": "pdf",
+   "file": "ferry",
+   "pdf_url": "https://buchung.spiekeroog.de/fahrplanexport/?hafen_1=NS&hafen_2=SP&daterange={from}+-+{to}&von={from}&bis={to}",
+   "pdf_days": 90,
+   "refresh_days": 30,
+   "mainland_name": "Neuharlingersiel",
+   "island_name": "Spiekeroog",
+   "booking_url": "https://buchung.spiekeroog.de",
+   "source": "Nordseebad Spiekeroog GmbH · Fahrplan (PDF)",
+   "vessels": {
+    "SP1": "Spiekeroog I",
+    "SP2": "Spiekeroog II",
+    "SP4": "Spiekeroog IV",
+    "WEX": "WattnExpress"
+   }
+  },
+  "tides": {
+   "file": "tides",
+   "path": "spiekeroog/tides-779P.json",
+   "bshnr": "779P",
+   "gauge": "662c4b5e-0241-456d-ac7d-9f62fd95c0d1",
+   "gauge_name": "Spiekeroog"
+  },
+  "airStation": "DENI058"
  }
 ]

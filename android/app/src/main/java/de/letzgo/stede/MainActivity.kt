@@ -40,13 +40,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class AppTab(private val label: String, val icon: ImageVector) {
+enum class AppTab(val title: String, val icon: ImageVector) {
     Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups),
-    Plus("Plus", Icons.Default.AutoAwesome), Settings("Einstellungen", Icons.Default.Settings);
+    Settings("Einstellungen", Icons.Default.Settings);
 
-    val title get() = if (this == Plus) Brand.current.plusName else label
-    /** Gruppen nur mit dem Baustein `groups`, Plus nur mit `plus`. */
-    val isAvailable get() = when (this) { Community -> Features.has(Feature.Groups); Plus -> Features.has(Feature.Plus); else -> true }
+    /** Gruppen nur mit dem Baustein `groups`. Plus hat keinen Tab, sondern steht in den Einstellungen. */
+    val isAvailable get() = when (this) { Community -> Features.has(Feature.Groups); else -> true }
 }
 
 /** Ziele, die auf einen Tab geschoben werden (wie HomeDestination in iOS). */
@@ -61,6 +60,7 @@ sealed class Screen {
     /** `tasks`: gleich im Reiter „Aufgaben“ öffnen (aus „Meine Aufgaben“). */
     data class CommunityDetail(val id: String, val tasks: Boolean = false) : Screen()
     data object MyTasks : Screen()
+
 }
 
 @Composable
@@ -78,8 +78,6 @@ fun StedeApp() {
         runCatching { ContentFiles.sync() }
         if (Features.has(Feature.Tides)) runCatching { Tides.events() }
     }
-    // Schloss in der Tagesleiste: zum Plus-Tab.
-    LaunchedEffect(AppNav.plusRequested) { if (AppNav.plusRequested > 0 && AppTab.Plus.isAvailable) tab = AppTab.Plus }
     // Gemeindewechsel: Mandant und Rollen neu laden.
     val slug = Tenants.slug
     var sessionSlug by remember { mutableStateOf(slug) }
@@ -98,6 +96,13 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
     BackHandler(enabled = stack.isNotEmpty()) { stack.removeAt(stack.lastIndex) }
     val open: (Screen) -> Unit = { stack.add(it) }
     val back: () -> Unit = { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex) }
+    // Schloss in Tagesleiste oder Kalender: zu den Einstellungen, dort steht „<App>+“ ganz oben.
+    LaunchedEffect(AppNav.plusRequested) {
+        if (AppNav.plusRequested > 0 && Features.has(Feature.Plus)) {
+            stacks.getValue(AppTab.Settings).clear()
+            setTab(AppTab.Settings)
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -117,7 +122,6 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
                     AppTab.Start -> StartScreen(open)
                     AppTab.Calendar -> CalendarScreen()
                     AppTab.Community -> CommunityScreen(open)
-                    AppTab.Plus -> PlusScreen()
                     AppTab.Settings -> SettingsScreen()
                 }
                 Screen.Weather -> WeatherScreen(back)

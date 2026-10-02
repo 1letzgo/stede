@@ -267,7 +267,6 @@ out center tags;"""
             oh = hours_de(t.get("opening_hours"))
             if oh and d in ("gastro", "health", "leisure"):
                 p["hours"] = oh
-                p["seasonNote"] = "Laut OpenStreetMap, nicht bestätigt"
             p["latitude"], p["longitude"] = it["lat"], it["lon"]
             if d == "bikes":
                 p["features"] = ["Fahrradladen"] + (["Verleih"] if t.get("service:bicycle:rental") == "yes" else []) + \
@@ -366,8 +365,47 @@ out geom;"""
             if area(r) < 2e-8: continue
             sr = ring(r)
             if len(sr) >= 4: polys[key].append(sr)
-    return {"attribution": "© OpenStreetMap-Mitwirkende (ODbL)", "fetchedAt": FETCHED,
-            "land": [[[w, s], [e, s], [e, n], [w, n], [w, s]]], "polygons": polys, "buildings": [], "lines": lines}
+    result = {"attribution": "© OpenStreetMap-Mitwirkende (ODbL)", "fetchedAt": FETCHED,
+              "land": [[[w, s], [e, s], [e, n], [w, n], [w, s]]], "polygons": polys, "buildings": [], "lines": lines}
+    coast = coastline(b)
+    if coast:
+        # Insel: Land ist der Küstenumriss, außerhalb zeichnen die Apps Meer; dazu Watt und Strand.
+        result["land"] = coast
+        result["sea"] = True
+        result["polygons"].update(shore(b))
+    return result
+
+
+def coastline(b):
+    """Geschlossene Küstenringe (natural=coastline) im Ausschnitt, sonst [] (Binnenland)."""
+    els = overpass(f"[out:json][timeout:120];way[\"natural\"=\"coastline\"]{b};out geom;")
+    geom = lambda g: [[round(p["lon"], 5), round(p["lat"], 5)] for p in g]
+    rings = [r for r in stitch([geom(el.get("geometry", [])) for el in els]) if len(r) >= 4 and r[0] == r[-1] and area(r) >= 2e-8]
+    return [ring(r) for r in rings]
+
+
+def shore(b):
+    """Watt (wetland=tidalflat) und Strand/Sand (natural=beach|sand) als Flächen."""
+    els = overpass(f"""[out:json][timeout:180];
+(
+  way["natural"="wetland"]["wetland"="tidalflat"]{b}; relation["natural"="wetland"]["wetland"="tidalflat"]{b};
+  way["natural"~"^(beach|sand)$"]{b}; relation["natural"~"^(beach|sand)$"]{b};
+);
+out geom;""")
+    geom = lambda g: [[round(p["lon"], 5), round(p["lat"], 5)] for p in g]
+    out = {"tidalflat": [], "sand": []}
+    for el in els:
+        key = "tidalflat" if el.get("tags", {}).get("natural") == "wetland" else "sand"
+        if el["type"] == "way":
+            g = geom(el.get("geometry", []))
+            rs = [g] if len(g) >= 4 and g[0] == g[-1] else []
+        else:
+            rs = stitch([geom(m["geometry"]) for m in el.get("members", []) if m.get("role") == "outer" and m.get("geometry")])
+        for r in rs:
+            if area(r) < 2e-8: continue
+            sr = ring(r)
+            if len(sr) >= 4: out[key].append(sr)
+    return out
 
 # ---------------------------------------------------------------- Bus
 

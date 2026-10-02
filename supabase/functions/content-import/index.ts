@@ -3,6 +3,7 @@
 // wieder durch den 410-Stub (`stub.ts`) ersetzt. Liest die Dateien über eine öffentliche URL (Cloudflare
 // Quick Tunnel auf tools/out) und schreibt mit der Service-Rolle:
 //   places + place_directories (Upsert, verschwundene Orte bekommen deleted_at),
+//   Fotos der Orte (`image` = Datei in tools/out/<slug>/images/) → Bucket `content/<slug>/places/<datei>` + image_path,
 //   bus_stops (falls bus-stops.json da ist),
 //   Bucket `content/<slug>/<name>.json` + content_files (inselkarte, bus-stops, abfuhr-strassen).
 // Aufruf: POST /functions/v1/content-import  {"token": "...", "slug": "juist", "base": "https://….trycloudflare.com"}
@@ -46,19 +47,29 @@ Deno.serve(async (req) => {
     dirs.push(["bikes", { source: b.source, fetchedAt: b.fetchedAt, places: (b.providers ?? []).map((p: any) => ({
       id: p.id, name: p.name, category: "Fahrrad", teaser: p.teaser, phone: p.phone, email: p.email, website: p.website,
       features: p.features, street: p.stations?.[0]?.street, latitude: p.stations?.[0]?.latitude, longitude: p.stations?.[0]?.longitude,
-      stations: p.stations?.length > 1 ? p.stations : null,
+      stations: p.stations?.length > 1 ? p.stations : null, image: p.image, imagePath: p.imagePath, imageCredit: p.imageCredit,
     })) }]);
   }
   for (const [dir, d] of dirs) {
     const places = d.places ?? [];
     if (!places.length) continue;
     await db.from("place_directories").upsert({ tenant_id: tenant.id, directory: dir, source: d.source || "OpenStreetMap", fetched_at: d.fetchedAt, updated_at: new Date().toISOString() });
+    for (const p of places) {
+      if (!p.image) continue;
+      const img = await get(`images/${p.image}`);
+      if (!img) continue;
+      const path = `${slug}/places/${p.image}`;
+      const { error } = await db.storage.from("content").upload(path, img, { contentType: "image/jpeg", upsert: true });
+      if (error) return new Response(`upload ${path}: ${error.message}`, { status: 500 });
+      p.imagePath = path;
+      report["images"] = ((report["images"] as number) ?? 0) + 1;
+    }
     const rows = places.map((p: any, i: number) => ({
       tenant_id: tenant.id, directory: dir, external_id: p.id, kind: p.category, name: p.name, teaser: p.teaser ?? null,
       street: p.street ?? null, phone: p.phone ?? null, email: p.email ?? null, website: p.website ?? null, hours: p.hours ?? null,
       rest_day: p.restDay ?? null, season_note: p.seasonNote ?? null, image_credit: p.imageCredit ?? null,
       extra_link_title: p.extraLinkTitle ?? null, extra_link_url: p.extraLinkURL ?? null, features: p.features ?? [],
-      lat: p.latitude ?? null, lon: p.longitude ?? null, sort_order: i, stations: p.stations ?? null,
+      lat: p.latitude ?? null, lon: p.longitude ?? null, sort_order: i, stations: p.stations ?? null, image_path: p.imagePath ?? null,
       deleted_at: null, updated_at: new Date().toISOString(),
     }));
     const { error } = await db.from("places").upsert(rows, { onConflict: "tenant_id,directory,external_id" });

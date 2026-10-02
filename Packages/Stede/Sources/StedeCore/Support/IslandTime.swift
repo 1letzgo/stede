@@ -65,6 +65,16 @@ public nonisolated enum IslandTime: Sendable {
         return formatter.date(from: text)
     }
 
+    /// „2026-10-02“ + „06:50“ in Inselzeit.
+    public static func date(day: String, time: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.date(from: "\(day) \(time)")
+    }
+
     public static func isSameDay(_ lhs: Date, _ rhs: Date) -> Bool {
         calendar.isDate(lhs, inSameDayAs: rhs)
     }

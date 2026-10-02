@@ -12,16 +12,52 @@ public nonisolated struct FerryClient: Sendable {
 
     public func trips(on day: Date) async throws -> [FerryTrip] {
         guard let ferry = Tenants.current.ferry else { return [] }
+        if ferry.isTimetable { return try await timetable(ferry, on: day) }
         let date = IslandTime.isoDate(day)
         var byID: [Int: FerryTrip] = [:]
-        for route in ferry.routes {
+        for route in ferry.routes ?? [] {
             guard let url = URL(string: "https://api.langeoog.de/fahrten/\(route)/\(date)") else { throw AppError.invalidURL }
             let payload: [FerryTripDTO] = try await http.get(url)
             for dto in payload {
-                byID[dto.fahrtnummer] = dto.asTrip(mainland: ferry.mainland)
+                byID[dto.fahrtnummer] = dto.asTrip(mainland: ferry.mainland ?? "")
             }
         }
         return byID.values.sorted { $0.abfahrt < $1.abfahrt }
+    }
+
+    /// Fester Fahrplan aus dem PDF der Reederei: der Server legt ihn als Datei ab (`sync-ferry-pdf`),
+    /// `ContentFiles` hält die lokale Kopie; ohne sie einmal direkt aus dem Bucket.
+    nonisolated struct Timetable: Decodable, Sendable {
+        let trips: [Row]
+        nonisolated struct Row: Decodable, Sendable {
+            let day: String
+            let time: String
+            let toIsland: Bool
+            let vessel: String
+        }
+    }
+
+    private func timetable(_ ferry: TenantConfig.FerryConfig, on day: Date) async throws -> [FerryTrip] {
+        let name = ferry.file ?? "ferry"
+        var data = ContentFiles.data(name)
+        if data == nil {
+            let url = Backend.url.appendingPathComponent("storage/v1/object/public/content/\(Tenants.currentSlug)/\(name).json")
+            data = try await http.data(from: url)
+        }
+        guard let data else { return [] }
+        let table = try JSONDecoder().decode(Timetable.self, from: data)
+        let date = IslandTime.isoDate(day)
+        return table.trips.enumerated().compactMap { index, row -> FerryTrip? in
+            guard row.day == date, let departure = IslandTime.date(day: row.day, time: row.time) else { return nil }
+            let vessel = ferry.vessels?[row.vessel] ?? row.vessel
+            return FerryTrip(
+                fahrtnummer: index, abfahrt: departure, ankunft: nil,
+                ausgangshafen: row.toIsland ? "mainland" : "island", ausgangshafenBezeichnung: row.toIsland ? ferry.mainlandName : ferry.islandName,
+                zielhafen: row.toIsland ? "island" : "mainland", zielhafenBezeichnung: row.toIsland ? ferry.islandName : ferry.mainlandName,
+                ausflug: false, mainland: "mainland", fahrzeugtyp: vessel, fahrzeug: vessel, ausgefallen: false, auslastungPersonen: nil
+            )
+        }
+        .sorted { $0.abfahrt < $1.abfahrt }
     }
 }
 

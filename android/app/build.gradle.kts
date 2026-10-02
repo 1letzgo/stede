@@ -36,6 +36,15 @@ android {
             resValue("string", "app_name", "Loog")
             manifestPlaceholders["urlScheme"] = "loog"
         }
+        create("spoog") {
+            dimension = "brand"
+            applicationId = "de.letzgo.spoog"
+            versionCode = 1
+            versionName = "1.0"
+            buildConfigField("String", "BRAND", "\"spoog\"")
+            resValue("string", "app_name", "Spoog")
+            manifestPlaceholders["urlScheme"] = "spoog"
+        }
         // brands: end (neue Flavors fügt der Skill `new-region-app` davor ein)
     }
     // Upload-Schlüssel liegt außerhalb von Repo und iCloud; ohne die Datei

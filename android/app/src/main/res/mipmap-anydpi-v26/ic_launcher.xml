@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Motiv des iOS-App-Icons (Rhododendron-Blüte): ganzes Icon als Hintergrund, auf die
-     sichtbaren 72 dp skaliert und randlos fortgesetzt; monochrom nur die Blütenlinien. -->
+<!-- stede-Icon (Schriftzug auf Rot, 10/2026): auf die sichtbaren 72 dp skaliert, am Rand fortgesetzt;
+     ohne eigenes Monochrom-Motiv. Quelle: store/stede/icon-1024.png -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_back" />
     <foreground android:drawable="@android:color/transparent" />
-    <monochrome android:drawable="@drawable/ic_launcher_mono" />
 </adaptive-icon>

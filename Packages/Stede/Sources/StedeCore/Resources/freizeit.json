@@ -146,20 +146,6 @@
       "teaser": "Erlebnispark rund um Bienen und Imkerei in Hollriede."
     },
     {
-      "id": "landerlebnis-janen-fikensolterfeld",
-      "name": "Landerlebnis Janßen",
-      "category": "Spiel & Familie",
-      "street": "Seghorner Weg 6",
-      "phone": "+49 4488 8420071",
-      "email": "buero@landerlebnis.de",
-      "website": "https://landerlebnis.de/",
-      "hours": "Apr-Oct: Mo-So, Feiertag 10–18 Uhr · Nov-Mar: Fr-So, Feiertag 10–18 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
-      "latitude": 53.232624,
-      "longitude": 7.939197,
-      "teaser": "Hof mit Spielscheune, Tieren und Hofcafé für Familien in Fikensolterfeld."
-    },
-    {
       "id": "ammerlander-spielzeugmuseum",
       "name": "Ammerländer Spielzeugmuseum",
       "category": "Kultur",
@@ -176,7 +162,6 @@
       "street": "Gaststraße 4",
       "website": "https://www.westerstede.de/gesundheit-familie/einrichtungen/apothekervilla/",
       "hours": "Di 10–12 Uhr, Mi 15–17 Uhr, Do 10–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.256413,
       "longitude": 7.929209,
       "teaser": "Begegnungsstätte der Stadt in der Gaststraße – Sprechstunden, Kurse und Treffen."
@@ -229,7 +214,6 @@
       "phone": "+49 4488 55-0",
       "website": "https://www.westerstede.de/leben-in-westerstede/einrichtungen/stadtarchiv-westerstede/",
       "hours": "Di, Fr 9–12 Uhr",
-      "seasonNote": "Laut OpenStreetMap, nicht bestätigt",
       "latitude": 53.248581,
       "longitude": 7.912089,
       "teaser": "Kultur- und Begegnungsort in Westerstede."

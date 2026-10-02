@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		5A7E0001000000000000C0DE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5A7E0002000000000000C0DE /* StedeUI */; };
 		4C00600100000000000000BF /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4C00600C0000000000000001 /* StedeUI */; };
+		DBF4F58FAE06915C23382AFE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 73F1A306A8624131A8FC909C /* StedeUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		37BF9B7E30376E7B005C411F /* stede.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = stede.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C0060020000000000000001 /* loog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = loog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B098F2232C374BC25DA42D3 /* spoog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = spoog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -32,6 +34,14 @@
 			);
 			target = 4C0060060000000000000001 /* loog */;
 		};
+		887AE9CFD90EDC121A313DC7 /* Exceptions for "spoog" folder in "spoog" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Spoog.storekit,
+			);
+			target = EC2A904518A103AA5ECF3191 /* spoog */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -49,6 +59,14 @@
 				4C0060030000000000000001 /* Exceptions for "loog" folder in "loog" target */,
 			);
 			path = loog;
+			sourceTree = "<group>";
+		};
+		7B3E37C1C2D8D2F74755ED1A /* spoog */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				887AE9CFD90EDC121A313DC7 /* Exceptions for "spoog" folder in "spoog" target */,
+			);
+			path = spoog;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -70,6 +88,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2167066670B397E5BEB68435 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DBF4F58FAE06915C23382AFE /* StedeUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +104,7 @@
 			children = (
 				37BF9B8030376E7B005C411F /* stede */,
 				4C0060040000000000000001 /* loog */,
+				7B3E37C1C2D8D2F74755ED1A /* spoog */,
 				37BF9B7F30376E7B005C411F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,6 +114,7 @@
 			children = (
 				37BF9B7E30376E7B005C411F /* stede.app */,
 				4C0060020000000000000001 /* loog.app */,
+				9B098F2232C374BC25DA42D3 /* spoog.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -140,6 +168,29 @@
 			productReference = 4C0060020000000000000001 /* loog.app */;
 			productType = "com.apple.product-type.application";
 		};
+		EC2A904518A103AA5ECF3191 /* spoog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 368AE304008AF4690C2804F3 /* Build configuration list for PBXNativeTarget "spoog" */;
+			buildPhases = (
+				F98FC9CB3A71829F7DBCD7A3 /* Sources */,
+				2167066670B397E5BEB68435 /* Frameworks */,
+				C1C2E30DD731DE2882C02EF4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7B3E37C1C2D8D2F74755ED1A /* spoog */,
+			);
+			name = spoog;
+			packageProductDependencies = (
+				73F1A306A8624131A8FC909C /* StedeUI */,
+			);
+			productName = spoog;
+			productReference = 9B098F2232C374BC25DA42D3 /* spoog.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -154,6 +205,12 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					4C0060060000000000000001 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					4C0060060000000000000001 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					EC2A904518A103AA5ECF3191 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -177,6 +234,7 @@
 			targets = (
 				37BF9B7D30376E7B005C411F /* stede */,
 				4C0060060000000000000001 /* loog */,
+				EC2A904518A103AA5ECF3191 /* spoog */,
 			);
 		};
 /* End PBXProject section */
@@ -196,6 +254,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1C2E30DD731DE2882C02EF4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -207,6 +272,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4C0060070000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F98FC9CB3A71829F7DBCD7A3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -476,6 +548,54 @@
 			};
 			name = Debug;
 		};
+		C103D36074C0A43D0818FBA1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = spoog/spoog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = spoog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spoog";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.spoog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
 		4C00600A0000000000000001 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -524,6 +644,54 @@
 			};
 			name = Release;
 		};
+		7D1A01165C55BD830413B8DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = spoog/spoog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = spoog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Spoog";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.spoog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -554,6 +722,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		368AE304008AF4690C2804F3 /* Build configuration list for PBXNativeTarget "spoog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C103D36074C0A43D0818FBA1 /* Debug */,
+				7D1A01165C55BD830413B8DA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -569,6 +746,10 @@
 			productName = StedeUI;
 		};
 		4C00600C0000000000000001 /* StedeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StedeUI;
+		};
+		73F1A306A8624131A8FC909C /* StedeUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StedeUI;
 		};

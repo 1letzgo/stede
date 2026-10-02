@@ -31,6 +31,11 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                // Baustein `plus`: große Kachel ganz oben, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
+                if Features.has(.plus) {
+                    PlusSection()
+                }
+
                 if Features.has(.groups) {
                     StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                     NavigationLink {

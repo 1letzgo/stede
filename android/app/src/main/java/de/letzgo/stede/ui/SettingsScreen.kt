@@ -52,6 +52,8 @@ fun SettingsScreen() {
 
     Scaffold(topBar = { StedeTopBar("Einstellungen") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
+            // Baustein `plus`: große Kachel ganz oben, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
+            if (Features.has(Feature.Plus)) item { PlusCard() }
             if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
             if (Features.has(Feature.Groups)) item {
                 RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {

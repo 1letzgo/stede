@@ -9,6 +9,11 @@ public nonisolated struct IslandMapData: Decodable, Sendable {
     public let polygons: [String: [[[Double]]]]
     public let buildings: [[[Double]]]
     public let lines: [String: [[[Double]]]]
+    /// Karte mit Küstenlinie (Inseln): außerhalb von `land` ist Meer. Ältere Dateien ohne den Schlüssel
+    /// erkennt `hasSea` daran, dass `land` mehr ist als das Rechteck des Kartenausschnitts.
+    public let sea: Bool?
+
+    public var hasSea: Bool { sea ?? (land.count > 1 || (land.first?.count ?? 0) > 5) }
 
     public static var shared: IslandMapData? { store.value }
 

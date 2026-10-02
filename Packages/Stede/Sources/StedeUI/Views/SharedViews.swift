@@ -128,7 +128,7 @@ struct DayNavigator: View {
                     if store.canChangeDay {
                         showPicker = true
                     } else {
-                        navigation.tab = .plus
+                        navigation.openPlus()
                     }
                 } label: {
                     Label(dayLabel, systemImage: store.canChangeDay ? "calendar" : "lock")

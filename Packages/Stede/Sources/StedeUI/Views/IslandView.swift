@@ -51,7 +51,10 @@ enum IslandCatalog {
     static let healthCategory = "Gesundheit"
     static let leisureCategory = "Freizeit & Sport"
     static let tripsCategory = "Ausflüge"
-    static let playgroundsCategory = "Spielplätze"
+    /// Spielplätze plus alles zum Spielen aus „Freizeit & Sport“ (Arten in `playKinds`) — auch Kostenpflichtiges.
+    static let playgroundsCategory = "Spiel & Spaß"
+    /// Arten aus „Freizeit & Sport“, die unter „Spiel & Spaß“ statt unter „Entdecken“ stehen.
+    static let playKinds: Set<String> = ["Spiel & Familie", "Kostenpflichtig", "Spielplatz", "Skaterplatz"]
     /// Vergünstigungen der Ehrenamtskarte in Westerstede (optionale Kachel auf Start).
     static let volunteerCategory = "Ehrenamtskarte"
 
@@ -93,7 +96,9 @@ enum IslandCatalog {
             // Orte, die auch als Ausflug geführt sind (Rhododendronpark Hobbie), nur einmal — mit dem Ausflugstext.
             let trips = GastroStore.trips.places
             let tripNames = Set(trips.map { $0.name.lowercased() })
-            let local = (GastroStore.sights.places + GastroStore.leisure.places).filter { !tripNames.contains($0.name.lowercased()) }
+            // Spiel & Familie und Kostenpflichtiges stehen unter „Spiel & Spaß“.
+            let leisure = GastroStore.leisure.places.filter { !playKinds.contains($0.category) }
+            let local = (GastroStore.sights.places + leisure).filter { !tripNames.contains($0.name.lowercased()) }
             return (local + trips).map(IslandPlace.gastro)
         }
         if category == shoppingCategory {
@@ -114,7 +119,11 @@ enum IslandCatalog {
             return GastroStore.trips.places.map(IslandPlace.gastro)
         }
         if category == playgroundsCategory {
-            return GastroStore.playgrounds.places.map(IslandPlace.gastro)
+            // Spielplätze plus Spiel & Familie und Kostenpflichtiges aus „Freizeit & Sport“, nach Namen einmal.
+            let playgrounds = GastroStore.playgrounds.places
+            let names = Set(playgrounds.map { $0.name.lowercased() })
+            let extra = GastroStore.leisure.places.filter { playKinds.contains($0.category) && !names.contains($0.name.lowercased()) }
+            return (playgrounds + extra).map(IslandPlace.gastro)
         }
         if category == volunteerCategory {
             return GastroStore.volunteer.places.map(IslandPlace.gastro)
@@ -127,10 +136,10 @@ enum IslandCatalog {
         let plural: [String: String] = [
             "Restaurant": "Restaurants", "Café": "Cafés", "Bäckerei": "Bäckereien",
             "Eiscafé": "Eiscafés", "Imbiss": "Imbisse", "Bar": "Bars", "Einkaufen": "Geschäfte",
-            sightsCategory: "Sehenswürdigkeiten", healthCategory: "Einträge", leisureCategory: "Angebote", discoverCategory: "Orte", gastroCategory: "Lokale", tripsCategory: "Ausflüge", playgroundsCategory: "Spielplätze", volunteerCategory: "Vergünstigungen",
+            sightsCategory: "Sehenswürdigkeiten", healthCategory: "Einträge", leisureCategory: "Angebote", discoverCategory: "Orte", gastroCategory: "Lokale", tripsCategory: "Ausflüge", playgroundsCategory: "Angebote", volunteerCategory: "Vergünstigungen",
             bikeCategory: "Fahrradläden",
         ]
-        let singular = [bikeCategory: "Fahrradladen", sightsCategory: "Sehenswürdigkeit", "Einkaufen": "Geschäft", playgroundsCategory: "Spielplatz"]
+        let singular = [bikeCategory: "Fahrradladen", sightsCategory: "Sehenswürdigkeit", "Einkaufen": "Geschäft", playgroundsCategory: "Angebot"]
         let noun = count == 1 ? (singular[category] ?? category) : (plural[category] ?? "Orte")
         return "\(count) \(noun)"
     }
@@ -149,7 +158,7 @@ enum IslandCatalog {
         case healthCategory: GastroStore.health.source
         case leisureCategory: GastroStore.leisure.source
         case tripsCategory: GastroStore.trips.source
-        case playgroundsCategory: GastroStore.playgrounds.source
+        case playgroundsCategory: "\(GastroStore.playgrounds.source) · Freizeit: \(GastroStore.leisure.source)"
         case volunteerCategory: GastroStore.volunteer.source
         case shoppingCategory: "\(GastroStore.directory.source) · Fahrrad: \(BikeRentalStore.directory.source)"
         default: GastroStore.directory.source
@@ -300,7 +309,7 @@ struct IslandView: View {
                         LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                             if places.isEmpty {
                                 InfoCard {
-                                    Text("Noch keine Favoriten — tippe auf den Stern einer Karte.")
+                                    Text(favoritesOnly ? "Noch keine Favoriten — tippe auf den Stern einer Karte." : "Keine Einträge.")
                                         .foregroundStyle(.secondary)
                                 }
                             }
@@ -464,11 +473,18 @@ struct IslandView: View {
     }
 
     private var places: [IslandPlace] {
-        allPlaces.filter { place in
+        let selected = activeKinds
+        return allPlaces.filter { place in
             (!favoritesOnly || favorites.contains(place.id))
-                && (selectedKinds.isEmpty || selectedKinds.contains(place.category)
-                    || (place.delivers && selectedKinds.contains(GastroPlace.deliveryFeature)))
+                && (selected.isEmpty || selected.contains(place.category)
+                    || (place.delivers && selected.contains(GastroPlace.deliveryFeature)))
         }
+    }
+
+    /// Gewählte Arten, die es in dieser Ansicht noch gibt — eine gespeicherte Art, die verschwunden
+    /// oder umgezogen ist (etwa „Spiel & Familie“ nach „Spiel & Spaß“), filtert sonst alles weg.
+    private var activeKinds: Set<String> {
+        selectedKinds.intersection(kinds)
     }
 
     /// Arten in der Reihenfolge ihres ersten Auftretens; „Lieferdienst“ zuletzt,
@@ -483,7 +499,7 @@ struct IslandView: View {
     /// Art, ein Tipp auf eine andere springt um, ein zweiter Tipp auf dieselbe
     /// hebt den Filter wieder auf.
     private func kindToggle(_ kind: String) -> some View {
-        let isActive = selectedKinds.isEmpty || selectedKinds.contains(kind)
+        let isActive = activeKinds.isEmpty || activeKinds.contains(kind)
         let color = IslandCatalog.color(for: kind)
         return Button {
             withAnimation(.snappy) {

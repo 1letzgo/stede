@@ -69,7 +69,7 @@ private fun FerryCard(t: FerryTrip, isNext: Boolean, isPast: Boolean, book: () -
     val alpha = if (isPast) 0.55f else 1f
     StedeCard(highlighted = isNext && !t.cancelled, onClick = if (t.cancelled) null else book) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${t.departure.format(Town.hm)} → ${t.arrival.format(Town.hm)}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+            Text(t.departure.format(Town.hm) + (t.arrival?.let { " → ${it.format(Town.hm)}" } ?: ""), fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
                 color = C.text.copy(alpha = alpha), textDecoration = if (t.cancelled) TextDecoration.LineThrough else null)
             if (t.cancelled) Text("fällt aus", color = C.red, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
             if (t.excursion) Text("Ausflug", color = C.secondary, fontSize = 11.sp)

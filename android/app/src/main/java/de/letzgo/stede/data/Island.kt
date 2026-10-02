@@ -24,7 +24,8 @@ import kotlin.math.cos
 // MARK: Fähre
 
 data class FerryTrip(
-    val number: Int, val departure: ZonedDateTime, val arrival: ZonedDateTime, val from: String,
+    /** `arrival` fehlt bei festen Fahrplänen aus einem PDF. */
+    val number: Int, val departure: ZonedDateTime, val arrival: ZonedDateTime?, val from: String,
     val excursion: Boolean, val vessel: String, val cancelled: Boolean, val occupancy: Int?, val toIsland: Boolean,
 )
 
@@ -38,6 +39,7 @@ object Ferry {
     /** Fahrten beider Richtungen eines Tages, nach Abfahrt sortiert. */
     suspend fun trips(day: LocalDate): List<FerryTrip> {
         val ferry = Tenants.config.ferry ?: return emptyList()
+        if (ferry.type == "pdf") return timetable(ferry, day)
         val byId = linkedMapOf<Int, FerryTrip>()
         for (route in ferry.routes) {
             val rows = Http.json.decodeFromString<List<FerryTripDto>>(Http.text("https://api.langeoog.de/fahrten/$route/$day"))
@@ -48,6 +50,21 @@ object Ferry {
             }
         }
         return byId.values.sortedBy { it.departure }
+    }
+
+    @Serializable private data class TimetableRow(val day: String, val time: String, val toIsland: Boolean, val vessel: String = "")
+    @Serializable private data class Timetable(val trips: List<TimetableRow> = emptyList())
+
+    /** Fester Fahrplan (Server liest das PDF alle 30 Tage): lokale Kopie aus ContentFiles, sonst direkt aus dem Bucket. */
+    private suspend fun timetable(ferry: FerryConfig, day: LocalDate): List<FerryTrip> {
+        val name = ferry.file ?: "ferry"
+        val text = ContentFiles.text(name) ?: Http.direct("${Backend.URL}/storage/v1/object/public/content/${Tenants.slug}/$name.json")
+        val date = day.toString()
+        return Http.json.decodeFromString<Timetable>(text).trips.mapIndexedNotNull { i, r ->
+            if (r.day != date) return@mapIndexedNotNull null
+            val dep = runCatching { java.time.LocalDateTime.parse("${r.day}T${r.time}").atZone(Town.zone) }.getOrNull() ?: return@mapIndexedNotNull null
+            FerryTrip(i, dep, null, if (r.toIsland) "mainland" else "island", false, ferry.vessels[r.vessel] ?: r.vessel, false, null, r.toIsland)
+        }.sortedBy { it.departure }
     }
 }
 

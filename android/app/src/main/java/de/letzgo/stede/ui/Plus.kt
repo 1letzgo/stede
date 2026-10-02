@@ -123,80 +123,51 @@ object PlusStore : PurchasesUpdatedListener {
 
 private fun Context.activity(): Activity? = when (this) { is Activity -> this; is ContextWrapper -> baseContext.activity(); else -> null }
 
-/** Tab „<App>+“ wie PlusView: Angebote, Status, Wiederherstellen, Rechtliches. */
+/**
+ * Große Kachel „<App>+“ ganz oben in den Einstellungen (wie PlusSection in iOS): Status, Kauf direkt in der Kachel,
+ * Wiederherstellen und Rechtliches — keine eigene Ansicht.
+ */
 @Composable
-fun PlusScreen() {
+fun PlusCard() {
     val name = Brand.current.plusName
     val context = LocalContext.current
     val openUrl = rememberOpenUrl()
     LaunchedEffect(Unit) { PlusStore.start(context); PlusStore.load() }
-    Scaffold(topBar = { StedeTopBar(name) }, containerColor = C.sand) { pad ->
-        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            item {
-                StedeCard(highlighted = true) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        IconChip(Icons.Default.AutoAwesome, C.teal)
-                        Text(name, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = C.text)
-                    }
-                    Text("Alle Tage statt nur heute", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text, modifier = Modifier.padding(top = 8.dp))
-                    Text("Der heutige Tag bleibt immer kostenfrei. Mit $name blätterst du durch beliebige Tage — vor und zurück.", color = C.secondary, modifier = Modifier.padding(top = 4.dp))
-                }
-            }
-            if (PlusStore.unlocked) item {
-                StedeCard(highlighted = true) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Verified, null, tint = C.green)
-                        Text("$name ist aktiv", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.green)
-                    }
-                    Text("Danke! Alle Tage sind freigeschaltet.", color = C.secondary, modifier = Modifier.padding(top = 4.dp))
-                }
-            } else {
-                listOfNotNull(PlusStore.lifetime, PlusStore.monthly).forEach { p ->
-                    item(key = p.productId) { OfferCard(p) { context.activity()?.let { PlusStore.buy(it, p) } } }
-                }
-                if (PlusStore.lifetime == null && PlusStore.monthly == null) item {
-                    InfoCard(if (PlusStore.loading) "Angebote werden geladen …" else "Die Angebote sind gerade nicht erreichbar.")
-                }
-            }
-            PlusStore.error?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
-            item {
-                StedeCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Build, null, tint = C.secondary, modifier = Modifier.size(18.dp))
-                        Text("Bald in $name", fontWeight = FontWeight.SemiBold, color = C.text)
-                    }
-                    Text("Weitere Zusatzfunktionen sind in Arbeit. Sie kommen ohne Aufpreis dazu.", color = C.secondary, modifier = Modifier.padding(top = 6.dp))
-                }
-            }
-            if (!PlusStore.unlocked) item {
-                TextButton(onClick = { PlusStore.restore() }, Modifier.fillMaxWidth()) { Text("Käufe wiederherstellen", fontWeight = FontWeight.SemiBold, color = C.ink) }
-            }
-            item {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Brand.current.privacyUrl?.let { url -> Text("Datenschutz", fontSize = 12.sp, color = C.ink, modifier = Modifier.clickable { openUrl(url) }) }
-                    Text("$name monatlich läuft einen Monat und verlängert sich automatisch, bis du es in Google Play kündigst. $name einmalig ist ein einmaliger Kauf ohne Laufzeit.",
-                        fontSize = 11.sp, color = C.secondary, textAlign = TextAlign.Center)
-                }
+    val unlocked = PlusStore.unlocked
+    StedeCard(highlighted = true) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconChip(if (unlocked) Icons.Default.Verified else Icons.Default.AutoAwesome, if (unlocked) C.green else C.teal)
+            Column {
+                Text(name, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = C.text)
+                Text(if (unlocked) "Aktiv — alle Tage freigeschaltet" else "Alle Tage statt nur heute", fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp, color = if (unlocked) C.green else C.text)
             }
         }
+        if (!unlocked) {
+            Text("Der heutige Tag bleibt immer kostenfrei. Mit $name blätterst du durch beliebige Tage — vor und zurück.",
+                color = C.secondary, fontSize = 15.sp, modifier = Modifier.padding(top = 10.dp))
+            val offers = listOfNotNull(PlusStore.lifetime, PlusStore.monthly)
+            if (offers.isEmpty()) Text(if (PlusStore.loading) "Angebote werden geladen …" else "Die Angebote sind gerade nicht erreichbar.",
+                color = C.secondary, fontSize = 14.sp, modifier = Modifier.padding(top = 10.dp))
+            offers.forEach { p -> OfferButton(p) { context.activity()?.let { PlusStore.buy(it, p) } } }
+        }
+        PlusStore.error?.let { Text(it, color = C.red, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
+        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (!unlocked) Text("Käufe wiederherstellen", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.clickable { PlusStore.restore() })
+            Brand.current.privacyUrl?.let { url -> Text("Datenschutz", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.clickable { openUrl(url) }) }
+        }
+        if (!unlocked) Text("$name monatlich läuft einen Monat und verlängert sich automatisch, bis du es in Google Play kündigst. $name einmalig ist ein einmaliger Kauf ohne Laufzeit.",
+            fontSize = 11.sp, color = C.secondary, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
 @Composable
-private fun OfferCard(p: ProductDetails, buy: () -> Unit) {
+private fun OfferButton(p: ProductDetails, buy: () -> Unit) {
     val sub = p.subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.lastOrNull()
     val price = sub?.let { "${it.formattedPrice}/Monat" } ?: p.oneTimePurchaseOfferDetails?.formattedPrice ?: ""
-    StedeCard {
-        Row(verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(p.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                Text(p.description, color = C.secondary, fontSize = 14.sp)
-            }
-            Text(price, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = C.text)
-        }
-        Button(onClick = buy, Modifier.fillMaxWidth().padding(top = 12.dp), shape = RoundedCornerShape(50),
-            colors = ButtonDefaults.buttonColors(containerColor = C.deep, contentColor = Color.White)) {
-            Text(if (sub != null) "Abo starten" else "Kaufen", fontWeight = FontWeight.SemiBold)
-        }
+    Button(onClick = buy, Modifier.fillMaxWidth().padding(top = 10.dp), shape = RoundedCornerShape(50),
+        colors = ButtonDefaults.buttonColors(containerColor = C.deep, contentColor = Color.White)) {
+        Text(p.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+        Text(price, fontWeight = FontWeight.SemiBold)
     }
 }

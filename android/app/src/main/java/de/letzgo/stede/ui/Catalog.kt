@@ -18,7 +18,8 @@ import de.letzgo.stede.data.Store
 /** Kategorien der Rubrik „Stadt“ — wie IslandCatalog in iOS. */
 object Catalog {
     const val DISCOVER = "Entdecken"; const val GASTRO = "Gastro"; const val SHOPPING = "Einkaufen"
-    const val PLAYGROUNDS = "Spielplätze"; const val TRIPS = "Ausflüge"; const val HEALTH = "Gesundheit"
+    /** Spielplätze plus Spiel & Familie und Kostenpflichtiges aus „Freizeit & Sport“ (Arten in [PLAY_KINDS]). */
+    const val PLAYGROUNDS = "Spiel & Spaß"; const val TRIPS = "Ausflüge"; const val HEALTH = "Gesundheit"
     /** Vergünstigungen der Ehrenamtskarte in Westerstede — optionale Kachel auf Start. */
     const val VOLUNTEER = "Ehrenamtskarte"
     /** Fahrradläden und -verleihe; in stede unter „Einkaufen“, sonst eigene Kachel „Fahrräder“. */
@@ -26,19 +27,24 @@ object Catalog {
 
     fun tileTitle(category: String) = if (category == BIKES) "Fahrräder" else category
     private val nonGastro = setOf("Einkaufen", "Bäckerei", "Drogerie")
+    /** Arten aus „Freizeit & Sport“, die unter „Spiel & Spaß“ statt unter „Entdecken“ stehen. */
+    val PLAY_KINDS = setOf("Spiel & Familie", "Kostenpflichtig", "Spielplatz", "Skaterplatz")
 
     fun places(category: String): List<Place> = when (category) {
         // Sehenswürdigkeiten, Freizeit & Sport und Ausflüge in einer Ansicht.
         // Orte, die auch als Ausflug geführt sind (Rhododendronpark Hobbie), nur einmal — mit dem Ausflugstext.
         DISCOVER -> Places.directory("trips").places.let { trips ->
             val names = trips.map { it.name.lowercase() }.toSet()
-            (Places.directory("sights").places + Places.directory("leisure").places).filter { it.name.lowercase() !in names } + trips
+            (Places.directory("sights").places + Places.directory("leisure").places.filter { it.category !in PLAY_KINDS }).filter { it.name.lowercase() !in names } + trips
         }
         GASTRO -> Places.directory("gastro").places.filter { it.category !in nonGastro }
         SHOPPING -> Places.directory("gastro").places.filter { it.category == "Einkaufen" } + Places.directory("gastro").places.filter { it.category == "Drogerie" } +
             Places.directory("gastro").places.filter { it.category == "Bäckerei" } + if (Brand.current.bikesInShopping) Places.directory("bikes").places else emptyList()
         BIKES -> Places.directory("bikes").places
-        PLAYGROUNDS -> Places.directory("playgrounds").places
+        PLAYGROUNDS -> Places.directory("playgrounds").places.let { pg ->
+            val names = pg.map { it.name.lowercase() }.toSet()
+            pg + Places.directory("leisure").places.filter { it.category in PLAY_KINDS && it.name.lowercase() !in names }
+        }
         TRIPS -> Places.directory("trips").places
         HEALTH -> Places.directory("health").places
         VOLUNTEER -> Places.directory("volunteer").places
@@ -48,7 +54,7 @@ object Catalog {
     fun source(category: String): String = when (category) {
         DISCOVER -> Places.directory("sights").source + " · Freizeit: " + Places.directory("leisure").source + " · Ausflüge: " + Places.directory("trips").source
         SHOPPING -> Places.directory("gastro").source + " · Fahrrad: " + Places.directory("bikes").source
-        PLAYGROUNDS -> Places.directory("playgrounds").source
+        PLAYGROUNDS -> Places.directory("playgrounds").source + " · Freizeit: " + Places.directory("leisure").source
         TRIPS -> Places.directory("trips").source
         HEALTH -> Places.directory("health").source
         BIKES -> Places.directory("bikes").source
