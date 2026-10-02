@@ -13,15 +13,21 @@ public nonisolated struct CityEventClient: Sendable {
         let title: String
         let startsAt: Date?
         let endsAt: Date?
-        let summary: String
+        let summary: String?
         let location: String?
         let organizer: String?
         let category: String?
         let seriesNote: String?
         let detailUrl: String?
+        let registration: String?
+        let price: String?
+        let soldOut: Bool?
+        let imagePath: String?
 
         enum CodingKeys: String, CodingKey {
-            case title, summary, location, organizer, category, day
+            case title, summary, location, organizer, category, day, registration, price
+            case soldOut = "sold_out"
+            case imagePath = "image_path"
             case externalId = "external_id"
             case startsAt = "starts_at"
             case endsAt = "ends_at"
@@ -30,7 +36,7 @@ public nonisolated struct CityEventClient: Sendable {
         }
     }
 
-    private static let columns = "external_id, day, title, starts_at, ends_at, summary, location, organizer, category, series_note, detail_url"
+    private static let columns = "external_id, day, title, starts_at, ends_at, summary, location, organizer, category, series_note, detail_url, registration, price, sold_out, image_path"
 
     public func events(on day: Date) async throws -> [StedeEvent] {
         let tenantID = try await Self.tenantID()
@@ -56,8 +62,9 @@ public nonisolated struct CityEventClient: Sendable {
     private static func event(_ row: Row) -> StedeEvent {
         StedeEvent(
             id: Int(row.externalId) ?? row.externalId.hashValue, title: row.title, time: row.startsAt, endTime: row.endsAt,
-            summary: row.summary, location: row.location, organizer: row.organizer, category: row.category,
-            seriesNote: row.seriesNote, detailURL: row.detailUrl.flatMap(URL.init(string:))
+            summary: row.summary ?? "", location: row.location, organizer: row.organizer, category: row.category,
+            seriesNote: row.seriesNote, detailURL: row.detailUrl.flatMap(URL.init(string:)),
+            registration: row.registration, price: row.price, soldOut: row.soldOut, imagePath: row.imagePath
         )
     }
 

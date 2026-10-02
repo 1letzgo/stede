@@ -5,29 +5,34 @@ public enum StedeTheme {
     /// Akzent: Petrol aus Logo und Website der Stadt (#294753), im Dark Mode helles Petrol
     /// (#9FC3D0) wie `StedeInk` — sonst sind Links, Knöpfe und der aktive Tab dort kaum lesbar.
     /// Name aus der Inselzeit behalten.
-    public static let iconBlue = Color("StedeInk", bundle: .module)
+    public static let iconBlue = brand("Ink")
 
     /// Insel-Palette: Sandgrund, Kartenfläche, Hafen, Düne, Sonne, Meer.
-    static let sand = Color("StedeSand", bundle: .module)
-    static let surface = Color("StedeSurface", bundle: .module)
-    static let harborRed = Color("StedeHarbor", bundle: .module)
-    static let duneGreen = Color("StedeDune", bundle: .module)
-    static let sunAmber = Color("StedeSun", bundle: .module)
-    static let seaTeal = Color("StedeSea", bundle: .module)
+    static let sand = brand("Sand")
+    static let surface = brand("Surface")
+    static let harborRed = brand("Harbor")
+    static let duneGreen = brand("Dune")
+    static let sunAmber = brand("Sun")
+    static let seaTeal = brand("Sea")
     /// Tiefwasser-Blau für Akzente auf Sandgrund — ruhiger als das reine Markenblau.
-    static let deep = Color("StedeDeep", bundle: .module)
+    static let deep = brand("Deep")
     /// Einheitliche Höhe aller Kapsel-Buttons (Auswahl, Aktion, Zusage).
     static let chipHeight: CGFloat = 36
     /// Dunkles Petrol-Grün aus dem Stadtlogo (#284050) — nur für die Navigationsleiste,
     /// im Dunkelmodus etwas tiefer.
-    static let bar = Color("StedeBar", bundle: .module)
+    static let bar = brand("Bar")
     /// Schrift und Symbole im Tiefwasserton: dunkelblau, im Dunkelmodus hellblau.
     /// `deep` selbst bleibt in beiden Modi dunkel (Leiste, gefüllte Chips).
-    static let ink = Color("StedeInk", bundle: .module)
+    static let ink = brand("Ink")
     /// Heidekraut-Lila und Watt-Braun — für Kacheln, die sich von den übrigen
     /// Inselfarben abheben müssen (Restaurant, Sehenswürdigkeiten).
-    static let heather = Color("StedeHeather", bundle: .module)
-    static let mudflat = Color("StedeMudflat", bundle: .module)
+    static let heather = brand("Heather")
+    static let mudflat = brand("Mudflat")
+
+    /// Farbe aus der Palette der Marke (`StedeSand`, `LoogSand` …).
+    private static func brand(_ name: String) -> Color {
+        Color("\(AppBrand.current.palette)\(name)", bundle: .module)
+    }
 
     /// Lesebreite: auf iPad und Mac laufen Karten sonst über die volle
     /// Fensterbreite, mit zwei Wörtern an den Enden.

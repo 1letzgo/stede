@@ -6,6 +6,8 @@ final class SelectedDateStore {
     var selectedDate: Date
     /// Letzter Tag mit Daten; `nil` bedeutet keine Obergrenze.
     var latestDate: Date?
+    /// Mit dem Baustein `plus` und ohne Kauf bleibt die App auf dem heutigen Tag stehen.
+    var canChangeDay = true
 
     init(date: Date = Date()) {
         selectedDate = IslandTime.startOfDay(date)
@@ -16,13 +18,15 @@ final class SelectedDateStore {
     }
 
     var canGoForward: Bool {
+        guard canChangeDay else { return false }
         guard let latestDate else { return true }
         return IslandTime.startOfDay(selectedDate) < IslandTime.startOfDay(latestDate)
     }
 
-    var canGoBack: Bool { true }
+    var canGoBack: Bool { canChangeDay }
 
     func goBack() {
+        guard canChangeDay else { return }
         shift(by: -1)
     }
 
@@ -60,7 +64,14 @@ final class SelectedDateStore {
     }
 
     func select(_ date: Date) {
+        guard canChangeDay else { return }
         selectedDate = clamped(IslandTime.startOfDay(date))
+    }
+
+    /// Nach einem Widerruf oder abgelaufenen Abo zurück auf heute.
+    func lockToToday() {
+        canChangeDay = false
+        selectedDate = IslandTime.startOfDay(Date())
     }
 
     func limit(to latest: Date?) {

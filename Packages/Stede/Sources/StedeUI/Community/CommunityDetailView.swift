@@ -126,6 +126,8 @@ struct CommunityDetailView: View {
         .sheet(item: $editingEvent) { event in
             EventEditorView(communityID: model.community.id, existing: event) { draft in await model.save(draft, editing: event.id) } onCancelEvent: {
                 await model.cancel(event: event)
+            } onTransferred: {
+                await reload()
             }
         }
         .sheet(isPresented: $showsAccount) { AccountView() }
@@ -415,7 +417,7 @@ struct CommunityDetailView: View {
             HStack(spacing: 8) {
                 Label("Einladungscode \(code)", systemImage: "key.fill").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                ShareLink(item: "Tritt „\(model.community.name)“ in der \(auth.tenant?.name ?? "stede")-App bei – Einladungscode \(code)") {
+                ShareLink(item: "Tritt „\(model.community.name)“ in der \(auth.tenant?.name ?? AppBrand.current.displayName)-App bei – Einladungscode \(code)") {
                     StedeActionChip(title: "Einladen", symbol: "square.and.arrow.up")
                 }
                 .buttonStyle(StedeCardButtonStyle())
@@ -610,6 +612,8 @@ struct EventEditorView: View {
     let existing: CommunityEvent?
     let onSave: (CommunityEventDraft) async -> Bool
     var onCancelEvent: (() async -> Void)?
+    /// Nach dem Übertragen an eine andere Gruppe (nur Veranstaltungs-Gruppe): Liste neu laden.
+    var onTransferred: (() async -> Void)?
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
@@ -636,6 +640,10 @@ struct EventEditorView: View {
     @State private var community: Community?
     @State private var countywideReach = true
     @State private var targetTenants: Set<UUID> = []
+    @State private var transferGroups: [Community] = []
+    @State private var transferTarget: UUID?
+    @State private var confirmTransfer = false
+    @State private var transferring = false
 
     /// Neue Termine beginnen zur nächsten vollen Stunde (10:23 → 11:00), nicht zur aktuellen Minute.
     static var nextFullHour: Date {
@@ -705,6 +713,9 @@ struct EventEditorView: View {
                 if isPublic, let community, community.isCountywide {
                     reachSection(home: community.tenantId)
                 }
+                if existing != nil, community?.canTransferEvents == true {
+                    transferSection
+                }
                 if existing != nil, existing?.cancelledAt == nil, let onCancelEvent {
                     Section { Button("Termin absagen", role: .destructive) { Task { await onCancelEvent(); dismiss() } } }
                 }
@@ -719,7 +730,20 @@ struct EventEditorView: View {
                 }
             }
             .task { headerImages = (try? await CommunityClient().headerImages(communityID: communityID)) ?? [] }
-            .task { community = try? await CommunityClient().community(id: communityID) }
+            .task {
+                community = try? await CommunityClient().community(id: communityID)
+                if existing != nil, community?.canTransferEvents == true, let tenantID = auth.tenant?.id {
+                    transferGroups = ((try? await CommunityClient().communities(tenantID: tenantID)) ?? [])
+                        .filter { $0.status == .approved && $0.id != communityID }
+                }
+            }
+            .confirmationDialog(transferQuestion, isPresented: $confirmTransfer, titleVisibility: .visible) {
+                Button("Übertragen") { Task { await transfer() } }
+            } message: {
+                Text(existing?.externalKey != nil
+                     ? "Alle künftigen Termine dieser Reihe gehen mit, und neue Importe landen direkt in der Gruppe."
+                     : "Der Termin gehört danach dieser Gruppe.")
+            }
             .navigationTitle(existing == nil ? "Neuer Termin" : "Termin bearbeiten")
             .stedeSheetForm()
             .toolbar {
@@ -743,6 +767,44 @@ struct EventEditorView: View {
                     targetTenants = Set(existing.targetTenants ?? [])
                 }
             }
+        }
+    }
+
+    // MARK: Übertragen (Sonderfunktion der Veranstaltungs-Gruppe)
+
+    private var transferTargetName: String { transferGroups.first { $0.id == transferTarget }?.name ?? "" }
+    private var transferQuestion: String {
+        existing?.externalKey != nil ? "Reihe „\(title)“ an \(transferTargetName) übertragen?" : "Termin an \(transferTargetName) übertragen?"
+    }
+
+    @ViewBuilder private var transferSection: some View {
+        Section {
+            Picker("Gruppe", selection: $transferTarget) {
+                Text("Wählen …").tag(UUID?.none)
+                ForEach(transferGroups) { group in Text(group.name).tag(UUID?.some(group.id)) }
+            }
+            #if !os(macOS)
+            .pickerStyle(.navigationLink)
+            #endif
+            Button(transferring ? "Überträgt …" : "Übertragen", systemImage: "arrow.right.circle") { confirmTransfer = true }
+                .disabled(transferTarget == nil || transferring)
+        } header: {
+            StedeFormHeader(title: "An Gruppe übertragen", symbol: "arrow.right.circle")
+        } footer: {
+            Text("Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.")
+        }
+    }
+
+    private func transfer() async {
+        guard let existing, let transferTarget else { return }
+        transferring = true
+        defer { transferring = false }
+        do {
+            try await CommunityClient().transferEvents(eventID: existing.id, to: transferTarget, series: true)
+            await onTransferred?()
+            dismiss()
+        } catch {
+            self.error = "Übertragen fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 
@@ -776,7 +838,7 @@ struct EventEditorView: View {
             Text("Sichtbar in")
         } footer: {
             Text(countywideReach
-                 ? "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
+                 ? "Der Termin erscheint im Kalender aller \(AppBrand.current.regionName)-Gemeinden."
                  : targetTenants.isEmpty ? "Wähle mindestens eine Gemeinde." : "Der Termin erscheint nur in den gewählten Gemeinden.")
         }
     }

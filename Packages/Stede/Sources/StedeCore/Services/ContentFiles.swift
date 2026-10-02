@@ -28,7 +28,9 @@ public actor ContentFiles {
     }
 
     /// Ohne Angabe die aktuelle Gemeinde; beim Wechsel die neue, bevor sie gilt.
-    public func sync(slug: String = Tenants.currentSlug) async {
+    /// Liefert true, wenn eine Datei neu geladen wurde.
+    @discardableResult
+    public func sync(slug: String = Tenants.currentSlug) async -> Bool {
         do {
             let tenant: Tenant = try await Backend.client.from("tenants").select("id, slug, name, municipality")
                 .eq("slug", value: slug).single().execute().value
@@ -45,9 +47,12 @@ public actor ContentFiles {
                 try data.write(to: Self.file(row.name, slug), options: .atomic)
                 manifest[row.name] = row.updatedAt
             }
-            if manifest != before { try JSONEncoder().encode(manifest).write(to: Self.manifestURL(slug), options: .atomic) }
+            guard manifest != before else { return false }
+            try JSONEncoder().encode(manifest).write(to: Self.manifestURL(slug), options: .atomic)
+            return true
         } catch {
             // Offline oder Backend nicht erreichbar: der letzte Stand bleibt.
+            return false
         }
     }
 }

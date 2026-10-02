@@ -31,29 +31,13 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
-                NavigationLink {
-                    AccountView(embedded: true)
-                } label: {
-                    HStack(spacing: 12) {
-                        accountRow
-                        Spacer(minLength: 0)
-                        SettingsChevron()
-                    }
-                    .stedeRowCard()
-                }
-                .buttonStyle(StedeCardButtonStyle())
-                .foregroundStyle(.primary)
-
-                #if os(iOS)
-                if auth.isSignedIn {
-                    StedeSectionHeader(title: "Benachrichtigungen", symbol: "bell.fill")
+                if Features.has(.groups) {
+                    StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                     NavigationLink {
-                        NotificationSettingsView()
+                        AccountView(embedded: true)
                     } label: {
                         HStack(spacing: 12) {
-                            SettingsIcon(symbol: "bell.fill", tint: StedeTheme.sunAmber)
-                            Text("Benachrichtigungen")
+                            accountRow
                             Spacer(minLength: 0)
                             SettingsChevron()
                         }
@@ -61,13 +45,33 @@ struct SettingsView: View {
                     }
                     .buttonStyle(StedeCardButtonStyle())
                     .foregroundStyle(.primary)
-                }
-                #endif
 
-                StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
-                SettingsCard {
-                    pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {
-                        showsTenants = true
+                    #if os(iOS)
+                    if auth.isSignedIn {
+                        StedeSectionHeader(title: "Benachrichtigungen", symbol: "bell.fill")
+                        NavigationLink {
+                            NotificationSettingsView()
+                        } label: {
+                            HStack(spacing: 12) {
+                                SettingsIcon(symbol: "bell.fill", tint: StedeTheme.sunAmber)
+                                Text("Benachrichtigungen")
+                                Spacer(minLength: 0)
+                                SettingsChevron()
+                            }
+                            .stedeRowCard()
+                        }
+                        .buttonStyle(StedeCardButtonStyle())
+                        .foregroundStyle(.primary)
+                    }
+                    #endif
+                }
+
+                if AppBrand.current.choosesTenant {
+                    StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
+                    SettingsCard {
+                        pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {
+                            showsTenants = true
+                        }
                     }
                 }
 
@@ -86,47 +90,55 @@ struct SettingsView: View {
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
 
-                StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
-                SettingsCard {
-                    pickerRow("Abfuhr", value: street?.name ?? "Nicht gewählt", symbol: "trash.fill", tint: StedeTheme.duneGreen) {
-                        showsStreets = true
-                    }
-                    if let street, street.needsSection {
-                        menuRow("Abschnitt", selection: $sectionID, options: street.sections ?? [])
-                    }
-                    if let street, street.needsBranchSection {
-                        menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
-                    }
-                    // Wie auf der appfuhr-Website: Eigenkompostierer ohne Biotonne, Restabfall alle 4 Wochen.
-                    if street != nil {
-                        toggleRow("Keine Biotonne", symbol: "leaf.fill", tint: StedeTheme.duneGreen, isOn: $noOrganic)
-                        toggleRow("Restabfall alle 4 Wochen", symbol: "trash.fill", tint: StedeTheme.ink, isOn: $fourWeekly)
+                if Features.has(.waste) {
+                    StedeSectionHeader(title: "Zuhause", symbol: "house.fill")
+                    SettingsCard {
+                        pickerRow("Abfuhr", value: street?.name ?? "Nicht gewählt", symbol: "trash.fill", tint: StedeTheme.duneGreen) {
+                            showsStreets = true
+                        }
+                        if let street, street.needsSection {
+                            menuRow("Abschnitt", selection: $sectionID, options: street.sections ?? [])
+                        }
+                        if let street, street.needsBranchSection {
+                            menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
+                        }
+                        // Wie auf der appfuhr-Website: Eigenkompostierer ohne Biotonne, Restabfall alle 4 Wochen.
+                        if street != nil {
+                            toggleRow("Keine Biotonne", symbol: "leaf.fill", tint: StedeTheme.duneGreen, isOn: $noOrganic)
+                            toggleRow("Restabfall alle 4 Wochen", symbol: "trash.fill", tint: StedeTheme.ink, isOn: $fourWeekly)
+                        }
                     }
                 }
 
-                StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
-                SettingsCard {
-                    pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
-                        showsStops = true
+                if Features.has(.bus) || Features.has(.train) {
+                    StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
+                    SettingsCard {
+                        if Features.has(.bus) {
+                            pickerRow("Bushaltestelle", value: BusStop.stop(id: busStopID).shortName, symbol: "bus.fill", tint: StedeTheme.seaTeal) {
+                                showsStops = true
+                            }
+                        }
+                        if Features.has(.train), !Tenants.current.stations.isEmpty {
+                            HStack(spacing: 12) {
+                                SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
+                                Text("Bahnhof")
+                                Spacer(minLength: 8)
+                                SettingsMenu(title: "Bahnhof", selection: stationBinding, value: station.name,
+                                             options: Tenants.current.stations.map { ($0.id, $0.name) })
+                            }
+                            .frame(minHeight: 32)
+                            .stedeRowCard()
+                            HStack(spacing: 12) {
+                                SettingsIcon(symbol: "arrow.left.arrow.right", tint: StedeTheme.harborRed)
+                                Text("Bahn-Richtung")
+                                Spacer(minLength: 8)
+                                SettingsMenu(title: "Bahn-Richtung", selection: $direction, value: direction.shortTitle(at: station),
+                                             options: TrainDirection.allCases.map { ($0, $0.shortTitle(at: station)) })
+                            }
+                            .frame(minHeight: 32)
+                            .stedeRowCard()
+                        }
                     }
-                    HStack(spacing: 12) {
-                        SettingsIcon(symbol: "tram.fill", tint: StedeTheme.harborRed)
-                        Text("Bahnhof")
-                        Spacer(minLength: 8)
-                        SettingsMenu(title: "Bahnhof", selection: stationBinding, value: station.name,
-                                     options: Tenants.current.stations.map { ($0.id, $0.name) })
-                    }
-                    .frame(minHeight: 32)
-                    .stedeRowCard()
-                    HStack(spacing: 12) {
-                        SettingsIcon(symbol: "arrow.left.arrow.right", tint: StedeTheme.harborRed)
-                        Text("Bahn-Richtung")
-                        Spacer(minLength: 8)
-                        SettingsMenu(title: "Bahn-Richtung", selection: $direction, value: direction.shortTitle(at: station),
-                                     options: TrainDirection.allCases.map { ($0, $0.shortTitle(at: station)) })
-                    }
-                    .frame(minHeight: 32)
-                    .stedeRowCard()
                 }
 
                 StedeSectionHeader(title: "App", symbol: "info.circle.fill")

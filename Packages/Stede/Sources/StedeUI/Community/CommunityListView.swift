@@ -315,7 +315,7 @@ struct CommunityEditorView: View {
                 Section {
                     Toggle("Kreisweit", isOn: $countywide)
                 } footer: {
-                    Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen Ammerland-Gemeinden, nicht nur in \(Tenants.current.municipality).")
+                    Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen \(AppBrand.current.regionName)-Gemeinden, nicht nur in \(Tenants.current.municipality).")
                 }
                 if existing == nil {
                     Section { Text("Nach dem Antrag gibt die Gemeinde-App die Gruppe frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }

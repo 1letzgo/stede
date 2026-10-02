@@ -76,6 +76,8 @@ enum IslandCatalog {
     }
 
     static func places(in category: String) -> [IslandPlace] {
+        // Nach einem Abgleich neu zeichnen (die Verzeichnisse selbst lesen dann frisch ein).
+        _ = ContentRevision.shared.value
         if category == bikeCategory {
             return BikeRentalStore.directory.providers.map(IslandPlace.bike)
         }
@@ -100,7 +102,7 @@ enum IslandCatalog {
                 + directory.places(in: drugstoreCategory)
                 + directory.places(in: bakeryCategory))
                 .map(IslandPlace.gastro)
-                + BikeRentalStore.directory.providers.map(IslandPlace.bike)
+                + (AppBrand.current.bikesInShopping ? BikeRentalStore.directory.providers.map(IslandPlace.bike) : [])
         }
         if category == healthCategory {
             return GastroStore.health.places.map(IslandPlace.gastro)
@@ -313,7 +315,7 @@ struct IslandView: View {
                             }
 
                             if category == IslandCatalog.tripsCategory || category == IslandCatalog.discoverCategory {
-                                Label("Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um \(Tenants.current.municipality).", systemImage: "calendar")
+                                Label(Tenants.current.notes?["trips"] ?? "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um \(Tenants.current.municipality).", systemImage: "calendar")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 4)
@@ -333,7 +335,7 @@ struct IslandView: View {
                             }
 
                             if category == IslandCatalog.healthCategory {
-                                Label("Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38.", systemImage: "cross.circle")
+                                Label(Tenants.current.notes?["health"] ?? "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117.", systemImage: "cross.circle")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 4)
@@ -675,11 +677,14 @@ private struct GastroCard: View {
 
 /// Lädt das Bundle-Bild direkt von der Datei — ein Asset-Katalog wäre für
 /// 37 einmalig übernommene Fotos zu viel Ballast.
+/// Foto aus dem Bucket (dauerhaft zwischengespeichert, bis dahin Sandfläche) oder aus dem Bundle.
 private struct GastroImage: View {
     let url: URL
 
     var body: some View {
-        if let image {
+        if !url.isFileURL {
+            RemoteImage(url: url) { StedeTheme.sand }
+        } else if let image {
             image
                 .resizable()
                 .scaledToFill()

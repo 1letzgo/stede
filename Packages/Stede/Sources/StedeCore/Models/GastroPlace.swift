@@ -34,17 +34,20 @@ public nonisolated struct GastroPlace: Identifiable, Hashable, Sendable, Decodab
     public let longitude: Double?
     /// Merkmale aus dem Backend (`places.features`), etwa „Lieferdienst“; im Bundle meist leer.
     public let features: [String]?
+    /// Foto im Bucket `content` (`places.image_path`).
+    public let imagePath: String?
 
     /// Liefert nach Hause (laut Lieferando oder Google Maps) — eigene Filter-Pille unter „Gastro“.
     public var delivers: Bool { features?.contains(Self.deliveryFeature) ?? false }
     public static let deliveryFeature = "Lieferdienst"
 
-    public init(id: String, name: String, category: String, teaser: String?, street: String?, phone: String?, email: String?, website: String?, detailURL: String?, hours: String?, restDay: String?, seasonNote: String?, imageCredit: String?, extraLinkTitle: String?, extraLinkURL: String?, latitude: Double?, longitude: Double?, features: [String]? = nil) {
+    public init(id: String, name: String, category: String, teaser: String?, street: String?, phone: String?, email: String?, website: String?, detailURL: String?, hours: String?, restDay: String?, seasonNote: String?, imageCredit: String?, extraLinkTitle: String?, extraLinkURL: String?, latitude: Double?, longitude: Double?, features: [String]? = nil, imagePath: String? = nil) {
         self.id = id; self.name = name; self.category = category; self.teaser = teaser; self.street = street
         self.phone = phone; self.email = email; self.website = website; self.detailURL = detailURL
         self.hours = hours; self.restDay = restDay; self.seasonNote = seasonNote; self.imageCredit = imageCredit
         self.extraLinkTitle = extraLinkTitle; self.extraLinkURL = extraLinkURL; self.latitude = latitude; self.longitude = longitude
         self.features = features
+        self.imagePath = imagePath
     }
 
     public var coordinate: CLLocationCoordinate2D? {
@@ -61,10 +64,11 @@ public nonisolated struct GastroPlace: Identifiable, Hashable, Sendable, Decodab
         return url
     }
 
-    /// Bild im Bundle: `gastro-<id>.jpg` oder `sight-<id>.jpg`, falls vorhanden —
-    /// derzeit liegen keine Fotos bei.
+    /// Foto aus dem Backend, sonst ein Bild im Bundle (`gastro-<id>.jpg` / `sight-<id>.jpg`) —
+    /// derzeit liegen dort keine bei.
     public var imageURL: URL? {
-        Bundle.module.url(forResource: "gastro-\(id)", withExtension: "jpg")
+        if let imagePath { return Backend.url.appendingPathComponent("storage/v1/object/public/content/\(imagePath)") }
+        return Bundle.module.url(forResource: "gastro-\(id)", withExtension: "jpg")
             ?? Bundle.module.url(forResource: "sight-\(id)", withExtension: "jpg")
     }
 

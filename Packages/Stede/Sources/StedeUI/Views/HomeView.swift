@@ -4,6 +4,8 @@ import StedeCore
 /// Von Start gepushte Detailseiten.
 enum HomeDestination: Hashable {
     case weather
+    case tides
+    case ferry
     case train
     case bus
     case waste
@@ -20,6 +22,9 @@ struct HomeView: View {
     @State private var trains = TrainViewModel()
     @State private var buses = BusViewModel()
     @State private var waste = WasteViewModel()
+    @State private var tides = TideViewModel()
+    @State private var ferry = FerryViewModel()
+    @State private var page: BrowserPage?
     @AppStorage("waste.street") private var wasteStreetID: Int = 0
     @AppStorage("waste.section") private var wasteSectionID: Int = 0
     @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
@@ -33,7 +38,7 @@ struct HomeView: View {
 
 
     var body: some View {
-        TabScreen(title: "stede", showsDateNavigator: false) {
+        TabScreen(title: AppBrand.current.displayName, showsDateNavigator: false) {
             await loadWeather(force: true)
         } content: {
                 ScrollView {
@@ -62,7 +67,24 @@ struct HomeView: View {
                         }
                     }
 
-                    if hiddenTiles.count == HomeTileID.allCases.count {
+                    if let external = Tenants.current.external, !external.isEmpty {
+                        // Angebote, die auf fremden Seiten gebucht werden.
+                        StedeSectionHeader(title: "Externe Anbieter", symbol: "arrow.up.forward.app")
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: 4),
+                                  spacing: StedeTheme.cardSpacing) {
+                            ForEach(external) { link in
+                                Button {
+                                    page = URL(string: link.url).map(BrowserPage.init(url:))
+                                } label: {
+                                    HomeCompactTile(title: link.title, symbol: link.symbol, tint: StedeTheme.harborRed)
+                                }
+                                .buttonStyle(StedeCardButtonStyle())
+                                .accessibilityLabel("\(link.title) – öffnet \(URL(string: link.url)?.host ?? "die Website")")
+                            }
+                        }
+                    }
+
+                    if HomeTileID.available.allSatisfy(hiddenTiles.contains) {
                         InfoCard {
                             Text("Alle Kacheln sind ausgeblendet. Unter Einstellungen → Startseite kannst du sie wieder einblenden.")
                                 .foregroundStyle(.secondary)
@@ -76,13 +98,19 @@ struct HomeView: View {
         .task {
             await loadWeather(force: false)
         }
+        .sheet(item: $page) { page in
+            InAppBrowser(url: page.url)
+        }
         .task(id: busStopID) {
+            guard Features.has(.bus) else { return }
             await buses.load(stop: busStop, day: IslandTime.startOfDay(Date()))
         }
         .task(id: trainStationID) {
+            guard Features.has(.train) else { return }
             await loadTrains(day: IslandTime.startOfDay(Date()), force: false)
         }
         .task(id: wasteSelection?.cacheKey ?? "") {
+            guard Features.has(.waste) else { return }
             await waste.load(selection: wasteSelection)
         }
     }
@@ -93,6 +121,18 @@ struct HomeView: View {
     @ViewBuilder
     private func sectionContent(_ section: HomeSection, tiles: [HomeTileID]) -> some View {
         switch section {
+        case .sea:
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: tiles.count),
+                      spacing: StedeTheme.cardSpacing) {
+                ForEach(tiles) { tile in
+                    NavigationLink(value: tile == .tides ? HomeDestination.tides : HomeDestination.ferry) {
+                        tile == .tides ? tideTile : ferryTile
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .foregroundStyle(.primary)
+                    .frame(maxHeight: .infinity)
+                }
+            }
         case .transit:
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: tiles.count),
                       spacing: StedeTheme.cardSpacing) {
@@ -163,6 +203,64 @@ struct HomeView: View {
         if let condition = currentHour?.conditionLabel { parts.append(condition) }
         if let max = weather.summary?.maxTemperature { parts.append("Max \(temperature(max))") }
         return parts.joined(separator: " · ")
+    }
+
+    private var tideTile: HomeTile {
+        HomeTile(
+            title: "Gezeiten",
+            symbol: "water.waves",
+            tint: StedeTheme.seaTeal,
+            headline: tides.currentLevel().map { TideFormat.meters($0.value) } ?? "–",
+            detail: tideDetail,
+            isLoading: tides.nextEvent == nil
+        )
+    }
+
+    private var tideDetail: String {
+        guard let next = tides.nextEvent else { return "Keine Vorhersage" }
+        return "\(next.kind.label) um \(next.timestamp.formatted(timeStyle))"
+    }
+
+    private var ferryTile: HomeTile {
+        let outbound = nextDeparture(ferry.outbound)
+        let inbound = nextDeparture(ferry.inbound)
+        // Fährt heute gar nichts mehr, wäre eine Zeile mit Strich irreführend.
+        if !ferryIsLoading, outbound == nil, inbound == nil {
+            return HomeTile(
+                title: "Fähre",
+                symbol: "ferry.fill",
+                tint: StedeTheme.harborRed,
+                headline: "Feierabend",
+                detail: "Heute keine Abfahrt mehr"
+            )
+        }
+        return HomeTile(
+            title: "Fähre",
+            symbol: "ferry.fill",
+            tint: StedeTheme.harborRed,
+            headline: departure(outbound, harbor: "ab \(FerryHarbor.mainland.title)"),
+            detail: departure(inbound, harbor: "ab \(FerryHarbor.island.title)"),
+            isLoading: ferryIsLoading
+        )
+    }
+
+    private func departure(_ trip: FerryTrip?, harbor: String) -> String {
+        guard let trip else { return "keine Abfahrt mehr \(harbor)" }
+        return "\(trip.abfahrt.formatted(timeStyle)) \(harbor)"
+    }
+
+    private var ferryIsLoading: Bool {
+        switch ferry.state {
+        case .idle, .loading: true
+        default: false
+        }
+    }
+
+    /// Nächste nicht ausgefallene Fähre nach „jetzt“.
+    private func nextDeparture(_ trips: [FerryTrip]) -> FerryTrip? {
+        trips
+            .filter { !$0.ausgefallen && $0.abfahrt > Date() }
+            .min { $0.abfahrt < $1.abfahrt }
     }
 
     private var trainTile: HomeTile {
@@ -299,6 +397,8 @@ struct HomeView: View {
         if case .failed = trains.state { names.append("Bahn") }
         if case .failed = buses.state { names.append("Bus") }
         if case .failed = waste.state { names.append("Abfuhr") }
+        if case .failed = tides.state { names.append("Gezeiten") }
+        if case .failed = ferry.state { names.append("Fähre") }
         return names
     }
 
@@ -334,10 +434,13 @@ struct HomeView: View {
 
     private func loadWeather(force: Bool) async {
         let today = IslandTime.startOfDay(Date())
-        async let weatherLoad: Void = weather.load(day: today, force: force)
-        async let trainLoad: Void = loadTrains(day: today, force: force)
-        async let busLoad: Void = buses.load(stop: busStop, day: today, force: force)
-        _ = await (weatherLoad, trainLoad, busLoad)
+        await withTaskGroup { group in
+            group.addTask { await weather.load(day: today, force: force) }
+            if Features.has(.train) { group.addTask { await loadTrains(day: today, force: force) } }
+            if Features.has(.bus) { group.addTask { await buses.load(stop: busStop, day: today, force: force) } }
+            if Features.has(.tides) { group.addTask { await tides.load(day: today, force: force) } }
+            if Features.has(.ferry) { group.addTask { await ferry.load(day: today, force: force) } }
+        }
     }
 }
 

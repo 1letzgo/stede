@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		5A7E0001000000000000C0DE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5A7E0002000000000000C0DE /* StedeUI */; };
+		4C00600100000000000000BF /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4C00600C0000000000000001 /* StedeUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		37BF9B7E30376E7B005C411F /* stede.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = stede.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C0060020000000000000001 /* loog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = loog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -22,6 +24,14 @@
 			);
 			target = 37BF9B7D30376E7B005C411F /* stede */;
 		};
+		4C0060030000000000000001 /* Exceptions for "loog" folder in "loog" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Loog.storekit,
+			);
+			target = 4C0060060000000000000001 /* loog */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +41,14 @@
 				37BF9B9A30376E7B005C411F /* Exceptions for "stede" folder in "stede" target */,
 			);
 			path = stede;
+			sourceTree = "<group>";
+		};
+		4C0060040000000000000001 /* loog */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4C0060030000000000000001 /* Exceptions for "loog" folder in "loog" target */,
+			);
+			path = loog;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -44,6 +62,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4C0060050000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C00600100000000000000BF /* StedeUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -51,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				37BF9B8030376E7B005C411F /* stede */,
+				4C0060040000000000000001 /* loog */,
 				37BF9B7F30376E7B005C411F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				37BF9B7E30376E7B005C411F /* stede.app */,
+				4C0060020000000000000001 /* loog.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -89,6 +117,29 @@
 			productReference = 37BF9B7E30376E7B005C411F /* stede.app */;
 			productType = "com.apple.product-type.application";
 		};
+		4C0060060000000000000001 /* loog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C00600B0000000000000001 /* Build configuration list for PBXNativeTarget "loog" */;
+			buildPhases = (
+				4C0060070000000000000001 /* Sources */,
+				4C0060050000000000000001 /* Frameworks */,
+				4C0060080000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4C0060040000000000000001 /* loog */,
+			);
+			name = loog;
+			packageProductDependencies = (
+				4C00600C0000000000000001 /* StedeUI */,
+			);
+			productName = loog;
+			productReference = 4C0060020000000000000001 /* loog.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -100,6 +151,9 @@
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					37BF9B7D30376E7B005C411F = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					4C0060060000000000000001 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -122,6 +176,7 @@
 			projectRoot = "";
 			targets = (
 				37BF9B7D30376E7B005C411F /* stede */,
+				4C0060060000000000000001 /* loog */,
 			);
 		};
 /* End PBXProject section */
@@ -134,10 +189,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4C0060080000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		37BF9B7A30376E7B005C411F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C0060070000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -359,6 +428,102 @@
 			};
 			name = Release;
 		};
+		4C0060090000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = loog/loog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = loog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Loog;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.loog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		4C00600A0000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = loog/loog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = loog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Loog;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.loog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -380,6 +545,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		4C00600B0000000000000001 /* Build configuration list for PBXNativeTarget "loog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C0060090000000000000001 /* Debug */,
+				4C00600A0000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -391,6 +565,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		5A7E0002000000000000C0DE /* StedeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StedeUI;
+		};
+		4C00600C0000000000000001 /* StedeUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StedeUI;
 		};

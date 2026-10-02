@@ -22,7 +22,7 @@ enum EventShare {
         if !description.isEmpty {
             parts.append(description.count > 450 ? String(description.prefix(450)) + "…" : description)
         }
-        parts.append("\(info.community) · geteilt aus der stede-App")
+        parts.append("\(info.community) · geteilt aus der \(AppBrand.current.displayName)-App")
         return parts.joined(separator: "\n\n")
     }
 }

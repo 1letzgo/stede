@@ -6,8 +6,8 @@ import SwiftUI
 enum TenantSwitch {
     static func activate(_ slug: String) async {
         await Tenants.refresh()
-        async let files: Void = ContentFiles.shared.sync(slug: slug)
-        async let places: Void = ContentSync.shared.syncAll(slug: slug)
+        async let files = ContentFiles.shared.sync(slug: slug)
+        async let places = ContentSync.shared.syncAll(slug: slug)
         _ = await (files, places)
         Tenants.select(slug)
         #if canImport(UIKit)
@@ -32,7 +32,7 @@ struct TenantPickerView: View {
                         Text("Willkommen bei stede")
                             .font(.largeTitle.weight(.bold))
                             .fontDesign(.rounded)
-                        Text("Wähle deine Gemeinde im Ammerland. Du kannst sie später in den Einstellungen wechseln.")
+                        Text("Wähle deine Gemeinde im \(AppBrand.current.regionName). Du kannst sie später in den Einstellungen wechseln.")
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 32)

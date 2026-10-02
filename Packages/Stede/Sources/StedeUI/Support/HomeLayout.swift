@@ -3,6 +3,7 @@ import SwiftUI
 
 /// Bereiche der Startseite, in der gewählten Reihenfolge.
 enum HomeSection: String, CaseIterable, Identifiable {
+    case sea
     case transit
     case home
     case city
@@ -11,14 +12,16 @@ enum HomeSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .sea: "Meer & Fähre"
         case .transit: "Unterwegs"
         case .home: "Zuhause"
-        case .city: "Stadt"
+        case .city: AppBrand.current.placesTitle
         }
     }
 
     var symbol: String {
         switch self {
+        case .sea: "water.waves"
         case .transit: "tram.fill"
         case .home: "house.fill"
         case .city: "map.fill"
@@ -26,29 +29,31 @@ enum HomeSection: String, CaseIterable, Identifiable {
     }
 
     /// Kacheln in Standardreihenfolge; die gewählte liefert `HomeLayout.tiles(in:order:)`.
-    var tiles: [HomeTileID] { HomeTileID.allCases.filter { $0.section == self } }
+    var tiles: [HomeTileID] { HomeTileID.available.filter { $0.section == self } }
 }
 
 /// Einzelne Kachel der Startseite, ein- und ausblendbar.
 enum HomeTileID: String, CaseIterable, Identifiable {
-    case train, bus, waste, discover, gastro, shopping, playgrounds, health, volunteer
+    case tides, ferry, train, bus, waste, discover, gastro, shopping, bikes, playgrounds, health, volunteer
 
     var id: String { rawValue }
 
     var section: HomeSection {
         switch self {
+        case .tides, .ferry: .sea
         case .train, .bus: .transit
         case .waste: .home
         default: .city
         }
     }
 
-    /// Kategorie der Rubrik „Stadt“, nil für Bahn, Bus und Abfuhr.
+    /// Kategorie der Rubrik „Stadt“, nil für Gezeiten, Fähre, Bahn, Bus und Abfuhr.
     var category: String? {
         switch self {
         case .discover: IslandCatalog.discoverCategory
         case .gastro: IslandCatalog.gastroCategory
         case .shopping: IslandCatalog.shoppingCategory
+        case .bikes: IslandCatalog.bikeCategory
         case .playgrounds: IslandCatalog.playgroundsCategory
         case .health: IslandCatalog.healthCategory
         case .volunteer: IslandCatalog.volunteerCategory
@@ -58,6 +63,8 @@ enum HomeTileID: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .tides: "Gezeiten"
+        case .ferry: "Fähre"
         case .train: "Bahn"
         case .bus: "Bus"
         case .waste: "Abfuhr"
@@ -67,6 +74,8 @@ enum HomeTileID: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
+        case .tides: "water.waves"
+        case .ferry: "ferry.fill"
         case .train: "tram.fill"
         case .bus: "bus.fill"
         case .waste: "trash.fill"
@@ -74,8 +83,30 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Hat die Gemeinde den Baustein? Sonst gibt es die Kachel nicht — auch nicht in den Einstellungen.
+    var isAvailable: Bool {
+        switch self {
+        case .tides: Features.has(.tides)
+        case .ferry: Features.has(.ferry)
+        case .train: Features.has(.train)
+        case .bus: Features.has(.bus)
+        case .waste: Features.has(.waste)
+        case .discover: Features.hasPlaces(["sights", "leisure", "trips"])
+        case .gastro: Features.hasPlaces(["gastro"])
+        case .shopping: Features.hasPlaces(["gastro", "bikes"])
+        case .bikes: Features.hasPlaces(["bikes"]) && !AppBrand.current.bikesInShopping
+        case .playgrounds: Features.hasPlaces(["playgrounds"])
+        case .health: Features.hasPlaces(["health"])
+        case .volunteer: Features.hasPlaces(["volunteer"])
+        }
+    }
+
+    static var available: [HomeTileID] { allCases.filter(\.isAvailable) }
+
     var tint: Color {
         switch self {
+        case .tides: StedeTheme.seaTeal
+        case .ferry: StedeTheme.harborRed
         case .train: StedeTheme.harborRed
         case .bus: StedeTheme.seaTeal
         case .waste: StedeTheme.duneGreen
@@ -98,7 +129,8 @@ enum HomeLayout {
     static func order(_ raw: String) -> [HomeSection] {
         var sections = raw.split(separator: ",").compactMap { HomeSection(rawValue: String($0)) }
         for section in HomeSection.allCases where !sections.contains(section) { sections.append(section) }
-        return sections
+        // Bereiche ohne Baustein (Bahn, Bus, Abfuhr fehlen der Gemeinde) gibt es nicht.
+        return sections.filter { !$0.tiles.isEmpty }
     }
 
     static func encode(_ order: [HomeSection]) -> String {
@@ -113,7 +145,7 @@ enum HomeLayout {
     }
 
     static func tiles(in section: HomeSection, order raw: String) -> [HomeTileID] {
-        tileOrder(raw).filter { $0.section == section }
+        tileOrder(raw).filter { $0.section == section && $0.isAvailable }
     }
 
     /// Kacheln eines Bereichs verschieben, die anderen Bereiche bleiben unberührt.

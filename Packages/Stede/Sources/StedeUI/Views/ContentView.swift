@@ -5,6 +5,7 @@ enum AppTab: Hashable, CaseIterable {
     case start
     case events
     case community
+    case plus
     case settings
 
     var title: String {
@@ -12,6 +13,7 @@ enum AppTab: Hashable, CaseIterable {
         case .start: "Start"
         case .events: "Kalender"
         case .community: "Gruppen"
+        case .plus: AppBrand.current.plusName
         case .settings: "Einstellungen"
         }
     }
@@ -21,6 +23,7 @@ enum AppTab: Hashable, CaseIterable {
         case .start: "house.fill"
         case .events: "calendar"
         case .community: "person.3.fill"
+        case .plus: "sparkles"
         case .settings: "gearshape.fill"
         }
     }
@@ -44,6 +47,7 @@ public struct ContentView: View {
     @State private var dateStore = SelectedDateStore()
     /// Konto, Mandant und Rollen — ein Objekt für alle Screens.
     @State private var auth = AuthStore()
+    @State private var plusStore = PlusStore()
     /// Die Fahrtrichtung bleibt über App-Starts erhalten — meist interessiert nur eine.
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     /// Gewählte Gemeinde; leer, solange beim ersten Start noch keine gewählt ist.
@@ -57,7 +61,7 @@ public struct ContentView: View {
 
     public var body: some View {
         Group {
-            if tenantSlug.isEmpty {
+            if tenantSlug.isEmpty && AppBrand.current.choosesTenant {
                 TenantPickerView(onboarding: true)
             } else {
                 // Neue Gemeinde → alle Screens und ViewModels frisch.
@@ -68,10 +72,20 @@ public struct ContentView: View {
         .environment(favorites)
         .environment(navigation)
         .environment(auth)
+        .environment(plusStore)
+        .onChange(of: plusStore.isUnlocked, initial: true) { _, unlocked in
+            // Ohne den Baustein ist jeder Tag frei.
+            if unlocked || !Features.has(.plus) {
+                dateStore.canChangeDay = true
+            } else {
+                dateStore.lockToToday()
+            }
+        }
+        .task { if Features.has(.plus) { await plusStore.load() } }
         .onAppear {
             auth.start()
             #if canImport(UIKit)
-            if !tenantSlug.isEmpty { OfflineMapLayers.warmUp() }
+            if Tenants.hasChosen { OfflineMapLayers.warmUp() }
             #endif
         }
         .onChange(of: tenantSlug) {
@@ -98,6 +112,8 @@ public struct ContentView: View {
                         .navigationDestination(for: HomeDestination.self) { destination in
                             switch destination {
                             case .weather: WeatherView()
+                            case .tides: TideView()
+                            case .ferry: FerryView()
                             case .train: TrainView(direction: $direction)
                             case .bus: BusView()
                             case .waste: WasteView()
@@ -110,8 +126,15 @@ public struct ContentView: View {
             Tab(AppTab.events.title, systemImage: AppTab.events.symbol, value: AppTab.events) {
                 screen { EventView() }
             }
-            Tab(AppTab.community.title, systemImage: AppTab.community.symbol, value: AppTab.community) {
-                screen { CommunityListView() }
+            if Features.has(.groups) {
+                Tab(AppTab.community.title, systemImage: AppTab.community.symbol, value: AppTab.community) {
+                    screen { CommunityListView() }
+                }
+            }
+            if Features.has(.plus) {
+                Tab(AppTab.plus.title, systemImage: AppTab.plus.symbol, value: AppTab.plus) {
+                    screen { PlusView() }
+                }
             }
             Tab(AppTab.settings.title, systemImage: AppTab.settings.symbol, value: AppTab.settings) {
                 screen { SettingsView() }
@@ -133,6 +156,7 @@ enum LaunchOptions {
         switch UserDefaults.standard.string(forKey: "startScreen") {
         case "events": .events
         case "community": .community
+        case "plus": .plus
         case "settings": .settings
         default: .start
         }
@@ -141,6 +165,8 @@ enum LaunchOptions {
     static var homePath: [HomeDestination] {
         switch UserDefaults.standard.string(forKey: "startScreen") {
         case "weather": [.weather]
+        case "tides": [.tides]
+        case "ferry": [.ferry]
         case "train": [.train]
         case "bus": [.bus]
         case "waste": [.waste]

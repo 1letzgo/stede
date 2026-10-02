@@ -9,7 +9,7 @@ public nonisolated struct HTTPClient: Sendable {
 
     /// Live-Dienste, die zuerst über den Server-Zwischenspeicher (Edge Function `upstream`)
     /// laufen; fällt der aus, geht die App wie früher direkt zum Dienst.
-    static let proxiedHosts: Set<String> = ["api.brightsky.dev", "dbf.finalrewind.org", "fahrplaner.vbn.de"]
+    static let proxiedHosts: Set<String> = ["api.brightsky.dev", "dbf.finalrewind.org", "fahrplaner.vbn.de", "api.langeoog.de", "luftdaten.umweltbundesamt.de"]
 
     public func data(from url: URL) async throws -> Data {
         if let host = url.host, Self.proxiedHosts.contains(host),

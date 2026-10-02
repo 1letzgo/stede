@@ -57,6 +57,8 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
     /// Gruppen-Funktionen, in den Einstellungen schaltbar (fehlen in manchen Abfragen).
     public var pollsEnabled: Bool?
     public var tasksEnabled: Bool?
+    /// Sonderfunktion der Veranstaltungs-Gruppe: Termine an andere Gruppen übertragen (nur im Backend freischaltbar).
+    public var canTransferEvents: Bool?
     public var hasPolls: Bool { pollsEnabled ?? true }
     public var hasTasks: Bool { tasksEnabled ?? false }
 
@@ -64,6 +66,7 @@ public nonisolated struct Community: Codable, Hashable, Sendable, Identifiable {
         case id, name, description, visibility, status, countywide
         case pollsEnabled = "polls_enabled"
         case tasksEnabled = "tasks_enabled"
+        case canTransferEvents = "can_transfer_events"
         case tenantId = "tenant_id"
         case joinPolicy = "join_policy"
         case inviteCode = "invite_code"

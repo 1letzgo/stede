@@ -3,7 +3,7 @@ import Foundation
 /// Ablage- und Aufräumregeln für alle tagesbezogenen Caches.
 public nonisolated enum CacheMaintenance: Sendable {
     public static let retentionDays = 7
-    public static let dayCacheNames = ["events", "weather"]
+    public static let dayCacheNames = ["events", "weather", "air"]
 
     public static func directory(_ name: String) -> URL {
         let manager = FileManager.default

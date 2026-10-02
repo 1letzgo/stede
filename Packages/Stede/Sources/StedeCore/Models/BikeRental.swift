@@ -36,7 +36,7 @@ public nonisolated struct BikeRentalProvider: Identifiable, Hashable, Sendable, 
 }
 
 /// Eine Ausleihstation; manche Anbieter haben mehrere.
-public nonisolated struct BikeRentalStation: Hashable, Sendable, Decodable {
+public nonisolated struct BikeRentalStation: Hashable, Sendable, Codable {
     public let label: String
     public let street: String
     public let latitude: Double

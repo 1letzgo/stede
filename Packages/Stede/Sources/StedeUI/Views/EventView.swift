@@ -28,6 +28,8 @@ struct EventView: View {
     }
 
     @Environment(AuthStore.self) private var auth
+    @Environment(SelectedDateStore.self) private var dateStore
+    @Environment(AppNavigation.self) private var navigation
     @AppStorage("calendar.filter") private var filterRaw = Filter.all.rawValue
     @State private var model = CalendarFeedModel()
     @State private var scrollTarget: String?
@@ -38,7 +40,8 @@ struct EventView: View {
     @State private var commentingEvent: CommunityEventInfo?
     @State private var editingEvent: CommunityEvent?
 
-    private var filter: Filter { Filter(rawValue: filterRaw) ?? .all }
+    /// Ohne Gruppen gibt es nur die Gemeinde-Termine — keine Filter.
+    private var filter: Filter { Features.has(.groups) ? Filter(rawValue: filterRaw) ?? .all : .all }
     /// Tag, der vor „Frühere Termine“ oben stand — danach bleibt die Liste dort stehen,
     /// die geladenen Tage stehen darüber (alt → neu), statt zum ältesten zu springen.
     @State private var earlierPosition = ScrollPosition(idType: String.self)
@@ -49,14 +52,19 @@ struct EventView: View {
             await loadCommunity()
         } content: {
             VStack(spacing: 0) {
-                filterRow
-                    .padding(.top)
-                    .padding(.bottom, StedeTheme.cardSpacing)
+                if Features.has(.groups) {
+                    filterRow
+                        .padding(.top)
+                        .padding(.bottom, StedeTheme.cardSpacing)
+                } else {
+                    // Ohne Filterzeile beginnt die Liste wie sonst 16 pt unter der Leiste.
+                    Color.clear.frame(height: 16)
+                }
                 LoadStateView(state: listState, emptyMessage: "Keine Termine gefunden.") {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                                earlierButton
+                                if !isLocked { earlierButton }
                                 ForEach(days, id: \.date) { day in
                                     StedeSectionHeader(title: day.title, symbol: day.isToday ? "sun.max.fill" : nil)
                                         .id(dayID(day.date))
@@ -127,6 +135,8 @@ struct EventView: View {
             } onCancelEvent: {
                 try? await CommunityClient().cancelEvent(id: event.id)
                 await loadCommunity()
+            } onTransferred: {
+                await loadCommunity()
             }
         }
     }
@@ -170,6 +180,7 @@ struct EventView: View {
     }
 
     private func loadCommunity() async {
+        guard Features.has(.groups) else { return }
         await community.load(from: model.start, to: IslandTime.day(model.end, adding: 1), tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
     }
 
@@ -224,17 +235,30 @@ struct EventView: View {
         .disabled(model.isLoadingEarlier)
     }
 
+    /// Baustein `plus` ohne Kauf: nur der heutige Tag.
+    private var isLocked: Bool { !dateStore.canChangeDay }
+
     /// Unten: sobald sichtbar, die nächsten drei Wochen laden.
     @ViewBuilder private var laterFooter: some View {
-        if model.canLoadLater {
+        if isLocked {
+            Button {
+                navigation.tab = .plus
+            } label: {
+                Label("Weitere Tage mit \(AppBrand.current.plusName)", systemImage: "lock")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .stedeSelectionChip(isSelected: false)
+            }
+            .buttonStyle(StedeCardButtonStyle())
+        } else if model.canLoadLater {
             HStack { Spacer(); ProgressView(); Spacer() }
                 .padding(.vertical, 8)
                 .onAppear { Task { await model.loadLater() } }
                 .id("later-\(IslandTime.isoDate(model.end))")
         }
-        SourceFooter(text: Tenants.usesBundle
+        SourceFooter(text: Tenants.current.notes?["events"] ?? (Tenants.usesBundle
             ? "Stadt Westerstede · westerstede.de/veranstaltungen · Gruppen-Termine aus der App"
-            : "\(Tenants.current.officialName) · Ammerland-Touristik (destination.one) · Gruppen-Termine aus der App")
+            : "\(Tenants.current.officialName) · Ammerland-Touristik (destination.one) · Gruppen-Termine aus der App"))
     }
 
     private func participate(_ info: CommunityEventInfo, _ status: ParticipationStatus?, _ helping: Bool) {
@@ -268,8 +292,9 @@ struct EventView: View {
             result += member.map(CalendarEntry.community)
             result += publicOnly.map(CalendarEntry.publicEvent)
         }
-        // Vorbei ist ausgeblendet, solange keine früheren Termine angefordert wurden.
-        if model.start >= IslandTime.startOfDay(Date()) {
+        // Vorbei ist ausgeblendet, solange keine früheren Termine angefordert wurden —
+        // außer ohne Plus: dann gibt es nur heute, und der ganze Tag bleibt sichtbar.
+        if model.start >= IslandTime.startOfDay(Date()), !isLocked {
             result = result.filter { !$0.isOver }
         }
         if filter == .mine {
@@ -295,7 +320,7 @@ struct EventView: View {
         let long = short.year()
         let today = IslandTime.startOfDay(Date())
         let byDay = Dictionary(grouping: entries.filter { $0.time != nil }) { IslandTime.startOfDay($0.time!) }
-        var dates = Set(byDay.keys.filter { $0 >= model.start && $0 <= model.end })
+        var dates = Set(byDay.keys.filter { $0 >= model.start && $0 <= model.end && (!isLocked || $0 == today) })
         dates.insert(today)
         return dates.sorted().map { date in
             let isToday = date == today
@@ -381,29 +406,45 @@ private enum CalendarEntry: Identifiable {
 private struct CityEventRow: View {
     let event: StedeEvent
     @State private var page: BrowserPage?
+    @ScaledMetric(relativeTo: .body) private var imageHeight = 168.0
 
     var body: some View {
         Button {
             if let url = event.detailURL { page = BrowserPage(url: url) }
         } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 12) {
-                    StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.mudflat)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(event.title).font(.headline).fontDesign(.rounded).multilineTextAlignment(.leading)
-                        HStack(spacing: 6) {
-                            StedeTagPill(text: event.timeLabel ?? "ganztägig", color: StedeTheme.mudflat)
-                            if let category = event.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+            VStack(alignment: .leading, spacing: 0) {
+                // Vorschaubild als Kopf der Karte, wie bei den Gruppen-Terminen.
+                if let imageURL = event.imageURL {
+                    RemoteImage(url: imageURL) { StedeTheme.sand }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: imageHeight)
+                        .clipped()
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.mudflat)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(event.title).font(.headline).fontDesign(.rounded).multilineTextAlignment(.leading)
+                            HStack(spacing: 6) {
+                                StedeTagPill(text: event.timeLabel ?? "ganztägig", color: StedeTheme.mudflat)
+                                if let category = event.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+                                if event.isSoldOut { StedeTagPill(text: "ausgebucht", color: StedeTheme.harborRed) }
+                                if let price = event.price { StedeTagPill(text: price, color: StedeTheme.seaTeal) }
+                            }
                         }
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 0)
+                    // Ort linksbündig unter der Kopfzeile — wie bei den Gruppen-Terminen.
+                    if let location = event.location {
+                        Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    if let registration = event.registration {
+                        Label(registration, systemImage: "person.crop.circle.badge.checkmark").font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    }
                 }
-                // Ort linksbündig unter der Kopfzeile — wie bei den Gruppen-Terminen.
-                if let location = event.location {
-                    Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                }
+                .padding(StedeTheme.cardPadding)
             }
-            .padding(StedeTheme.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .stedeCard()
         }

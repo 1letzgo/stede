@@ -13,10 +13,23 @@ public nonisolated struct StedeEvent: Identifiable, Hashable, Sendable, Codable 
     /// Etwa „Jede Woche am Dienstag" bei Serienterminen.
     public let seriesNote: String?
     public let detailURL: URL?
+    /// Nur manche Quellen (Langeoog): Anmeldung, Preis, ausgebucht, Vorschaubild im Bucket `content`.
+    public let registration: String?
+    public let price: String?
+    public let soldOut: Bool?
+    public let imagePath: String?
 
-    public init(id: Int, title: String, time: Date?, endTime: Date?, summary: String, location: String?, organizer: String?, category: String?, seriesNote: String?, detailURL: URL?) {
+    public init(id: Int, title: String, time: Date?, endTime: Date?, summary: String, location: String?, organizer: String?, category: String?, seriesNote: String?, detailURL: URL?,
+                registration: String? = nil, price: String? = nil, soldOut: Bool? = nil, imagePath: String? = nil) {
         self.id = id; self.title = title; self.time = time; self.endTime = endTime; self.summary = summary
         self.location = location; self.organizer = organizer; self.category = category; self.seriesNote = seriesNote; self.detailURL = detailURL
+        self.registration = registration; self.price = price; self.soldOut = soldOut; self.imagePath = imagePath
+    }
+
+    public var isSoldOut: Bool { soldOut ?? false }
+
+    public var imageURL: URL? {
+        imagePath.map { Backend.url.appendingPathComponent("storage/v1/object/public/content/\($0)") }
     }
 
     public var timeLabel: String? {

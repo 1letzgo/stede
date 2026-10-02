@@ -30,6 +30,10 @@ public actor ContentSync {
         let imageCredit: String?
         let extraLinkTitle: String?
         let extraLinkUrl: String?
+        /// Foto im Bucket `content`; der Pfad enthält einen Hash und ändert sich mit dem Bild.
+        let imagePath: String?
+        /// Mehrere Standorte eines Verleihs (`[{label, street, latitude, longitude}]`).
+        let stations: [BikeRentalStation]?
         let features: [String]
         let lat: Double?
         let lon: Double?
@@ -45,6 +49,8 @@ public actor ContentSync {
             case imageCredit = "image_credit"
             case extraLinkTitle = "extra_link_title"
             case extraLinkUrl = "extra_link_url"
+            case imagePath = "image_path"
+            case stations
             case sortOrder = "sort_order"
             case updatedAt = "updated_at"
             case deletedAt = "deleted_at"
@@ -63,6 +69,9 @@ public actor ContentSync {
 
     /// Lokal gehaltener Stand eines Verzeichnisses.
     nonisolated struct Snapshot: Codable, Sendable {
+        /// Ältere Stände ohne Foto und Stationen werden einmal ganz neu geladen.
+        static let currentVersion = 2
+        var version: Int?
         var source: String
         var fetchedAt: String
         var cursor: Date
@@ -96,7 +105,9 @@ public actor ContentSync {
                 BikeRentalProvider(
                     id: row.externalId, name: row.name, teaser: row.teaser, phone: row.phone, email: row.email, website: row.website,
                     features: row.features,
-                    stations: [BikeRentalStation(label: Tenants.current.municipality, street: row.street ?? "", latitude: row.lat ?? 0, longitude: row.lon ?? 0)]
+                    // Mehrere Stationen aus `stations`; sonst Adresse und Koordinate der Zeile.
+                    stations: row.stations?.isEmpty == false ? row.stations!
+                        : [BikeRentalStation(label: Tenants.current.municipality, street: row.street ?? "", latitude: row.lat ?? 0, longitude: row.lon ?? 0)]
                 )
             }
         return BikeRentalDirectory(source: snapshot.source, fetchedAt: snapshot.fetchedAt, providers: providers)
@@ -108,31 +119,35 @@ public actor ContentSync {
 
     /// Beim Start und bei Pull-to-Refresh: alle Verzeichnisse nachziehen — ohne Angabe
     /// für die aktuelle Gemeinde, beim Wechsel für die neue, bevor sie gilt.
-    public func syncAll(slug: String = Tenants.currentSlug) async {
+    /// Liefert true, wenn sich ein lokaler Stand geändert hat (dann `ContentGeneration.bump()`).
+    @discardableResult
+    public func syncAll(slug: String = Tenants.currentSlug) async -> Bool {
+        var changed = false
         do {
             if tenantIDs[slug] == nil {
                 let tenant: Tenant = try await client.from("tenants").select("id, slug, name, municipality").eq("slug", value: slug).single().execute().value
                 tenantIDs[slug] = tenant.id
             }
-            guard let tenantID = tenantIDs[slug] else { return }
+            guard let tenantID = tenantIDs[slug] else { return false }
             let directories: [DirectoryRow] = try await client.from("place_directories").select("directory, source, fetched_at").eq("tenant_id", value: tenantID).execute().value
             for meta in directories where Self.directories.contains(meta.directory) {
-                try await sync(directory: meta, tenantID: tenantID, slug: slug)
+                if try await sync(directory: meta, tenantID: tenantID, slug: slug) { changed = true }
             }
-            try? await syncBusStops(tenantID: tenantID, slug: slug)
+            if (try? await syncBusStops(tenantID: tenantID, slug: slug)) == true { changed = true }
         } catch {
             // Offline oder Backend nicht erreichbar: der letzte Stand bleibt.
         }
+        return changed
     }
 
-    private func sync(directory meta: DirectoryRow, tenantID: UUID, slug: String) async throws {
-        var snapshot = loadSnapshot(meta.directory, slug) ?? Snapshot(source: meta.source, fetchedAt: meta.fetchedAt, cursor: .distantPast, places: [:])
+    private func sync(directory meta: DirectoryRow, tenantID: UUID, slug: String) async throws -> Bool {
+        var snapshot = loadSnapshot(meta.directory, slug) ?? Snapshot(version: Snapshot.currentVersion, source: meta.source, fetchedAt: meta.fetchedAt, cursor: .distantPast, places: [:])
         let rows: [PlaceRow] = try await client.from("places")
-            .select("external_id, directory, kind, name, teaser, street, phone, email, website, hours, rest_day, season_note, image_credit, extra_link_title, extra_link_url, features, lat, lon, sort_order, updated_at, deleted_at")
+            .select("external_id, directory, kind, name, teaser, street, phone, email, website, hours, rest_day, season_note, image_credit, extra_link_title, extra_link_url, image_path, stations, features, lat, lon, sort_order, updated_at, deleted_at")
             .eq("tenant_id", value: tenantID).eq("directory", value: meta.directory)
             .gt("updated_at", value: snapshot.cursor.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true)))
             .order("updated_at").limit(1000).execute().value
-        guard !rows.isEmpty || snapshot.cursor == .distantPast else { return }
+        guard !rows.isEmpty || snapshot.cursor == .distantPast else { return false }
         for row in rows { snapshot.places[row.externalId] = row }
         snapshot.cursor = rows.map(\.updatedAt).max() ?? snapshot.cursor
         snapshot.source = meta.source
@@ -140,6 +155,7 @@ public actor ContentSync {
         try fileManager.createDirectory(at: Tenants.contentFolder(slug), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(snapshot)
         try data.write(to: file(meta.directory, slug), options: .atomic)
+        return true
     }
 
     // MARK: Bushaltestellen
@@ -157,16 +173,19 @@ public actor ContentSync {
     }
 
     /// Alle Haltestellen der Gemeinde — wenige hundert Zeilen, daher jedes Mal komplett.
-    private func syncBusStops(tenantID: UUID, slug: String) async throws {
+    private func syncBusStops(tenantID: UUID, slug: String) async throws -> Bool {
         let rows: [BusStopRow] = try await client.from("bus_stops").select("stop_id, name, lat, lon")
             .eq("tenant_id", value: tenantID).is("deleted_at", value: nil)
             .order("sort_order").order("name").limit(2000).execute().value
-        guard !rows.isEmpty else { return }
+        guard !rows.isEmpty else { return false }
         struct Stop: Encodable { let id: String; let name: String; let latitude: Double; let longitude: Double }
         struct File: Encodable { let source: String; let stops: [Stop] }
         let file = File(source: "bus_stops", stops: rows.map { Stop(id: $0.id, name: $0.name, latitude: $0.latitude, longitude: $0.longitude) })
+        let data = try JSONEncoder().encode(file)
+        guard data != (try? Data(contentsOf: self.file("bus-stops", slug))) else { return false }
         try fileManager.createDirectory(at: Tenants.contentFolder(slug), withIntermediateDirectories: true)
-        try JSONEncoder().encode(file).write(to: self.file("bus-stops", slug), options: .atomic)
+        try data.write(to: self.file("bus-stops", slug), options: .atomic)
+        return true
     }
 
     /// Haltestellen aus der Tabelle `bus_stops` für die aktuelle Gemeinde, sonst nil.
@@ -175,8 +194,11 @@ public actor ContentSync {
     }
 
     private func loadSnapshot(_ name: String, _ slug: String) -> Snapshot? {
-        guard let data = try? Data(contentsOf: file(name, slug)) else { return nil }
-        return try? JSONDecoder().decode(Snapshot.self, from: data)
+        guard let data = try? Data(contentsOf: file(name, slug)),
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data),
+              snapshot.version == Snapshot.currentVersion
+        else { return nil }
+        return snapshot
     }
 }
 
@@ -188,7 +210,7 @@ extension GastroPlace {
             phone: row.phone, email: row.email, website: row.website, detailURL: nil,
             hours: row.hours, restDay: row.restDay, seasonNote: row.seasonNote, imageCredit: row.imageCredit,
             extraLinkTitle: row.extraLinkTitle, extraLinkURL: row.extraLinkUrl, latitude: row.lat, longitude: row.lon,
-            features: row.features.isEmpty ? nil : row.features
+            features: row.features.isEmpty ? nil : row.features, imagePath: row.imagePath
         )
     }
 }

@@ -112,6 +112,7 @@ struct DayNavigator: View {
     @Binding var showPicker: Bool
     var weekMode = false
     @Environment(SelectedDateStore.self) private var store
+    @Environment(AppNavigation.self) private var navigation
 
     var body: some View {
         // Schwebende Glasleiste über dem Inhalt statt einer festen Zeile.
@@ -122,9 +123,15 @@ struct DayNavigator: View {
                 }
 
                 Button {
-                    showPicker = true
+                    // Ohne Plus führt der Tipp dorthin, statt einen Picker zu
+                    // öffnen, der ohnehin nichts ändern könnte.
+                    if store.canChangeDay {
+                        showPicker = true
+                    } else {
+                        navigation.tab = .plus
+                    }
                 } label: {
-                    Label(dayLabel, systemImage: "calendar")
+                    Label(dayLabel, systemImage: store.canChangeDay ? "calendar" : "lock")
                         .font(.subheadline.weight(.semibold))
                         .fontDesign(.rounded)
                         .monospacedDigit()
@@ -134,7 +141,7 @@ struct DayNavigator: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(StedeCardButtonStyle())
-                .accessibilityLabel("Tag wählen, \(dayLabel)")
+                .accessibilityLabel(store.canChangeDay ? "Tag wählen, \(dayLabel)" : "Andere Tage mit \(AppBrand.current.plusName) freischalten")
                 .contextMenu {
                     Button("Heute", systemImage: "sun.max") {
                         store.goToToday()

@@ -50,18 +50,18 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Communities
 
-    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count, countywide, polls_enabled, tasks_enabled"
+    private static let communityColumns = "id, tenant_id, name, description, visibility, join_policy, status, invite_code, logo_path, created_by, created_at, member_count, countywide, polls_enabled, tasks_enabled, can_transfer_events"
 
     /// Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland.
     static func ownOrCountywide(_ tenantID: UUID) -> String {
-        "tenant_id.eq.\(tenantID.uuidString.lowercased()),and(countywide.is.true,region.eq.ammerland)"
+        "tenant_id.eq.\(tenantID.uuidString.lowercased()),and(countywide.is.true,region.eq.\(AppBrand.current.region))"
     }
 
     /// Termine: Gruppen nur ihrer Gemeinde · kreisweite ohne Auswahl · kreisweite, deren Termin
     /// diese Gemeinde gewählt hat (`target_tenants` — auch die Heimatgemeinde muss dann gewählt sein).
     static func ownOrTargeted(_ tenantID: UUID) -> String {
         let id = tenantID.uuidString.lowercased()
-        return "and(countywide.is.false,tenant_id.eq.\(id)),and(countywide.is.true,region.eq.ammerland,target_tenants.is.null),and(countywide.is.true,target_tenants.cs.{\(id)})"
+        return "and(countywide.is.false,tenant_id.eq.\(id)),and(countywide.is.true,region.eq.\(AppBrand.current.region),target_tenants.is.null),and(countywide.is.true,target_tenants.cs.{\(id)})"
     }
 
     /// Alle sichtbaren Communities des Mandanten (gelistete plus eigene) und die kreisweiten.
@@ -231,6 +231,14 @@ public nonisolated struct CommunityClient: Sendable {
     public func setEventComments(id: UUID, enabled: Bool) async throws {
         struct Patch: Encodable { let comments_enabled: Bool }
         try await client.from("community_events").update(Patch(comments_enabled: enabled)).eq("id", value: id).execute()
+    }
+
+    /// Termin der Veranstaltungs-Gruppe an eine andere Gruppe übertragen; `series` nimmt alle künftigen Termine
+    /// gleichen Titels mit und leitet neue Importe dieser Reihe gleich dorthin. Liefert die Zahl der Termine.
+    @discardableResult
+    public func transferEvents(eventID: UUID, to target: UUID, series: Bool) async throws -> Int {
+        struct Params: Encodable { let p_event: UUID; let p_target: UUID; let p_series: Bool }
+        return try await client.rpc("transfer_events", params: Params(p_event: eventID, p_target: target, p_series: series)).execute().value
     }
 
     public func cancelEvent(id: UUID) async throws {

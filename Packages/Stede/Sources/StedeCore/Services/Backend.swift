@@ -2,14 +2,14 @@ import Foundation
 import Supabase
 
 /// Zugang zum gemeinsamen Supabase-Projekt „lokalz“ — ein Backend für alle
-/// Gemeinde-Apps. Welche Ammerland-Gemeinde die App zeigt, wählt der Nutzer (`Tenants`).
+/// Gemeinde-Apps. Welche Gemeinde die App zeigt, wählt der Nutzer (`Tenants`).
 public nonisolated enum Backend {
     public static let url = URL(string: "https://fkzjlecsetbnumtqrnem.supabase.co")!
     /// Publishable Key: darf in der App liegen, RLS schützt die Daten.
     public static let publishableKey = "sb_publishable_5ptJm36r8qnhKrGoGOWd0A_5uOpaBmH"
     public static var tenantSlug: String { Tenants.currentSlug }
     /// Deep-Link für Magic-Link und OAuth-Rückkehr; in der Supabase-Konsole freigeben.
-    public static let redirectURL = URL(string: "stede://auth-callback")!
+    public static let redirectURL = URL(string: "\(AppBrand.current.urlScheme)://auth-callback")!
 
     public static let client = SupabaseClient(
         supabaseURL: url,
