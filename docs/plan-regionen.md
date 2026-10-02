@@ -201,4 +201,5 @@ Parser-Fixture + Test in `StedeCoreTests`:
       Luft, Ortsfotos/Stationen, Kalender-Extras, loog+ über Play Billing; Debug und Release
       beider Flavors im Emulator geprüft. Offen: Play-Console-App für Loog anlegen, Produkte
       `de.letzgo.loog.plus.lifetime` / `.plus.monthly` anlegen, Store-Texte/Screenshots.
-- [ ] Phase 7 — Aufräumen
+- [x] Phase 7 — Aufräumen: Store-Screenshots nach `store/loog/screenshots`, GitHub-Repo
+      `1letzgo/loog` archiviert (README verweist hierher), lokaler Ordner gelöscht.
