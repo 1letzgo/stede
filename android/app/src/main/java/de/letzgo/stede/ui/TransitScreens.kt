@@ -184,7 +184,7 @@ fun WasteScreen(onBack: () -> Unit, openSettings: () -> Unit) {
                     val list = items!!
                     list.groupBy { it.day.withDayOfMonth(1) }.forEach { (month, entries) ->
                         item(key = month.toString()) { SectionHeader(month.format(Town.fmt("MMMM yyyy")), Icons.Default.CalendarMonth) }
-                        items(entries, key = { it.date + it.label }) { c -> WasteCard(c, c == list.first()) }
+                        items(entries, key = { it.date + it.label }) { c -> WasteCard(c, c.date == list.first().date) }
                     }
                     item { SourceFooter("${Waste.source} · appfuhr.de · Angaben ohne Gewähr") }
                 }

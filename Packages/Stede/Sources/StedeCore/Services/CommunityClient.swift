@@ -180,7 +180,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, external_key, rsvp_enabled, all_day, organizer, category, source_url, source_name, image_credit, price, registration, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -204,11 +204,19 @@ public nonisolated struct CommunityClient: Sendable {
             .order("starts_at").execute().value
     }
 
+    /// Seitenweise zu 1000 — mit den übernommenen Gemeinde-Terminen kommen über Monate mehr zusammen,
+    /// als PostgREST in einer Antwort liefert.
     public func publicEvents(tenantID: UUID, from: Date, to: Date) async throws -> [PublicEvent] {
-        try await client.from("v_public_events").select()
-            .or(Self.ownOrTargeted(tenantID))
-            .gte("starts_at", value: from.ISO8601Format()).lt("starts_at", value: to.ISO8601Format())
-            .order("starts_at").execute().value
+        let page = 1000
+        var all: [PublicEvent] = []
+        while true {
+            let rows: [PublicEvent] = try await client.from("v_public_events").select()
+                .or(Self.ownOrTargeted(tenantID))
+                .gte("starts_at", value: from.ISO8601Format()).lt("starts_at", value: to.ISO8601Format())
+                .order("starts_at").order("id").range(from: all.count, to: all.count + page - 1).execute().value
+            all += rows
+            if rows.count < page { return all }
+        }
     }
 
     public func createEvent(_ draft: CommunityEventDraft) async throws -> CommunityEvent {

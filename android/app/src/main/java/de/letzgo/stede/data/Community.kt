@@ -57,13 +57,41 @@ import java.util.UUID
     val visibility: String = "members", @SerialName("published_at") val publishedAt: String? = null,
     @SerialName("cancelled_at") val cancelledAt: String? = null, @SerialName("created_by") val createdBy: String? = null,
     @SerialName("communities") val community: CommunityRef? = null,
-) { val isPublic get() = visibility == "public" && publishedAt != null }
+    /** Aus einem Gemeinde-Kalender übernommen (`<gemeinde>:<id>:<tag>`); null = in der App angelegt. */
+    @SerialName("external_key") val externalKey: String? = null,
+    /** Teilnahme abfragen (Zusagen, Helfer); übernommene Termine standardmäßig ohne. */
+    @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = true,
+    @SerialName("all_day") val allDay: Boolean = false, val organizer: String? = null, val category: String? = null,
+    @SerialName("source_url") val sourceUrl: String? = null, @SerialName("source_name") val sourceName: String? = null,
+    @SerialName("image_credit") val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
+) {
+    val isPublic get() = visibility == "public" && publishedAt != null
+    val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration)
+}
 
 @Serializable data class PublicEvent(
     val id: String, @SerialName("community_name") val communityName: String, @SerialName("community_logo_path") val communityLogoPath: String? = null,
     val title: String, val description: String = "", @SerialName("starts_at") val startsAt: String, @SerialName("ends_at") val endsAt: String? = null,
     val location: String? = null, @SerialName("image_path") val imagePath: String? = null, @SerialName("helpers_needed") val helpersNeeded: Int = 0,
-)
+    @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = true,
+    @SerialName("all_day") val allDay: Boolean = false, val organizer: String? = null, val category: String? = null,
+    @SerialName("source_url") val sourceUrl: String? = null, @SerialName("source_name") val sourceName: String? = null,
+    @SerialName("image_credit") val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
+) { val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration) }
+
+/** Ende eines Termins fürs Ausblenden und die Pille „vorbei“ (EventTiming in iOS). */
+fun eventEnd(starts: ZonedDateTime, ends: ZonedDateTime?, allDay: Boolean): ZonedDateTime = when {
+    ends != null && ends.isAfter(starts) -> ends
+    allDay -> starts.withZoneSameInstant(Town.zone).toLocalDate().plusDays(1).atStartOfDay(Town.zone)
+    else -> starts.plusHours(2)
+}
+
+/** Herkunft eines aus einem Gemeinde-Kalender übernommenen Termins (Gruppe „stede Veranstaltungen“):
+ *  ganztägig, Veranstalter, Rubrik, Quelle mit Link und Foto-Credit. Bei Terminen aus der App leer. */
+data class EventOrigin(
+    val allDay: Boolean = false, val organizer: String? = null, val category: String? = null, val sourceUrl: String? = null,
+    val sourceName: String? = null, val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
+) { val isImported get() = sourceName != null }
 
 /** Standardbild einer Community — als Termin-Kopfbild wählbar; liegt in event-photos/<community>/defaults/. */
 @Serializable data class HeaderImage(
@@ -94,16 +122,22 @@ data class EventInfo(
     val commentsEnabled: Boolean = false,
     /** Gewählte Gemeinden eines öffentlichen Termins; null = kreisweit. */
     val targetTenants: List<String>? = null,
+    val origin: EventOrigin = EventOrigin(),
+    /** Aus: keine Zusage-Chips, keine Helfer, keine Zusagenliste. */
+    val rsvpEnabled: Boolean = true,
 ) {
+    val isImported get() = origin.isImported
+    /** Vorbei wie EventTiming in iOS: mit Ende ab dem Ende, ganztägig ab Mitternacht danach, sonst zwei Stunden nach Beginn. */
+    val isOver get() = !eventEnd(starts, ends, origin.allDay).isAfter(Town.now())
     companion object {
         fun of(e: CommunityEvent, fallbackName: String = "", fallbackLogo: String? = null) = EventInfo(
             e.id, e.title, e.community?.name?.ifBlank { null } ?: fallbackName, Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
-            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants,
+            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants, e.origin, e.rsvpEnabled,
         )
         fun of(e: PublicEvent) = EventInfo(
             e.id, e.title, e.communityName, Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,
-            e.description, Backend.photoUrl(e.imagePath), true, false, e.helpersNeeded, null, null,
+            e.description, Backend.photoUrl(e.imagePath), true, false, e.helpersNeeded, null, null, origin = e.origin, rsvpEnabled = e.rsvpEnabled,
         )
     }
 }
@@ -113,7 +147,10 @@ data class EventInfo(
     @SerialName("starts_at") val startsAt: String, @SerialName("ends_at") val endsAt: String?, val location: String?,
     @SerialName("image_path") val imagePath: String?, @SerialName("helpers_needed") val helpersNeeded: Int,
     val visibility: String, @SerialName("created_by") val createdBy: String,
-    @SerialName("comments_enabled") val commentsEnabled: Boolean = false,
+    /** Beide ohne Standardwert, damit sie immer mitgehen — Standardwerte lässt die Serialisierung weg,
+     *  dann bliebe beim Bearbeiten „Kommentare an“ bzw. „Teilnahme aus“ stehen. */
+    @SerialName("comments_enabled") val commentsEnabled: Boolean,
+    @SerialName("rsvp_enabled") val rsvpEnabled: Boolean,
     /** Ohne Standardwert, damit das Feld immer (auch als null) mitgeht — sonst bliebe beim
      *  Bearbeiten eine alte Auswahl stehen, wenn der Termin wieder kreisweit wird. */
     @SerialName("target_tenants") val targetTenants: List<String>?,
@@ -123,7 +160,7 @@ data class EventInfo(
 object CommunityApi {
     private val db get() = Backend.supabase
     private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled"
-    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,communities(name,logo_path)"
+    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()
@@ -198,7 +235,7 @@ object CommunityApi {
         if (communityIds.isEmpty()) return emptyList()
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()
     }
-    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed")) {
+    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration")) {
         filter { ownOrTargeted(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
     }.decodeList<PublicEvent>()
 

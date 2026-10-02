@@ -36,6 +36,8 @@ final class CommunityDetailModel {
     var pastEvents: [CommunityEvent]?
     var loadingPast = false
     var hasMorePast = true
+    /// Bisher abgerufene Zeilen des Archivs — ohne die herausgefilterten, noch laufenden zählt der Versatz falsch.
+    private var pastFetched = 0
     private static let pastPageSize = 20
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
@@ -62,7 +64,7 @@ final class CommunityDetailModel {
             let today = IslandTime.startOfDay(Date())
             community = cached.community
             members = cached.members
-            events = cached.events.filter { ($0.endsAt ?? $0.startsAt) >= today }
+            events = cached.events.filter { $0.startsAt >= today && !$0.isOver }
             state = .loaded
         }
         if members.isEmpty, events.isEmpty { state = .loading }
@@ -72,7 +74,8 @@ final class CommunityDetailModel {
                 async let membersTask = client.members(communityID: community.id)
                 async let eventsTask = client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
                 members = try await membersTask
-                events = try await eventsTask
+                // Heute schon Vorbeiges steht unter „Frühere Termine“.
+                events = try await eventsTask.filter { !$0.isOver }
                 CommunityCache.save(Snapshot(community: community, members: members, events: events), cacheName, userID: userID)
                 if let userID {
                     let mine = try await client.myParticipations(userID: userID)
@@ -105,19 +108,23 @@ final class CommunityDetailModel {
 
     /// Nächste Seite, wenn das Ende der Liste sichtbar wird.
     func loadMorePastEvents() async {
-        guard hasMorePast, !loadingPast, let count = pastEvents?.count else { return }
-        await loadPast(offset: count)
+        guard hasMorePast, !loadingPast, pastEvents != nil else { return }
+        await loadPast(offset: pastFetched)
     }
 
     private func loadPast(offset: Int) async {
         loadingPast = true
         defer { loadingPast = false }
         do {
-            let page = try await client.pastEvents(communityID: community.id, before: IslandTime.startOfDay(Date()),
-                                                   offset: offset, limit: Self.pastPageSize)
+            // Bis jetzt statt bis Mitternacht, damit heute Vorbeiges dabei ist; was noch läuft, steht oben.
+            let upcoming = Set(events.map(\.id))
+            let raw = try await client.pastEvents(communityID: community.id, before: Date(),
+                                                  offset: offset, limit: Self.pastPageSize)
+            pastFetched = offset + raw.count
+            let page = raw.filter { !upcoming.contains($0.id) }
             let counts = try await client.helperCounts(eventIDs: page.filter { $0.helpersNeeded > 0 }.map(\.id))
             helperCounts.merge(counts) { _, new in new }
-            hasMorePast = page.count == Self.pastPageSize
+            hasMorePast = raw.count == Self.pastPageSize
             pastEvents = offset == 0 ? page : (pastEvents ?? []) + page
             await loadCommentCounts()
         } catch {
@@ -157,7 +164,7 @@ final class CommunityDetailModel {
     func save(_ draft: CommunityEventDraft, editing id: UUID?) async -> Bool {
         do {
             if let id { try await client.updateEvent(id: id, draft) } else { _ = try await client.createEvent(draft) }
-            events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
+            events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date())).filter { !$0.isOver }
             if pastEvents != nil { await loadPastEvents() }
             return true
         } catch {
@@ -169,7 +176,7 @@ final class CommunityDetailModel {
     func cancel(event: CommunityEvent) async {
         do {
             try await client.cancelEvent(id: event.id)
-            events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date()))
+            events = try await client.events(communityID: community.id, from: IslandTime.startOfDay(Date())).filter { !$0.isOver }
             if pastEvents != nil { await loadPastEvents() }
         } catch { lastError = error.localizedDescription }
     }
@@ -202,10 +209,13 @@ final class CommunityCalendarModel {
     var myParticipations: [UUID: MyParticipation] = [:]
     var helperCounts: [UUID: Int] = [:]
     var commentCounts: [UUID: Int] = [:]
+    /// Erster Ladeversuch abgeschlossen (auch bei Fehler) — der Kalender springt erst dann auf heute.
+    private(set) var didLoad = false
     private let client = CommunityClient()
 
     /// Lädt bei jedem Aufruf neu — Termine entstehen auch in anderen Tabs.
     func load(from start: Date, to end: Date, tenantID: UUID?, memberCommunityIDs: [UUID], userID: UUID?) async {
+        defer { didLoad = true }
         guard let tenantID else { return }
         do {
             async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end)

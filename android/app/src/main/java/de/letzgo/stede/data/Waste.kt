@@ -22,7 +22,11 @@ enum class WasteKind(val label: String) {
 }
 @Serializable data class WasteCollection(val date: String, val label: String) { val day: LocalDate get() = LocalDate.parse(date); val kind get() = WasteKind.of(label) }
 
-data class WasteSelection(val street: Int, val section: Int?, val branch: Int?) { val key get() = "$street-${section ?: 0}-${branch ?: 0}" }
+/** `noOrganic`: Eigenkompostierer ohne Biotonne (appfuhr `komp=true`); `fourWeekly`: Restabfall alle 4 Wochen (`vier=true`). */
+data class WasteSelection(val street: Int, val section: Int?, val branch: Int?, val noOrganic: Boolean = false, val fourWeekly: Boolean = false) {
+    /** Ohne Optionen wie bisher; jede Option bekommt einen eigenen Cache-Eintrag. */
+    val key get() = "$street-${section ?: 0}-${branch ?: 0}" + (if (noOrganic) "-nobio" else "") + (if (fourWeekly) "-4w" else "")
+}
 
 object Waste {
     /** Straßen der aktuellen Gemeinde: Stand aus dem Backend (`content_files`), sonst (nur Westerstede) das Asset. */
@@ -41,37 +45,55 @@ object Waste {
         val section = Store.int("waste.section"); val branch = Store.int("waste.branchSection")
         if (street.needsSection && section == 0) return null
         if (street.needsBranch && branch == 0) return null
-        return WasteSelection(street.id, if (street.needsSection) section else null, if (street.needsBranch) branch else null)
+        return WasteSelection(street.id, if (street.needsSection) section else null, if (street.needsBranch) branch else null,
+            Store.bool("waste.noOrganic", false), Store.bool("waste.fourWeekly", false))
     }
 
     private val line = Regex("""^\s*(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag),\s*(\d{1,2})\.(\d{1,2})\.\s+(.+?)\s*$""")
-    fun parse(text: String, year: Int): List<WasteCollection> = text.lines().mapNotNull { l ->
-        val m = line.find(l) ?: return@mapNotNull null
-        val date = runCatching { LocalDate.of(year, m.groupValues[2].toInt(), m.groupValues[1].toInt()) }.getOrNull() ?: return@mapNotNull null
-        WasteCollection(date.toString(), m.groupValues[3])
-    }.distinctBy { it.date + it.label }.sortedBy { it.date }
+    private val kinds = setOf("Restabfall", "Papier", "Gelber Sack", "Bioabfall", "Ast- und Strauchwerk", "Problemstoffe")
 
-    private fun cachedYear(sel: WasteSelection, year: Int) = Store.read("waste", "${sel.key}-$year.json")?.let { runCatching { Http.json.decodeFromString(ListSerializer(WasteCollection.serializer()), it) }.getOrNull() }
+    /** Zwei Abfuhren am selben Tag: Das PDF nennt das Datum nur einmal, die zweite Art steht allein
+     *  in der Folgezeile (oft mit Monatsnamen dazwischen) und gehört zum zuletzt genannten Datum. */
+    fun parse(text: String, year: Int): List<WasteCollection> {
+        var lastDate: LocalDate? = null
+        return text.lines().mapNotNull { l ->
+            val m = line.find(l)
+            if (m == null) {
+                val label = l.trim()
+                return@mapNotNull lastDate?.takeIf { label in kinds }?.let { WasteCollection(it.toString(), label) }
+            }
+            val date = runCatching { LocalDate.of(year, m.groupValues[2].toInt(), m.groupValues[1].toInt()) }.getOrNull() ?: return@mapNotNull null
+            lastDate = date
+            WasteCollection(date.toString(), m.groupValues[3])
+        }.distinctBy { it.date + it.label }.sortedBy { it.date }
+    }
+
+    /** `v2`: Doppeltermine werden mitgelesen — ältere Dateien haben dort Lücken. */
+    private fun cacheName(sel: WasteSelection, year: Int) = "v2-${sel.key}-$year.json"
+
+    private fun cachedYear(sel: WasteSelection, year: Int) = Store.read("waste", cacheName(sel, year))?.let { runCatching { Http.json.decodeFromString(ListSerializer(WasteCollection.serializer()), it) }.getOrNull() }
 
     private suspend fun year(sel: WasteSelection, year: Int, force: Boolean): List<WasteCollection> {
         if (!force) cachedYear(sel, year)?.let { return it }
         // Erst der Server (Edge Function `waste-calendar`, PDF 7 Tage zwischengespeichert), dann direkt bei appfuhr.de.
         val server = runCatching {
-            Http.bytes("${Backend.URL}/functions/v1/waste-calendar?street=${sel.street}&year=$year&section=${sel.section ?: ""}&branch=${sel.branch ?: ""}")
+            Http.bytes("${Backend.URL}/functions/v1/waste-calendar?street=${sel.street}&year=$year&section=${sel.section ?: ""}&branch=${sel.branch ?: ""}&komp=${sel.noOrganic}&vier=${sel.fourWeekly}")
         }.getOrNull()?.let { pdf -> runCatching { parse(PDDocument.load(pdf).use { PDFTextStripper().getText(it) }, year) }.getOrNull() }
         if (!server.isNullOrEmpty()) {
-            Store.write("waste", "${sel.key}-$year.json", Http.json.encodeToString(ListSerializer(WasteCollection.serializer()), server))
+            Store.write("waste", cacheName(sel, year), Http.json.encodeToString(ListSerializer(WasteCollection.serializer()), server))
+            Store.file("waste", "${sel.key}-$year.json").delete()
             return server
         }
         val id = UUID.randomUUID().toString().replace("-", "")
         val yy = "%02d".format(year % 100)
-        Http.text("https://www.appfuhr.de/api/makekal.php?uid=$id&str=${sel.street}&strgr=${sel.section ?: "null"}&astgr=${sel.branch ?: "null"}&komp=false&vier=false&jahr=$yy&max=999")
+        Http.text("https://www.appfuhr.de/api/makekal.php?uid=$id&str=${sel.street}&strgr=${sel.section ?: "null"}&astgr=${sel.branch ?: "null"}&komp=${sel.noOrganic}&vier=${sel.fourWeekly}&jahr=$yy&max=999")
         Http.text("https://www.appfuhr.de/pdf/makepdf.php?uuid=$id&str=${sel.street}&jahr=$yy&sw=false")
         val pdf = Http.bytes("https://www.appfuhr.de/pdf/tmp/$id.pdf")
         val text = PDDocument.load(pdf).use { PDFTextStripper().getText(it) }
         val list = parse(text, year)
         if (list.isEmpty()) error("Der Abfuhrkalender enthält keine Termine.")
-        Store.write("waste", "${sel.key}-$year.json", Http.json.encodeToString(ListSerializer(WasteCollection.serializer()), list))
+        Store.write("waste", cacheName(sel, year), Http.json.encodeToString(ListSerializer(WasteCollection.serializer()), list))
+        Store.file("waste", "${sel.key}-$year.json").delete()
         return list
     }
 

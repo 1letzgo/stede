@@ -142,6 +142,18 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public let updatedAt: Date
     /// Per Join geladen: `communities(name)`.
     public var community: CommunityName?
+    /// Aus einem Gemeinde-Kalender übernommen (`<gemeinde>:<id>:<tag>`); nil = in der App angelegt.
+    public var externalKey: String?
+    /// Teilnahme abfragen (Zusage, Vielleicht, Absage, Helfer); übernommene Termine standardmäßig ohne.
+    public var rsvpEnabled: Bool
+    public var allDay: Bool
+    public var organizer: String?
+    public var category: String?
+    public var sourceURL: String?
+    public var sourceName: String?
+    public var imageCredit: String?
+    public var price: String?
+    public var registration: String?
 
     public nonisolated struct CommunityName: Codable, Hashable, Sendable {
         public let name: String
@@ -172,6 +184,18 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case createdBy = "created_by"
         case updatedAt = "updated_at"
         case community = "communities"
+        case externalKey = "external_key"
+        case rsvpEnabled = "rsvp_enabled"
+        case allDay = "all_day"
+        case organizer, category, price, registration
+        case sourceURL = "source_url"
+        case sourceName = "source_name"
+        case imageCredit = "image_credit"
+    }
+
+    public var origin: EventOrigin {
+        EventOrigin(allDay: allDay, organizer: organizer, category: category, sourceURL: sourceURL, sourceName: sourceName,
+                    imageCredit: imageCredit, price: price, registration: registration)
     }
 
     public var communityName: String { community?.name ?? "" }
@@ -200,7 +224,40 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         createdBy = try c.decodeIfPresent(UUID.self, forKey: .createdBy)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
         community = try c.decodeIfPresent(CommunityName.self, forKey: .community)
+        externalKey = try c.decodeIfPresent(String.self, forKey: .externalKey)
+        rsvpEnabled = try c.decodeIfPresent(Bool.self, forKey: .rsvpEnabled) ?? true
+        allDay = try c.decodeIfPresent(Bool.self, forKey: .allDay) ?? false
+        organizer = try c.decodeIfPresent(String.self, forKey: .organizer)
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        sourceURL = try c.decodeIfPresent(String.self, forKey: .sourceURL)
+        sourceName = try c.decodeIfPresent(String.self, forKey: .sourceName)
+        imageCredit = try c.decodeIfPresent(String.self, forKey: .imageCredit)
+        price = try c.decodeIfPresent(String.self, forKey: .price)
+        registration = try c.decodeIfPresent(String.self, forKey: .registration)
     }
+}
+
+/// Herkunft eines Termins aus einem Gemeinde-Kalender (Import in die Gruppe „stede Veranstaltungen“):
+/// ganztägig, Veranstalter, Rubrik, Quelle mit Link und Foto-Credit. Bei Terminen aus der App leer.
+public nonisolated struct EventOrigin: Hashable, Sendable {
+    public var allDay = false
+    public var organizer: String?
+    public var category: String?
+    public var sourceURL: String?
+    public var sourceName: String?
+    public var imageCredit: String?
+    public var price: String?
+    public var registration: String?
+
+    public init(allDay: Bool = false, organizer: String? = nil, category: String? = nil, sourceURL: String? = nil, sourceName: String? = nil,
+                imageCredit: String? = nil, price: String? = nil, registration: String? = nil) {
+        self.allDay = allDay; self.organizer = organizer; self.category = category; self.sourceURL = sourceURL
+        self.sourceName = sourceName; self.imageCredit = imageCredit; self.price = price; self.registration = registration
+    }
+
+    /// Aus einem Gemeinde-Kalender übernommen.
+    public var isImported: Bool { sourceName != nil }
+    public var link: URL? { sourceURL.flatMap { URL(string: $0) } }
 }
 
 /// Öffentlicher Termin aus `v_public_events` — ohne Community-Interna.
@@ -216,6 +273,20 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let location: String?
     public let imagePath: String?
     public let helpersNeeded: Int
+    public let allDay: Bool?
+    public let organizer: String?
+    public let category: String?
+    public let sourceURL: String?
+    public let sourceName: String?
+    public let imageCredit: String?
+    public let price: String?
+    public let registration: String?
+    public let rsvpEnabled: Bool?
+
+    public var origin: EventOrigin {
+        EventOrigin(allDay: allDay ?? false, organizer: organizer, category: category, sourceURL: sourceURL, sourceName: sourceName,
+                    imageCredit: imageCredit, price: price, registration: registration)
+    }
 
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
     public var communityLogoURL: URL? { communityLogoPath.map(Backend.communityLogoURL) }
@@ -229,6 +300,12 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
         case communityLogoPath = "community_logo_path"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
+        case allDay = "all_day"
+        case organizer, category, price, registration
+        case sourceURL = "source_url"
+        case sourceName = "source_name"
+        case imageCredit = "image_credit"
+        case rsvpEnabled = "rsvp_enabled"
     }
 }
 
@@ -269,12 +346,14 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
     public var imagePath: String?
     public var helpersNeeded: Int
     public var commentsEnabled: Bool
+    /// Teilnahme abfragen; aus = keine Zusagen und keine Helfer.
+    public var rsvpEnabled: Bool
     public var visibility: EventVisibility
     /// nil = kreisweit (oder Gruppe nicht kreisweit), sonst nur diese Gemeinden.
     public var targetTenants: [UUID]?
     public var createdBy: UUID
 
-    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, commentsEnabled: Bool = false, visibility: EventVisibility, targetTenants: [UUID]? = nil, createdBy: UUID) {
+    public init(communityId: UUID, title: String, description: String, startsAt: Date, endsAt: Date?, location: String?, imagePath: String? = nil, helpersNeeded: Int = 0, commentsEnabled: Bool = false, rsvpEnabled: Bool = true, visibility: EventVisibility, targetTenants: [UUID]? = nil, createdBy: UUID) {
         self.communityId = communityId
         self.title = title
         self.description = description
@@ -282,8 +361,9 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         self.endsAt = endsAt
         self.location = location
         self.imagePath = imagePath
-        self.helpersNeeded = helpersNeeded
+        self.helpersNeeded = rsvpEnabled ? helpersNeeded : 0
         self.commentsEnabled = commentsEnabled
+        self.rsvpEnabled = rsvpEnabled
         self.visibility = visibility
         self.targetTenants = visibility == .public ? targetTenants : nil
         self.createdBy = createdBy
@@ -295,6 +375,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         case imagePath = "image_path"
         case helpersNeeded = "helpers_needed"
         case commentsEnabled = "comments_enabled"
+        case rsvpEnabled = "rsvp_enabled"
         case targetTenants = "target_tenants"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
@@ -314,6 +395,7 @@ public nonisolated struct CommunityEventDraft: Codable, Sendable {
         try c.encode(imagePath, forKey: .imagePath)
         try c.encode(helpersNeeded, forKey: .helpersNeeded)
         try c.encode(commentsEnabled, forKey: .commentsEnabled)
+        try c.encode(rsvpEnabled, forKey: .rsvpEnabled)
         try c.encode(visibility, forKey: .visibility)
         try c.encode(targetTenants, forKey: .targetTenants)
         try c.encode(createdBy, forKey: .createdBy)

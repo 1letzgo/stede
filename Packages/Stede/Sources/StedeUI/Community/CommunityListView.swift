@@ -19,6 +19,8 @@ struct CommunityListView: View {
         } content: {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
+                    // Ganz oben: was für dich zu tun ist.
+                    MyTasksLink(model: myTasks, communities: taskCommunities)
                     if !auth.isSignedIn {
                         InfoCard {
                             VStack(alignment: .leading, spacing: 10) {
@@ -38,9 +40,8 @@ struct CommunityListView: View {
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         }
                     }
-                    MyTasksLink(model: myTasks, communities: taskCommunities)
                     if !others.isEmpty {
-                        StedeSectionHeader(title: mine.isEmpty ? "Gruppen" : "Weitere", symbol: "person.2.fill")
+                        StedeSectionHeader(title: mine.isEmpty ? "Gruppen" : "Weitere Gruppen", symbol: "person.2.fill")
                         ForEach(others) { community in
                             NavigationLink(value: community) { CommunityCard(community: community, membership: nil) }
                                 .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)

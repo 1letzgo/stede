@@ -60,7 +60,7 @@ object Tenants {
     const val DEFAULT = "stede"
     const val KEY = "tenant.slug"
     /** Wird die Gemeinde gewechselt, gelten diese Einstellungen nicht mehr. */
-    private val perTenantKeys = listOf("bus.stop", "train.station", "train.direction", "waste.street", "waste.section", "waste.branchSection")
+    private val perTenantKeys = listOf("bus.stop", "train.station", "train.direction", "waste.street", "waste.section", "waste.branchSection", "waste.noOrganic", "waste.fourWeekly")
     private val listSerializer = ListSerializer(TenantConfig.serializer())
 
     /** Gewählte Gemeinde; null, solange beim ersten Start noch keine gewählt ist. Compose beobachtet den Wert. */

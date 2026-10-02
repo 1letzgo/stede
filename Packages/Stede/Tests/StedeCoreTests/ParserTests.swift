@@ -50,11 +50,36 @@ private func fixture(_ name: String) throws -> String {
 @Test func wasteCalendarParsesPDFText() throws {
     let text = try fixture("abfuhr-albertskamp-2026.txt")
     let items = WastePDFParser.collections(from: text, year: 2026)
-    #expect(items.count == 95)
+    // 95 datierte Zeilen plus zweimal Ast- und Strauchwerk am Restabfall-Tag (27.3., 6.11.).
+    #expect(items.count == 97)
+    #expect(items.contains { $0.kind == .branches && IslandTime.isoDate($0.date) == "2026-11-06" })
     let first = try #require(items.first)
     #expect(first.kind == .residual)
     #expect(IslandTime.isoDate(first.date) == "2026-01-02")
     #expect(items.contains { $0.kind == .hazardous && IslandTime.isoDate($0.date) == "2026-01-31" })
     #expect(items.contains { $0.kind == .branches && IslandTime.isoDate($0.date) == "2026-01-21" })
     #expect(items.last.map { IslandTime.isoDate($0.date) } == "2026-12-24")
+}
+
+/// Doppeltermine: Die zweite Art am selben Tag steht ohne Datum in der Folgezeile,
+/// teils mit Monatsnamen dazwischen — sie gehört zum zuletzt genannten Datum.
+@Test func wasteCalendarReadsSecondCollectionOnSameDay() throws {
+    let text = try fixture("abfuhr-gross-neudorfer-weg-2026.txt")
+    let items = WastePDFParser.collections(from: text, year: 2026)
+    let yellow = items.filter { $0.kind == .yellowBag }
+    #expect(yellow.count == 26)
+    #expect(items.contains { $0.kind == .residual && IslandTime.isoDate($0.date) == "2026-01-08" })
+    #expect(yellow.contains { IslandTime.isoDate($0.date) == "2026-01-08" })
+    // „August“/„Februar“ zwischen Datum und Art ändern nichts an der Zuordnung.
+    #expect(yellow.contains { IslandTime.isoDate($0.date) == "2026-02-05" })
+    #expect(items.contains { $0.kind == .branches && IslandTime.isoDate($0.date) == "2026-03-26" })
+    #expect(!items.contains { $0.kind == .other })
+}
+
+/// Die Abfuhr-Optionen bekommen eigene Cache-Einträge, ohne Optionen bleibt der Schlüssel wie bisher.
+@Test func wasteSelectionCacheKeyKeepsDefaults() throws {
+    #expect(WasteSelection(streetID: 12, sectionID: 3).cacheKey == "12-3-0")
+    #expect(WasteSelection(streetID: 12, noOrganic: true, fourWeekly: true).cacheKey == "12-0-0-nobio-4w")
+    let old = try JSONDecoder().decode(WasteSelection.self, from: Data(#"{"streetID":12}"#.utf8))
+    #expect(!old.noOrganic && !old.fourWeekly)
 }

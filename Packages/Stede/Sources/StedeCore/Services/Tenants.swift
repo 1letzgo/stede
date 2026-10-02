@@ -46,7 +46,7 @@ public nonisolated enum Tenants {
     public static let defaultSlug = "stede"
     public static let slugKey = "tenant.slug"
     /// Wird die Gemeinde gewechselt, gelten diese Einstellungen nicht mehr.
-    public static let perTenantKeys = ["bus.stop", "train.station", "train.direction", "waste.street", "waste.section", "waste.branchSection"]
+    public static let perTenantKeys = ["bus.stop", "train.station", "train.direction", "waste.street", "waste.section", "waste.branchSection", "waste.noOrganic", "waste.fourWeekly"]
 
     public static var currentSlug: String {
         UserDefaults.standard.string(forKey: slugKey) ?? defaultSlug

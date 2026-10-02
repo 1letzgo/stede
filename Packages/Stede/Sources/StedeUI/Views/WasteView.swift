@@ -6,12 +6,15 @@ struct WasteView: View {
     @AppStorage("waste.street") private var streetID: Int = 0
     @AppStorage("waste.section") private var sectionID: Int = 0
     @AppStorage("waste.branchSection") private var branchSectionID: Int = 0
+    @AppStorage("waste.noOrganic") private var noOrganic = false
+    @AppStorage("waste.fourWeekly") private var fourWeekly = false
     @State private var model = WasteViewModel()
     @Environment(AppNavigation.self) private var navigation
 
     private var street: WasteStreet? { WasteSettings.street(id: streetID) }
     private var selection: WasteSelection? {
-        WasteSettings.selection(streetID: streetID, sectionID: sectionID, branchSectionID: branchSectionID)
+        WasteSettings.selection(streetID: streetID, sectionID: sectionID, branchSectionID: branchSectionID,
+                                noOrganic: noOrganic, fourWeekly: fourWeekly)
     }
 
     var body: some View {
@@ -42,7 +45,7 @@ struct WasteView: View {
                                 ForEach(months, id: \.month) { group in
                                     StedeSectionHeader(title: group.title, symbol: "calendar")
                                     ForEach(group.items) { item in
-                                        WasteCard(collection: item, isNext: item.id == model.collections.first?.id)
+                                        WasteCard(collection: item, isNext: item.date == model.collections.first?.date)
                                     }
                                 }
                                 SourceFooter(text: "\(WasteStreetStore.directory.source) · appfuhr.de · Angaben ohne Gewähr")

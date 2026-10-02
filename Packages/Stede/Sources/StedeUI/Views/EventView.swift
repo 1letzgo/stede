@@ -78,13 +78,15 @@ struct EventView: View {
                         }
                         .scrollPosition($earlierPosition)
                         .onChange(of: scrollTarget) {
-                            scrollToCurrent(scrollTarget, in: proxy)
+                            if let scrollTarget { jump(to: scrollTarget, in: proxy) }
                             scrollTarget = nil
                         }
-                        .onChange(of: model.state, initial: true) {
-                            guard !didScrollToToday, model.state == .loaded || model.state == .empty else { return }
+                        // Erst springen, wenn auch die Gruppen-Termine da sind: sie ersetzen die
+                        // Roh-Termine der Stadt und verschieben sonst alles über „heute“.
+                        .onChange(of: initialLoadDone, initial: true) {
+                            guard !didScrollToToday, initialLoadDone else { return }
                             didScrollToToday = true
-                            scrollToCurrent(dayID(IslandTime.startOfDay(Date())), in: proxy)
+                            jump(to: dayID(IslandTime.startOfDay(Date())), in: proxy)
                         }
                     }
                 }
@@ -173,6 +175,27 @@ struct EventView: View {
 
     private func dayID(_ date: Date) -> String { "day-\(IslandTime.isoDate(date))" }
 
+    /// Stadt- und Gruppen-Termine geladen (oder gescheitert) — dann steht die Liste über „heute“.
+    private var initialLoadDone: Bool {
+        guard community.didLoad else { return false }
+        switch model.state {
+        case .loaded, .empty, .failed: return true
+        default: return false
+        }
+    }
+
+    /// Springt mehrfach nach: der LazyVStack schätzt die Höhen der Karten über dem Ziel
+    /// (Fotos, lange Texte) erst grob und korrigiert sie beim Bauen — ein einzelnes
+    /// `scrollTo` landet dann daneben.
+    private func jump(to id: String, in proxy: ScrollViewProxy) {
+        Task {
+            for delay in [0, 80, 200, 400, 700] {
+                try? await Task.sleep(for: .milliseconds(delay))
+                proxy.scrollTo(id, anchor: .top)
+            }
+        }
+    }
+
     // MARK: Nachladen
 
     /// Oben: frühere Termine auf Tipp — automatisch würde die Liste beim Einfügen springen.
@@ -218,16 +241,36 @@ struct EventView: View {
         Task { if let userID = auth.userID { await community.setParticipation(eventID: info.id, userID: userID, status: status, helping: helping) } }
     }
 
-    /// Alle Einträge der Woche nach Filter.
+    /// Gemeinde-Termine kommen als übernommene Termine der Gruppe „stede Veranstaltungen“. Die
+    /// Rohdaten (`city_events`, offline im Tagescache) zeigt der Kalender nur, solange davon nichts
+    /// geladen ist — ohne Netz oder bevor der Import für die Gemeinde läuft.
+    private var showsRawCityEvents: Bool {
+        !community.publicEvents.contains { $0.origin.isImported } && !community.memberEvents.contains { $0.externalKey != nil }
+    }
+
+    /// Alle Einträge nach Filter: „Öffentlich“ sind die Gemeinde-Termine, „Gruppen“ alles aus der App.
     private var entries: [CalendarEntry] {
         var result: [CalendarEntry] = []
-        if filter == .all || filter == .city {
+        if (filter == .all || filter == .city), showsRawCityEvents {
             result += model.events.map(CalendarEntry.city)
         }
-        if filter != .city {
-            let memberIDs = Set(community.memberEvents.map(\.id))
-            result += community.memberEvents.filter { $0.cancelledAt == nil }.map(CalendarEntry.community)
-            result += community.publicEvents.filter { !memberIDs.contains($0.id) }.map(CalendarEntry.publicEvent)
+        let memberIDs = Set(community.memberEvents.map(\.id))
+        let member = community.memberEvents.filter { $0.cancelledAt == nil }
+        let publicOnly = community.publicEvents.filter { !memberIDs.contains($0.id) }
+        switch filter {
+        case .city:
+            result += member.filter { $0.externalKey != nil }.map(CalendarEntry.community)
+            result += publicOnly.filter(\.origin.isImported).map(CalendarEntry.publicEvent)
+        case .communities:
+            result += member.filter { $0.externalKey == nil }.map(CalendarEntry.community)
+            result += publicOnly.filter { !$0.origin.isImported }.map(CalendarEntry.publicEvent)
+        case .all, .mine:
+            result += member.map(CalendarEntry.community)
+            result += publicOnly.map(CalendarEntry.publicEvent)
+        }
+        // Vorbei ist ausgeblendet, solange keine früheren Termine angefordert wurden.
+        if model.start >= IslandTime.startOfDay(Date()) {
+            result = result.filter { !$0.isOver }
         }
         if filter == .mine {
             result = result.filter { entry in
@@ -263,7 +306,7 @@ struct EventView: View {
 
     private var listState: LoadState {
         if case .failed(let message) = model.state, entries.isEmpty { return .failed(message) }
-        if model.state == .loading, entries.isEmpty { return .loading }
+        if model.state == .loading, entries.isEmpty, community.publicEvents.isEmpty { return .loading }
         return .loaded
     }
 
@@ -314,6 +357,14 @@ private enum CalendarEntry: Identifiable {
         case .city(let e): e.time
         case .community(let e): e.startsAt
         case .publicEvent(let e): e.startsAt
+        }
+    }
+
+    var isOver: Bool {
+        switch self {
+        case .city(let e): e.isOver
+        case .community(let e): e.isOver
+        case .publicEvent(let e): e.isOver
         }
     }
 

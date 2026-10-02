@@ -89,7 +89,7 @@ fun StartScreen(open: (Screen) -> Unit) {
                         val street = Waste.street(Store.int("waste.street"))
                         if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", height = 112.dp) { open(Screen.Waste) }
                         else HomeTile("Abfuhr", next?.let { wasteIcon(it.kind) } ?: Icons.Default.Delete, next?.let { wasteColor(it.kind) } ?: C.green, Modifier.fillMaxWidth(),
-                            next?.let { "${it.day.format(Town.dayShort)} · ${it.label}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
+                            next?.let { n -> "${n.day.format(Town.dayShort)} · ${waste.orEmpty().filter { it.date == n.date }.joinToString(", ") { it.label }}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
                     }
                     HomeSection.City -> {
                         // Die ersten beiden Kacheln groß, die übrigen klein darunter.

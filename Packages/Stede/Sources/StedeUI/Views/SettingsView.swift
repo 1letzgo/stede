@@ -8,6 +8,8 @@ struct SettingsView: View {
     @AppStorage("waste.street") private var streetID: Int = 0
     @AppStorage("waste.section") private var sectionID: Int = 0
     @AppStorage("waste.branchSection") private var branchSectionID: Int = 0
+    @AppStorage("waste.noOrganic") private var noOrganic = false
+    @AppStorage("waste.fourWeekly") private var fourWeekly = false
     @AppStorage("bus.stop") private var busStopID: String = ""
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     @AppStorage("train.station") private var stationID = ""
@@ -95,6 +97,11 @@ struct SettingsView: View {
                     if let street, street.needsBranchSection {
                         menuRow("Ast- und Strauchwerk", selection: $branchSectionID, options: street.branchSections ?? [])
                     }
+                    // Wie auf der appfuhr-Website: Eigenkompostierer ohne Biotonne, Restabfall alle 4 Wochen.
+                    if street != nil {
+                        toggleRow("Keine Biotonne", symbol: "leaf.fill", tint: StedeTheme.duneGreen, isOn: $noOrganic)
+                        toggleRow("Restabfall alle 4 Wochen", symbol: "trash.fill", tint: StedeTheme.ink, isOn: $fourWeekly)
+                    }
                 }
 
                 StedeSectionHeader(title: "Unterwegs", symbol: "tram.fill")
@@ -179,6 +186,18 @@ struct SettingsView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private func toggleRow(_ title: String, symbol: String, tint: Color, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            HStack(spacing: 12) {
+                SettingsIcon(symbol: symbol, tint: tint)
+                Text(title)
+            }
+        }
+        .tint(StedeTheme.duneGreen)
+        .frame(minHeight: 32)
+        .stedeRowCard()
     }
 
     private func pickerRow(_ title: String, value: String, symbol: String, tint: Color, action: @escaping () -> Void) -> some View {

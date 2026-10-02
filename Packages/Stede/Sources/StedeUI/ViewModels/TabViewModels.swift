@@ -186,7 +186,8 @@ final class CalendarFeedModel {
     /// Weiter als ein Jahr voraus gibt es keine Stadt-Termine mehr.
     static let horizonDays = 365
 
-    private(set) var start = IslandTime.day(Date(), adding: -7)
+    /// Startet heute — Vergangenes nur über „Frühere Termine“.
+    private(set) var start = IslandTime.startOfDay(Date())
     private(set) var end = IslandTime.day(Date(), adding: pageDays - 1)
     private(set) var events: [StedeEvent] = []
     private(set) var state: LoadState = .idle

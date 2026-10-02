@@ -621,6 +621,7 @@ struct EventEditorView: View {
     @State private var isPublic = false
     @State private var wantsHelpers = false
     @State private var commentsEnabled = false
+    @State private var rsvpEnabled = true
     @State private var helpersNeeded = 3
     @State private var saving = false
     @State private var photoItem: PhotosPickerItem?
@@ -678,12 +679,17 @@ struct EventEditorView: View {
                     TextField("Ort", text: $location)
                     TextField("Beschreibung", text: $description, axis: .vertical).lineLimit(3 ... 8)
                 }
-                Section("Helfer") {
-                    Toggle("Helfer gesucht", isOn: $wantsHelpers.animation())
-                    if wantsHelpers {
-                        Stepper("Anzahl: \(helpersNeeded)", value: $helpersNeeded, in: 1 ... 99)
+                Section("Teilnahme") {
+                    Toggle("Teilnahme abfragen", isOn: $rsvpEnabled.animation())
+                    if rsvpEnabled {
+                        Toggle("Helfer gesucht", isOn: $wantsHelpers.animation())
+                        if wantsHelpers {
+                            Stepper("Anzahl: \(helpersNeeded)", value: $helpersNeeded, in: 1 ... 99)
+                        }
                     }
-                    Text("Mitglieder und – bei öffentlichen Terminen – alle Nutzer können sich als Helfer eintragen, bis die Zahl erreicht ist.")
+                    Text(rsvpEnabled
+                         ? "Mitglieder und – bei öffentlichen Terminen – alle Nutzer sagen zu, vielleicht oder ab und können sich als Helfer eintragen, bis die Zahl erreicht ist."
+                         : "Ohne Teilnahmeabfrage zeigt der Termin keine Zusage-Knöpfe – etwa für Märkte oder Veranstaltungen anderer.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Kommentare") {
@@ -732,6 +738,7 @@ struct EventEditorView: View {
                     wantsHelpers = existing.helpersNeeded > 0
                     helpersNeeded = max(existing.helpersNeeded, 1)
                     commentsEnabled = existing.commentsEnabled
+                    rsvpEnabled = existing.rsvpEnabled
                     countywideReach = existing.targetTenants == nil
                     targetTenants = Set(existing.targetTenants ?? [])
                 }
@@ -796,7 +803,7 @@ struct EventEditorView: View {
         let draft = CommunityEventDraft(
             communityId: communityID, title: title.trimmingCharacters(in: .whitespaces), description: description,
             startsAt: startsAt, endsAt: hasEnd ? endsAt : nil, location: location.isEmpty ? nil : location,
-            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled, visibility: isPublic ? .public : .members,
+            imagePath: imagePath, helpersNeeded: wantsHelpers ? helpersNeeded : 0, commentsEnabled: commentsEnabled, rsvpEnabled: rsvpEnabled, visibility: isPublic ? .public : .members,
             targetTenants: community?.isCountywide == true && !countywideReach ? Array(targetTenants) : nil,
             createdBy: existing?.createdBy ?? userID
         )

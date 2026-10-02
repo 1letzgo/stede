@@ -10,14 +10,16 @@ enum WasteSettings {
     }
 
     /// Erst vollständig, wenn alle nötigen Abschnitte gewählt sind.
-    static func selection(streetID: Int, sectionID: Int, branchSectionID: Int) -> WasteSelection? {
+    static func selection(streetID: Int, sectionID: Int, branchSectionID: Int, noOrganic: Bool = false, fourWeekly: Bool = false) -> WasteSelection? {
         guard let street = street(id: streetID) else { return nil }
         if street.needsSection, sectionID == 0 { return nil }
         if street.needsBranchSection, branchSectionID == 0 { return nil }
         return WasteSelection(
             streetID: street.id,
             sectionID: street.needsSection ? sectionID : nil,
-            branchSectionID: street.needsBranchSection ? branchSectionID : nil
+            branchSectionID: street.needsBranchSection ? branchSectionID : nil,
+            noOrganic: noOrganic,
+            fourWeekly: fourWeekly
         )
     }
 }

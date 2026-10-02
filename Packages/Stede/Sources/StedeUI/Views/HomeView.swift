@@ -23,6 +23,8 @@ struct HomeView: View {
     @AppStorage("waste.street") private var wasteStreetID: Int = 0
     @AppStorage("waste.section") private var wasteSectionID: Int = 0
     @AppStorage("waste.branchSection") private var wasteBranchID: Int = 0
+    @AppStorage("waste.noOrganic") private var wasteNoOrganic = false
+    @AppStorage("waste.fourWeekly") private var wasteFourWeekly = false
     @AppStorage(HomeLayout.orderKey) private var homeOrder = HomeLayout.defaultOrder
     @AppStorage(HomeLayout.hiddenKey) private var homeHidden = HomeLayout.defaultHidden
     @AppStorage(HomeLayout.tilesKey) private var homeTiles = ""
@@ -190,7 +192,8 @@ struct HomeView: View {
 
     private var wasteStreet: WasteStreet? { WasteSettings.street(id: wasteStreetID) }
     private var wasteSelection: WasteSelection? {
-        WasteSettings.selection(streetID: wasteStreetID, sectionID: wasteSectionID, branchSectionID: wasteBranchID)
+        WasteSettings.selection(streetID: wasteStreetID, sectionID: wasteSectionID, branchSectionID: wasteBranchID,
+                                noOrganic: wasteNoOrganic, fourWeekly: wasteFourWeekly)
     }
 
     /// Nächster Abfuhrtermin der gemerkten Straße; ohne Straße lädt die Kachel zur Wahl ein.
@@ -217,7 +220,11 @@ struct HomeView: View {
             title: "Abfuhr",
             symbol: next?.kind.symbol ?? "trash.fill",
             tint: next?.kind.tint ?? StedeTheme.duneGreen,
-            headline: next.map { "\($0.date.formatted(format)) · \($0.label)" } ?? (isLoading ? "–" : "Keine Termine"),
+            // Alle Arten des nächsten Abholtags („Restabfall, Gelber Sack“), nicht nur die erste.
+            headline: next.map { first in
+                let labels = waste.collections.filter { $0.date == first.date }.map(\.label).joined(separator: ", ")
+                return "\(first.date.formatted(format)) · \(labels)"
+            } ?? (isLoading ? "–" : "Keine Termine"),
             detail: street.name,
             isLoading: isLoading,
             compact: true

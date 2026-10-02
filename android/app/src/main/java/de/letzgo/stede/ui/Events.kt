@@ -56,6 +56,7 @@ object MyParticipation {
 }
 
 fun timeLabel(e: EventInfo): String {
+    if (e.origin.allDay) return "ganztägig"
     val start = e.starts.withZoneSameInstant(Town.zone)
     val end = e.ends?.withZoneSameInstant(Town.zone)
     return when {
@@ -66,6 +67,7 @@ fun timeLabel(e: EventInfo): String {
 }
 fun longTimeLabel(e: EventInfo): String {
     val start = e.starts.withZoneSameInstant(Town.zone)
+    if (e.origin.allDay) return start.format(Town.fmt("EEEE, d. MMMM yyyy")) + ", ganztägig"
     val end = e.ends?.withZoneSameInstant(Town.zone)
     return start.format(Town.fmt("EEEE, d. MMMM yyyy, HH:mm")) + (end?.let { " bis ${it.format(Town.hm)} Uhr" } ?: " Uhr")
 }
@@ -87,7 +89,7 @@ fun EventCard(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {},
     // Tippen öffnet die Details, langes Drücken teilt (wie das Kontextmenü in iOS).
     Column(Modifier.cardSurface().goingOutline(going)
         .combinedClickable(onClick = onOpen, onLongClick = { scope.launch { EventShare.share(context, e) } })) {
-        e.imageUrl?.let { EventPhoto(it, 170.dp) }
+        e.imageUrl?.let { EventPhoto(it, 170.dp, credit = e.origin.imageCredit) }
         EventBody(e, helpers, compact = true, onSignIn = onSignIn,
             menu = if (manageable) ({ EventCardMenu(e, onEdit = { editing = true }, onCancel = { confirmCancel = true }) }) else null) {
             if (e.commentsEnabled && onComments != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -130,7 +132,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
     val tint = if (e.isCancelled) C.red else C.teal
     val count = helpers ?: 0
     // Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
-    val isPast = (e.ends ?: e.starts).isBefore(Town.now())
+    val isPast = e.isOver
     Column(Modifier.padding(CardPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
             CommunityAvatar(e.logoUrl, e.community)
@@ -140,7 +142,8 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Pill(timeLabel(e), tint)
                     if (e.isCancelled) Pill("abgesagt", C.red) else if (isPast) Pill("vorbei", C.mudflat)
-                    if (e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
+                    e.origin.category?.let { Pill(it, C.ink) }
+                    if (e.rsvpEnabled && e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
             }
             if (!e.isPublic) Icon(Icons.Default.Lock, "Nur für Mitglieder", tint = C.secondary,
@@ -155,12 +158,26 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
             SmallLabel(Icons.Default.Groups, e.community, tint)
         }
         if (!compact) e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
-        if (!e.isCancelled && !isPast) {
+        if (!compact) EventOriginDetails(e.origin, tint)
+        if (e.rsvpEnabled && !e.isCancelled && !isPast) {
             if (Session.signedIn) ParticipationRow(e, helpers)
             else ColorChip("Anmelden, um zuzusagen", C.ink, icon = Icons.Default.AccountCircle) { onSignIn() }
         }
         footer()
     }
+}
+
+/** Detail übernommener Gemeinde-Termine: Veranstalter, Preis, Anmeldung und die Quelle als Link. */
+@Composable
+private fun EventOriginDetails(o: EventOrigin, tint: Color) {
+    val openUrl = rememberOpenUrl()
+    o.organizer?.let { SmallLabel(Icons.Default.Business, it, tint) }
+    o.price?.let { SmallLabel(Icons.Default.Euro, it, tint) }
+    o.registration?.let { SmallLabel(Icons.Default.EditNote, "Anmeldung: $it", tint) }
+    val name = o.sourceName ?: return
+    val url = o.sourceUrl
+    if (url != null) ColorChip("Quelle: $name", C.ink, icon = Icons.Default.Public) { openUrl(url) }
+    else SmallLabel(Icons.Default.AccountBalance, "Quelle: $name", tint)
 }
 
 @Composable
@@ -211,7 +228,9 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
     var editing by remember { mutableStateOf(false) }
     var people by remember { mutableStateOf<List<Participation>?>(null) }
     val showsPeople = canEdit(e)
-    LaunchedEffect(e.id, Changes.version) { if (showsPeople) people = runCatching { CommunityApi.participations(e.id) }.getOrNull() }
+    // Zusagenliste nur, wenn der Termin die Teilnahme abfragt.
+    val showsList = showsPeople && e.rsvpEnabled
+    LaunchedEffect(e.id, Changes.version) { if (showsList) people = runCatching { CommunityApi.participations(e.id) }.getOrNull() }
     if (editing && e.communityId != null) {
         EventEditorSheet(communityId = e.communityId, existing = e, onDismiss = { editing = false; onDismiss() })
         return
@@ -224,7 +243,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
                 Column(Modifier.cardSurface().goingOutline(going)) {
-                    e.imageUrl?.let { FullEventPhoto(it) }
+                    e.imageUrl?.let { FullEventPhoto(it, credit = e.origin.imageCredit) }
                     EventBody(e, helpers, compact = false, onSignIn = onSignIn)
                 }
                 ColorChip("Teilen", C.ink, Modifier.fillMaxWidth().padding(top = Spacing), icon = Icons.Default.Share) {
@@ -232,7 +251,7 @@ fun EventDetailSheet(e: EventInfo, helpers: Int?, onSignIn: () -> Unit = {}, onD
                 }
             }
             if (e.commentsEnabled && Session.signedIn) item { EventComments(CommentTarget.Event(e.id), canModerate = showsPeople) }
-            if (showsPeople) {
+            if (showsList) {
                 val list = people.orEmpty()
                 val loading = people == null
                 val helping = list.filter { it.helping && it.status != "declined" }
@@ -286,6 +305,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
     var helpers by remember { mutableIntStateOf(existing?.helpersNeeded ?: 0) }
     var isPublic by remember { mutableStateOf(existing?.isPublic ?: false) }
     var comments by remember { mutableStateOf(existing?.commentsEnabled ?: false) }
+    var rsvp by remember { mutableStateOf(existing?.rsvpEnabled ?: true) }
     // Foto beim Öffnen: wird nach dem Sichern gelöscht, wenn ersetzt (Standardbilder nie).
     val originalPath = remember { existing?.imageUrl?.substringAfter("/event-photos/") }
     var imagePath by remember { mutableStateOf(originalPath) }
@@ -315,8 +335,8 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             var ends = if (hasEnd) ZonedDateTime.of(day, endTime, Town.zone) else null
             if (ends != null && !ends.isAfter(starts)) ends = ends.plusDays(1)
             val draft = EventDraft(communityId, title.trim(), description.trim(), starts.toOffsetDateTime().toString(), ends?.toOffsetDateTime()?.toString(),
-                location.trim().ifBlank { null }, path, helpers, if (isPublic) "public" else "members", existing?.createdBy ?: user,
-                commentsEnabled = comments,
+                location.trim().ifBlank { null }, path, if (rsvp) helpers else 0, if (isPublic) "public" else "members", existing?.createdBy ?: user,
+                commentsEnabled = comments, rsvpEnabled = rsvp,
                 targetTenants = if (isPublic && community?.countywide == true && !countywideReach) targetTenants.toList() else null)
             if (existing == null) CommunityApi.createEvent(draft) else CommunityApi.updateEvent(existing.id, draft)
             if (originalPath != null && originalPath != path) CommunityApi.deletePhoto("event-photos", originalPath)
@@ -354,6 +374,13 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
             }
             StedeCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Teilnahme abfragen", color = C.text)
+                        Text(if (rsvp) "Zusagen und Helfer" else "Keine Zusage-Knöpfe – etwa für Märkte oder Veranstaltungen anderer", color = C.secondary, fontSize = 13.sp)
+                    }
+                    Switch(rsvp, { rsvp = it })
+                }
+                if (rsvp) Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Helfer gesucht", color = C.text); Text(if (helpers == 0) "keine" else "$helpers Personen", color = C.secondary, fontSize = 13.sp) }
                     IconButton(onClick = { if (helpers > 0) helpers-- }) { Icon(Icons.Default.Remove, "Weniger", tint = C.ink) }
                     IconButton(onClick = { helpers++ }) { Icon(Icons.Default.Add, "Mehr", tint = C.ink) }

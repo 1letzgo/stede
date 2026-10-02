@@ -23,9 +23,13 @@ enum class CalendarFilter(val title: String) { All("Alle"), City("Öffentlich"),
 
 /** Kalender-Eintrag: Stadt-Termin oder Community-Termin. */
 sealed class CalendarEntry {
-    abstract val day: LocalDate; abstract val sortKey: String
-    data class City(val e: CityEvent) : CalendarEntry() { override val day: LocalDate = LocalDate.parse(e.day); override val sortKey = e.startsAt ?: e.day }
-    data class Community(val e: EventInfo) : CalendarEntry() { override val day: LocalDate = e.starts.withZoneSameInstant(Town.zone).toLocalDate(); override val sortKey = e.starts.toInstant().toString() }
+    abstract val day: LocalDate; abstract val sortKey: String; abstract val isOver: Boolean
+    data class City(val e: CityEvent) : CalendarEntry() {
+        override val day: LocalDate = LocalDate.parse(e.day); override val sortKey = e.startsAt ?: e.day
+        override val isOver get() = Town.parse(e.startsAt)?.let { !eventEnd(it, Town.parse(e.endsAt), false).isAfter(Town.now()) }
+            ?: !day.plusDays(1).atStartOfDay(Town.zone).isAfter(Town.now())
+    }
+    data class Community(val e: EventInfo) : CalendarEntry() { override val day: LocalDate = e.starts.withZoneSameInstant(Town.zone).toLocalDate(); override val sortKey = e.starts.toInstant().toString(); override val isOver get() = e.isOver }
 }
 
 /** Zeilen der fortlaufenden Liste — flach, damit „Heute“ einen festen Index hat. */
@@ -46,7 +50,8 @@ private const val HORIZON_DAYS = 365L
 @Composable
 fun CalendarScreen() {
     val today = Town.today()
-    var start by remember { mutableStateOf(today.minusDays(7)) }
+    // Startet heute — Vergangenes nur über „Frühere Termine“.
+    var start by remember { mutableStateOf(today) }
     var end by remember { mutableStateOf(today.plusDays(PAGE_DAYS - 1)) }
     var filter by remember { mutableStateOf(runCatching { CalendarFilter.valueOf(Store.string("calendar.filter", "All")) }.getOrDefault(CalendarFilter.All)) }
     var city by remember { mutableStateOf(CityEvents.cached("feed")) }
@@ -60,6 +65,9 @@ fun CalendarScreen() {
     var loadingEarlier by remember { mutableStateOf(false) }
     var loadingLater by remember { mutableStateOf(false) }
     var didScroll by remember { mutableStateOf(false) }
+    // Erster Ladeversuch der Gruppen-Termine abgeschlossen — erst dann auf heute springen, weil sie
+    // die Roh-Termine der Stadt ersetzen und sonst alles über „heute“ verschieben.
+    var communityLoaded by remember { mutableStateOf(false) }
     // Nach „Frühere Termine“: Schlüssel der Zeile, die vorher ganz oben stand und nun unten am Rand stehen soll.
     var earlierAnchor by remember { mutableStateOf<String?>(null) }
     val openUrl = rememberOpenUrl()
@@ -82,9 +90,10 @@ fun CalendarScreen() {
     // Ganzer geladener Bereich — beim Start, bei An-/Abmeldung und nach Änderungen.
     LaunchedEffect(userId, memberIds, Changes.version) {
         error = null
-        runCatching { CityEvents.range(start, end, cacheAs = if (start == today.minusDays(7)) "feed" else null) }
+        runCatching { CityEvents.range(start, end, cacheAs = if (start == today) "feed" else null) }
             .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }
         runCatching { community = communityRange(start, end) }
+        communityLoaded = true
         refreshHelpers()
         refreshComments()
         MyParticipation.load()
@@ -121,14 +130,18 @@ fun CalendarScreen() {
         }
     }
 
+    // Gemeinde-Termine kommen als übernommene Termine der Gruppe „stede Veranstaltungen“; die Rohdaten
+    // (city_events, offline im Cache) nur, solange davon nichts geladen ist — ohne Netz oder vor dem Import.
+    val showsRawCity = community.none { it.isImported }
     val entries = buildList {
-        if (filter == CalendarFilter.All || filter == CalendarFilter.City) city?.forEach { add(CalendarEntry.City(it)) }
+        if ((filter == CalendarFilter.All || filter == CalendarFilter.City) && showsRawCity) city?.forEach { add(CalendarEntry.City(it)) }
         community.forEach { e ->
             val mine = MyParticipation.byEvent[e.id]?.status.let { it == "going" || it == "maybe" } || e.createdBy == userId
-            val show = when (filter) { CalendarFilter.All -> true; CalendarFilter.City -> false; CalendarFilter.Communities -> true; CalendarFilter.Mine -> mine }
+            val show = when (filter) { CalendarFilter.All -> true; CalendarFilter.City -> e.isImported; CalendarFilter.Communities -> !e.isImported; CalendarFilter.Mine -> mine }
             if (show) add(CalendarEntry.Community(e))
         }
-    }.sortedBy { it.sortKey }.groupBy { it.day }
+    }.filter { start.isBefore(today) || !it.isOver } // Vorbei ausgeblendet, bis frühere Termine angefordert sind
+        .sortedBy { it.sortKey }.groupBy { it.day }
 
     // Nur Tage mit Terminen, dazu immer heute.
     val rows = buildList {
@@ -151,8 +164,8 @@ fun CalendarScreen() {
         earlierAnchor = null
     }
 
-    LaunchedEffect(city != null) {
-        if (!didScroll && city != null && todayIndex >= 0) { didScroll = true; listState.scrollToItem(todayIndex) }
+    LaunchedEffect(city != null || error != null, communityLoaded) {
+        if (!didScroll && (city != null || error != null) && communityLoaded && todayIndex >= 0) { didScroll = true; listState.scrollToItem(todayIndex) }
     }
 
     Scaffold(topBar = {

@@ -90,21 +90,24 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             val mine = all.filter { it.id in mineIds || it.createdBy == Session.userId }
             val others = all.filter { it !in mine && it.status == "approved" && it.visibility == "listed" }
             if (list == null && error == null) item { Loading() }
+            // Ganz oben, eigene Kategorie „Meine Aufgaben“: eine Karte mit der Anzahl, öffnet die Übersicht nach Gruppen.
+            val taskGroups = mine.filter { it.hasTasks && Session.membership(it.id)?.isActive == true }.map { it.id }.toSet()
+            val assigned = myTasks?.filter { it.task.communityId in taskGroups }
+            // Nur wenn dir etwas zugewiesen ist — sonst bleibt der Gruppen-Tab aufgeräumt.
+            if (!assigned.isNullOrEmpty()) {
+                item(key = "mytasksHeader") { SectionHeader("Meine Aufgaben", Icons.Default.Checklist) }
+                item(key = "mytasks") {
+                    val groups = assigned.map { it.task.communityId }.toSet().size
+                    JoinRow(Icons.Default.Checklist, C.amber, "Aufgaben",
+                        "${assigned.size} offen · ${if (groups == 1) "1 Gruppe" else "$groups Gruppen"}") { open(Screen.MyTasks) }
+                }
+            }
             if (mine.isNotEmpty()) {
                 item { SectionHeader("Meine Gruppen", Icons.Default.Groups) }
                 items(mine, key = { "m${it.id}" }) { c -> CommunityRow(c, Session.membership(c.id)) { open(Screen.CommunityDetail(c.id)) } }
-                // Eigene Kategorie „Meine Aufgaben“: eine Karte mit der Anzahl, öffnet die Übersicht nach Gruppen.
-                val taskGroups = mine.filter { it.hasTasks && Session.membership(it.id)?.isActive == true }.map { it.id }.toSet()
-                val assigned = myTasks?.filter { it.task.communityId in taskGroups }
-                if (assigned != null && taskGroups.isNotEmpty()) item(key = "mytasksHeader") { SectionHeader("Meine Aufgaben", Icons.Default.Checklist) }
-                if (assigned != null && taskGroups.isNotEmpty()) item(key = "mytasks") {
-                    val groups = assigned.map { it.task.communityId }.toSet().size
-                    JoinRow(Icons.Default.Checklist, C.amber, "Aufgaben",
-                        if (assigned.isEmpty()) "Keine offenen Aufgaben" else "${assigned.size} offen · ${if (groups == 1) "1 Gruppe" else "$groups Gruppen"}") { open(Screen.MyTasks) }
-                }
             }
             if (others.isNotEmpty()) {
-                item { SectionHeader(if (mine.isEmpty()) "Gruppen" else "Weitere", Icons.Default.People) }
+                item { SectionHeader(if (mine.isEmpty()) "Gruppen" else "Weitere Gruppen", Icons.Default.People) }
                 items(others, key = { "o${it.id}" }) { c -> CommunityRow(c, null) { open(Screen.CommunityDetail(c.id)) } }
             } else if (mine.isEmpty() && list != null) {
                 item { SectionHeader("Gruppen", Icons.Default.People) }
@@ -217,7 +220,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit, initialTab: CommunityT
     val today = remember { Town.today() }
     var c by remember { mutableStateOf(cached?.community) }
     var events by remember { mutableStateOf(cached?.events?.map { EventInfo.of(it, cached.community.name, cached.community.logoUrl) }
-        ?.filter { !(it.ends ?: it.starts).withZoneSameInstant(Town.zone).toLocalDate().isBefore(today) }) }
+        ?.filter { !it.starts.withZoneSameInstant(Town.zone).toLocalDate().isBefore(today) && !it.isOver }) }
     var members by remember { mutableStateOf(cached?.members) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var past by remember { mutableStateOf<List<EventInfo>?>(null) }
@@ -255,7 +258,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit, initialTab: CommunityT
         runCatching { CommunityApi.community(id) }.onSuccess { c = it }
         if (isMember) {
             val from = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
-            val rawEvents = runCatching { CommunityApi.events(id, from) }.onSuccess { list -> events = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) } }.getOrNull()
+            val rawEvents = runCatching { CommunityApi.events(id, from) }.onSuccess { list -> events = list.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }.filter { !it.isOver } }.getOrNull()
             val rawMembers = runCatching { CommunityApi.members(id) }.onSuccess { members = it }.getOrNull()
             val community = c
             if (rawEvents != null && rawMembers != null && community != null)
@@ -268,13 +271,18 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit, initialTab: CommunityT
         }
     }
     // Frühere Termine: jeder Tipp auf den Chip holt die nächsten 20 (neueste zuerst geladen, oben chronologisch gezeigt).
+    // Bisher abgerufene Zeilen — ohne die herausgefilterten, noch laufenden zählt der Versatz falsch.
+    var pastFetched by remember { mutableLongStateOf(0L) }
     suspend fun loadPast(offset: Long) {
         if (loadingPast) return
         loadingPast = true
         noMorePast = false
-        val before = Town.today().atStartOfDay(Town.zone).toOffsetDateTime().toString()
+        // Bis jetzt statt bis Mitternacht, damit heute Vorbeiges dabei ist; was noch läuft, steht oben.
+        val before = Town.now().toOffsetDateTime().toString()
+        val upcoming = events.orEmpty().map { it.id }.toSet()
         runCatching { CommunityApi.pastEvents(id, before, offset) }.onSuccess { page ->
-            val infos = page.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
+            pastFetched = offset + page.size
+            val infos = page.filter { it.id !in upcoming }.map { EventInfo.of(it, c?.name ?: "", c?.logoUrl) }
             past = if (offset == 0L) infos else past.orEmpty() + infos
             hasMorePast = page.size == 20
             noMorePast = page.isEmpty()
@@ -355,7 +363,7 @@ fun CommunityDetailScreen(id: String, onBack: () -> Unit, initialTab: CommunityT
                                 val anchor = past?.lastOrNull()?.let { "past${it.id}" } ?: events?.firstOrNull()?.id
                                 scope.launch {
                                     val before = past?.size ?: 0
-                                    loadPast(before.toLong())
+                                    loadPast(pastFetched)
                                     if ((past?.size ?: 0) > before) pastAnchor = anchor
                                 }
                             }

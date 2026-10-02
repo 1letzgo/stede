@@ -34,6 +34,8 @@ public nonisolated struct WasteClient: Sendable {
             URLQueryItem(name: "year", value: String(year)),
             URLQueryItem(name: "section", value: selection.sectionID.map(String.init) ?? ""),
             URLQueryItem(name: "branch", value: selection.branchSectionID.map(String.init) ?? ""),
+            URLQueryItem(name: "komp", value: String(selection.noOrganic)),
+            URLQueryItem(name: "vier", value: String(selection.fourWeekly)),
         ]
         guard let url = components.url else { throw AppError.invalidURL }
         let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 25))
@@ -47,7 +49,7 @@ public nonisolated struct WasteClient: Sendable {
         let section = selection.sectionID.map(String.init) ?? "null"
         let branch = selection.branchSectionID.map(String.init) ?? "null"
         guard
-            let prepare = URL(string: "\(Self.base)/api/makekal.php?uid=\(id)&str=\(selection.streetID)&strgr=\(section)&astgr=\(branch)&komp=false&vier=false&jahr=\(shortYear)&max=999"),
+            let prepare = URL(string: "\(Self.base)/api/makekal.php?uid=\(id)&str=\(selection.streetID)&strgr=\(section)&astgr=\(branch)&komp=\(selection.noOrganic)&vier=\(selection.fourWeekly)&jahr=\(shortYear)&max=999"),
             let render = URL(string: "\(Self.base)/pdf/makepdf.php?uuid=\(id)&str=\(selection.streetID)&jahr=\(shortYear)&sw=false"),
             let pdf = URL(string: "\(Self.base)/pdf/tmp/\(id).pdf")
         else { throw AppError.invalidURL }
@@ -84,8 +86,10 @@ public actor WasteStore {
     private let fileManager = FileManager.default
     private var memory: [String: [WasteCollection]] = [:]
 
+    /// `v2`: Parser liest auch Doppeltermine (zweite Art ohne Datum) — ältere Dateien
+    /// haben dort Lücken und werden deshalb nicht mehr gelesen.
     private func key(_ selection: WasteSelection, _ year: Int) -> String {
-        "\(selection.cacheKey)-\(year)"
+        "v2-\(selection.cacheKey)-\(year)"
     }
 
     private func fileURL(_ key: String) -> URL {
@@ -114,6 +118,7 @@ public actor WasteStore {
         if let data = try? JSONEncoder().encode(fresh) {
             try? data.write(to: fileURL(key), options: .atomic)
         }
+        try? fileManager.removeItem(at: fileURL("\(selection.cacheKey)-\(year)"))
         return fresh
     }
 

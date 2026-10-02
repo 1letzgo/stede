@@ -153,14 +153,28 @@ fun initials(name: String): String {
 }
 
 @Composable
-fun EventPhoto(url: String, height: Dp, modifier: Modifier = Modifier) {
-    AsyncImage(url, null, modifier.fillMaxWidth().height(height).background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.Crop)
+fun EventPhoto(url: String, height: Dp, modifier: Modifier = Modifier, credit: String? = null) {
+    Box(modifier.fillMaxWidth().height(height)) {
+        AsyncImage(url, null, Modifier.fillMaxSize().background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.Crop)
+        PhotoCredit(credit, Modifier.align(Alignment.BottomEnd))
+    }
+}
+
+/** Urheber und Lizenz übernommener Fotos, klein unten rechts im Bild. */
+@Composable
+fun PhotoCredit(text: String?, modifier: Modifier = Modifier) {
+    if (text == null) return
+    Text(text, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        modifier = modifier.padding(6.dp).background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(50)).padding(horizontal = 6.dp, vertical = 2.dp))
 }
 
 /** Beitragsbild in der Detailansicht: volle Breite, Höhe nach Seitenverhältnis — nichts abgeschnitten. */
 @Composable
-fun FullEventPhoto(url: String, modifier: Modifier = Modifier) {
-    AsyncImage(url, null, modifier.fillMaxWidth().background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.FillWidth)
+fun FullEventPhoto(url: String, modifier: Modifier = Modifier, credit: String? = null) {
+    Box(modifier.fillMaxWidth()) {
+        AsyncImage(url, null, Modifier.fillMaxWidth().background(C.teal.copy(alpha = 0.12f)), contentScale = ContentScale.FillWidth)
+        PhotoCredit(credit, Modifier.align(Alignment.BottomEnd))
+    }
 }
 
 /** Kopfleiste im Petrol der Stadt: Titel mittig, weiße Symbole. */

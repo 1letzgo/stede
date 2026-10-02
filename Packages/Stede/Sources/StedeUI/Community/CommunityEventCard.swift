@@ -21,6 +21,10 @@ struct CommunityEventInfo: Identifiable, Hashable {
     let commentsEnabled: Bool
     let createdBy: UUID?
     let communityId: UUID?
+    /// Herkunft bei übernommenen Gemeinde-Terminen (Quelle, Foto-Credit, ganztägig …).
+    let origin: EventOrigin
+    /// Teilnahme abfragen — aus: keine Zusage-Chips, keine Helfer, keine Zusagenliste.
+    let rsvpEnabled: Bool
 
     init(_ event: CommunityEvent) {
         id = event.id; title = event.title; community = event.communityName; communityLogoURL = event.communityLogoURL
@@ -28,6 +32,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
         imageURL = event.imageURL; isPublic = event.isPublic; isCancelled = event.cancelledAt != nil
         helpersNeeded = event.helpersNeeded; createdBy = event.createdBy; communityId = event.communityId
         commentsEnabled = event.commentsEnabled
+        origin = event.origin
+        rsvpEnabled = event.rsvpEnabled
     }
 
     init(_ event: PublicEvent) {
@@ -36,6 +42,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
         imageURL = event.imageURL; isPublic = true; isCancelled = false
         helpersNeeded = event.helpersNeeded; createdBy = nil; communityId = nil
         commentsEnabled = false
+        origin = event.origin
+        rsvpEnabled = event.rsvpEnabled ?? true
     }
 
     static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
@@ -45,10 +53,24 @@ struct CommunityEventInfo: Identifiable, Hashable {
     static let timeFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
         .hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
 
-    var timeLabel: String { starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "") }
+    static let dayFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+        .weekday(.abbreviated).day().month(.abbreviated)
+    static let longDayFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+        .weekday(.wide).day().month(.wide).year()
+
+    var timeLabel: String {
+        if origin.allDay { return starts.formatted(Self.dayFormat) + ", ganztägig" }
+        return starts.formatted(Self.dateFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "")
+    }
     /// Nur die Uhrzeit — für Listen, die schon nach Tag gegliedert sind.
-    var clockLabel: String { starts.formatted(Self.timeFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "") }
-    var longTimeLabel: String { starts.formatted(Self.longDateFormat) + (ends.map { " bis \($0.formatted(Self.timeFormat)) Uhr" } ?? " Uhr") }
+    var clockLabel: String {
+        if origin.allDay { return "ganztägig" }
+        return starts.formatted(Self.timeFormat) + (ends.map { "–\($0.formatted(Self.timeFormat))" } ?? "")
+    }
+    var longTimeLabel: String {
+        if origin.allDay { return starts.formatted(Self.longDayFormat) + ", ganztägig" }
+        return starts.formatted(Self.longDateFormat) + (ends.map { " bis \($0.formatted(Self.timeFormat)) Uhr" } ?? " Uhr")
+    }
 }
 
 /// Schnellmenü „…“ auf der Karte — für Ersteller und Admins, wie bei Umfragen.
@@ -87,7 +109,7 @@ struct CommunityEventCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight) }
+            if showsPhoto, let imageURL = info.imageURL { EventPhoto(url: imageURL, height: imageHeight, credit: info.origin.imageCredit) }
             VStack(alignment: .leading, spacing: 10) {
                 EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                           onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: true, showsDate: showsDate,
@@ -157,7 +179,7 @@ private struct EventBody: View {
     private var isHelping: Bool { participation?.helping == true }
     private var helpersOpen: Bool { info.helpersNeeded > 0 && helperCount < info.helpersNeeded }
     /// Vorbei, sobald Ende (oder Beginn ohne Ende) verstrichen ist — dann keine Zusagen mehr.
-    private var isPast: Bool { (info.ends ?? info.starts) < Date() }
+    private var isPast: Bool { EventTiming.isOver(starts: info.starts, ends: info.ends, allDay: info.origin.allDay) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -170,7 +192,8 @@ private struct EventBody: View {
                             StedeTagPill(text: showsDate ? info.timeLabel : info.clockLabel, color: tint)
                             if info.isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
                             else if isPast { StedeTagPill(text: "vorbei", color: StedeTheme.mudflat) }
-                            if info.helpersNeeded > 0 {
+                            if let category = info.origin.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+                            if info.rsvpEnabled, info.helpersNeeded > 0 {
                                 StedeTagPill(text: helperCount >= info.helpersNeeded ? "Helfer komplett" : "Helfer \(helperCount)/\(info.helpersNeeded)", color: helperCount >= info.helpersNeeded ? StedeTheme.duneGreen : StedeTheme.heather)
                             }
                         }
@@ -198,7 +221,8 @@ private struct EventBody: View {
             if !compact, let location = info.location, !location.isEmpty {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
             }
-            if !info.isCancelled && !isPast {
+            if !compact { EventOriginDetails(origin: info.origin, tint: tint) }
+            if info.rsvpEnabled, !info.isCancelled, !isPast {
                 if isSignedIn {
                     ParticipationRow(
                         participation: participation,
@@ -242,7 +266,7 @@ struct CommunityEventDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                     VStack(alignment: .leading, spacing: 0) {
-                        if let imageURL = info.imageURL { FullEventPhoto(url: imageURL, placeholderHeight: imageHeight) }
+                        if let imageURL = info.imageURL { FullEventPhoto(url: imageURL, placeholderHeight: imageHeight, credit: info.origin.imageCredit) }
                         EventBody(info: info, helperCount: helperCount, participation: participation, isSignedIn: isSignedIn,
                                   onParticipate: onParticipate, signIn: signIn, onEdit: onEdit, compact: false)
                             .padding(StedeTheme.cardPadding)
@@ -255,7 +279,7 @@ struct CommunityEventDetailView: View {
                         EventCommentsSection(eventID: info.id, canModerate: showsParticipants)
                     }
 
-                    if showsParticipants {
+                    if showsParticipants, info.rsvpEnabled {
                         participantSections
                     }
                 }
@@ -275,7 +299,7 @@ struct CommunityEventDetailView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
             }
             .task(id: "\(info.id)|\(participation?.status.rawValue ?? "")|\(participation?.helping ?? false)") {
-                guard showsParticipants else { return }
+                guard showsParticipants, info.rsvpEnabled else { return }
                 loadingParticipants = true
                 participants = (try? await CommunityClient().participations(eventID: info.id)) ?? []
                 loadingParticipants = false
@@ -319,14 +343,64 @@ struct CommunityEventDetailView: View {
 struct EventPhoto: View {
     let url: URL
     let height: CGFloat
+    var credit: String?
 
     var body: some View {
         RemoteImage(url: url) { Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)) }
         .frame(maxWidth: .infinity)
         .frame(height: height)
         .clipped()
+        .overlay(alignment: .bottomTrailing) { PhotoCredit(text: credit) }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// Urheber und Lizenz übernommener Fotos, klein unten rechts im Bild.
+struct PhotoCredit: View {
+    let text: String?
+
+    var body: some View {
+        if let text {
+            Text(text)
+                .font(.caption2)
+                .lineLimit(1)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.black.opacity(0.45), in: Capsule())
+                .padding(6)
+        }
+    }
+}
+
+/// Detailansicht übernommener Gemeinde-Termine: Veranstalter, Preis, Anmeldung und die Quelle als Link.
+private struct EventOriginDetails: View {
+    let origin: EventOrigin
+    let tint: Color
+    @State private var page: BrowserPage?
+
+    var body: some View {
+        if let organizer = origin.organizer {
+            Label { Text(organizer) } icon: { Image(systemName: "person.crop.square").foregroundStyle(tint) }.font(.caption)
+        }
+        if let price = origin.price {
+            Label { Text(price) } icon: { Image(systemName: "eurosign.circle").foregroundStyle(tint) }.font(.caption)
+        }
+        if let registration = origin.registration {
+            Label { Text("Anmeldung: \(registration)") } icon: { Image(systemName: "pencil.and.list.clipboard").foregroundStyle(tint) }.font(.caption)
+        }
+        if let name = origin.sourceName {
+            if let url = origin.link {
+                Button { page = BrowserPage(url: url) } label: {
+                    StedeColorChip(title: "Quelle: \(name)", symbol: "safari", color: StedeTheme.ink)
+                }
+                .buttonStyle(StedeCardButtonStyle())
+                .sheet(item: $page) { page in InAppBrowser(url: page.url) }
+            } else {
+                Label { Text("Quelle: \(name)") } icon: { Image(systemName: "building.columns").foregroundStyle(tint) }.font(.caption)
+            }
+        }
     }
 }
 
@@ -334,12 +408,14 @@ struct EventPhoto: View {
 struct FullEventPhoto: View {
     let url: URL
     let placeholderHeight: CGFloat
+    var credit: String?
 
     var body: some View {
         RemoteImage(url: url, contentMode: .fit) {
             Rectangle().fill(StedeTheme.seaTeal.opacity(0.12)).frame(height: placeholderHeight)
         }
         .frame(maxWidth: .infinity)
+        .overlay(alignment: .bottomTrailing) { PhotoCredit(text: credit) }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

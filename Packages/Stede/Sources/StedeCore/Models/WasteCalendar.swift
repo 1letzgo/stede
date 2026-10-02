@@ -98,15 +98,33 @@ public nonisolated struct WasteSelection: Hashable, Sendable, Codable {
     public let streetID: Int
     public let sectionID: Int?
     public let branchSectionID: Int?
+    /// Eigenkompostierer: keine Biotonne (appfuhr `komp=true`).
+    public let noOrganic: Bool
+    /// Restabfall nur alle 4 Wochen (appfuhr `vier=true`).
+    public let fourWeekly: Bool
 
-    public init(streetID: Int, sectionID: Int? = nil, branchSectionID: Int? = nil) {
+    public init(streetID: Int, sectionID: Int? = nil, branchSectionID: Int? = nil, noOrganic: Bool = false, fourWeekly: Bool = false) {
         self.streetID = streetID
         self.sectionID = sectionID
         self.branchSectionID = branchSectionID
+        self.noOrganic = noOrganic
+        self.fourWeekly = fourWeekly
     }
 
+    enum CodingKeys: String, CodingKey { case streetID, sectionID, branchSectionID, noOrganic, fourWeekly }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        streetID = try c.decode(Int.self, forKey: .streetID)
+        sectionID = try c.decodeIfPresent(Int.self, forKey: .sectionID)
+        branchSectionID = try c.decodeIfPresent(Int.self, forKey: .branchSectionID)
+        noOrganic = try c.decodeIfPresent(Bool.self, forKey: .noOrganic) ?? false
+        fourWeekly = try c.decodeIfPresent(Bool.self, forKey: .fourWeekly) ?? false
+    }
+
+    /// Ohne Optionen wie bisher; jede Option bekommt einen eigenen Cache-Eintrag.
     public var cacheKey: String {
-        "\(streetID)-\(sectionID ?? 0)-\(branchSectionID ?? 0)"
+        "\(streetID)-\(sectionID ?? 0)-\(branchSectionID ?? 0)" + (noOrganic ? "-nobio" : "") + (fourWeekly ? "-4w" : "")
     }
 }
 
@@ -119,22 +137,34 @@ public nonisolated enum WastePDFParser: Sendable {
         }
         var seen = Set<String>()
         var result: [WasteCollection] = []
+        // Zwei Abfuhren am selben Tag: Das PDF nennt das Datum nur einmal, die zweite Art
+        // („Gelber Sack“, „Ast- und Strauchwerk“) steht allein in der Folgezeile — oft mit
+        // Monatsnamen dazwischen. Sie gehört zum zuletzt genannten Datum.
+        var lastDate: Date?
+        func add(_ date: Date, _ label: String) {
+            let collection = WasteCollection(date: date, kind: WasteKind(label: label), label: label)
+            if seen.insert(collection.id).inserted {
+                result.append(collection)
+            }
+        }
         for line in text.components(separatedBy: .newlines) {
             let ns = line as NSString
-            guard let match = regex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)),
-                  let day = Int(ns.substring(with: match.range(at: 1))),
+            guard let match = regex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else {
+                let label = line.trimmingCharacters(in: .whitespaces)
+                if let lastDate, WasteKind(label: label) != .other { add(lastDate, label) }
+                continue
+            }
+            guard let day = Int(ns.substring(with: match.range(at: 1))),
                   let month = Int(ns.substring(with: match.range(at: 2)))
             else { continue }
-            let label = ns.substring(with: match.range(at: 3))
             var components = DateComponents()
             components.year = year
             components.month = month
             components.day = day
             guard let date = IslandTime.calendar.date(from: components) else { continue }
-            let collection = WasteCollection(date: IslandTime.startOfDay(date), kind: WasteKind(label: label), label: label)
-            if seen.insert(collection.id).inserted {
-                result.append(collection)
-            }
+            let start = IslandTime.startOfDay(date)
+            lastDate = start
+            add(start, ns.substring(with: match.range(at: 3)))
         }
         return result.sorted { $0.date < $1.date }
     }

@@ -27,6 +27,8 @@ fun SettingsScreen() {
     var streetId by remember { mutableIntStateOf(Store.int("waste.street")) }
     var sectionId by remember { mutableIntStateOf(Store.int("waste.section")) }
     var branchId by remember { mutableIntStateOf(Store.int("waste.branchSection")) }
+    var noOrganic by remember { mutableStateOf(Store.bool("waste.noOrganic", false)) }
+    var fourWeekly by remember { mutableStateOf(Store.bool("waste.fourWeekly", false)) }
     var stopId by remember { mutableStateOf(Store.string("bus.stop", "")) }
     var direction by remember { mutableStateOf(TrainDirection.stored()) }
     var stationId by remember { mutableStateOf(Store.string("train.station", "")) }
@@ -123,6 +125,12 @@ fun SettingsScreen() {
                         Spacer(Modifier.height(10.dp))
                         SectionPicker("Ast- und Strauchwerk", s.branchSections!!, branchId) { branchId = it; Store.setInt("waste.branchSection", it) }
                     }
+                    // Wie auf der appfuhr-Website: Eigenkompostierer ohne Biotonne, Restabfall alle 4 Wochen.
+                    if (street != null) {
+                        Spacer(Modifier.height(10.dp))
+                        WasteOptionRow(Icons.Default.Eco, C.green, "Keine Biotonne", noOrganic) { noOrganic = it; Store.setBool("waste.noOrganic", it) }
+                        WasteOptionRow(Icons.Default.Delete, C.ink, "Restabfall alle 4 Wochen", fourWeekly) { fourWeekly = it; Store.setBool("waste.fourWeekly", it) }
+                    }
                 }
             }
 
@@ -180,5 +188,15 @@ private fun ValueRow(icon: ImageVector, color: Color, title: String, value: Stri
         Text(title, color = C.text, fontSize = 16.sp)
         Text(value, Modifier.weight(1f), color = C.secondary, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.End)
         Chevron()
+    }
+}
+
+/** Schalter für eine Abfuhr-Option mit Symbol und Titel — wie toggleRow in SettingsView. */
+@Composable
+private fun WasteOptionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, color: androidx.compose.ui.graphics.Color, title: String, on: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        IconChip(icon, color, size = 32.dp)
+        Text(title, color = C.text, modifier = Modifier.weight(1f))
+        Switch(on, onToggle)
     }
 }

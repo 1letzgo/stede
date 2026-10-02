@@ -44,15 +44,16 @@ struct CommunityTasksDestination: Hashable {
 /// Ziel „Meine Aufgaben“ im Gruppen-Reiter.
 struct MyTasksDestination: Hashable {}
 
-/// Eigene Kategorie „Meine Aufgaben“ nach „Meine Gruppen“: eine Karte mit der Anzahl offener Aufgaben, öffnet `MyTasksView`.
+/// Eigene Kategorie „Meine Aufgaben“ ganz oben im Gruppen-Tab, nur mit offenen Aufgaben: eine Karte mit der Anzahl offener Aufgaben, öffnet `MyTasksView`.
 struct MyTasksLink: View {
     let model: MyTasksModel
     /// Eigene Gruppen mit eingeschalteten Aufgaben.
     let communities: [Community]
 
     var body: some View {
-        if let tasks = model.tasks, !communities.isEmpty {
-            let own = tasks.filter { task in communities.contains { $0.id == task.task.communityId } }
+        // Nur wenn dir etwas zugewiesen ist — sonst bleibt der Gruppen-Tab aufgeräumt.
+        let own = (model.tasks ?? []).filter { task in communities.contains { $0.id == task.task.communityId } }
+        if !own.isEmpty {
             let groups = Set(own.map(\.task.communityId)).count
             StedeSectionHeader(title: "Meine Aufgaben", symbol: "checklist")
             NavigationLink(value: MyTasksDestination()) {
@@ -60,7 +61,7 @@ struct MyTasksLink: View {
                     StedeIconChip(symbol: "checklist", color: StedeTheme.sunAmber)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aufgaben").font(.headline)
-                        Text(own.isEmpty ? "Keine offenen Aufgaben" : "\(own.count) offen · \(groups == 1 ? "1 Gruppe" : "\(groups) Gruppen")")
+                        Text("\(own.count) offen · \(groups == 1 ? "1 Gruppe" : "\(groups) Gruppen")")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
