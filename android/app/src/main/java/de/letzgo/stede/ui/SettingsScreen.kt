@@ -52,8 +52,8 @@ fun SettingsScreen() {
 
     Scaffold(topBar = { StedeTopBar("Einstellungen") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            item { SectionHeader("Konto", Icons.Default.Person) }
-            item {
+            if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
+            if (Features.has(Feature.Groups)) item {
                 RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
                     val profile = Session.profile
                     if (Session.signedIn) PersonAvatar(profile?.avatar, profile?.displayName ?: "?", size = 44.dp)
@@ -66,8 +66,8 @@ fun SettingsScreen() {
                 }
             }
 
-            item { SectionHeader("Gemeinde", Icons.Default.Place) }
-            item {
+            if (Brand.current.choosesTenant) item { SectionHeader("Gemeinde", Icons.Default.Place) }
+            if (Brand.current.choosesTenant) item {
                 StedeCard { ValueRow(Icons.Default.Place, C.ink, "Gemeinde", tenant.municipality) { showTenants = true } }
             }
 
@@ -89,7 +89,7 @@ fun SettingsScreen() {
                 item(key = "tiles-${section.key}") {
                     StedeCard {
                         Text(section.title, fontSize = 13.sp, color = C.secondary)
-                        val tiles = tileOrder.filter { it.section == section }
+                        val tiles = tileOrder.filter { it.section == section && it.isAvailable }
                         tiles.forEachIndexed { index, tile ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 SmallIcon(tile.icon, tile.color)
@@ -110,11 +110,11 @@ fun SettingsScreen() {
             }
             item {
                 TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
-                    enabled = order != HomeSection.entries || hidden != setOf(HomeTileId.Volunteer) || tileOrder != HomeTileId.entries) { Text("Standard wiederherstellen") }
+                    enabled = Store.string("home.order", "").isNotEmpty() || hidden != setOf(HomeTileId.Volunteer) || Store.string("home.tiles", "").isNotEmpty()) { Text("Standard wiederherstellen") }
             }
 
-            item { SectionHeader("Zuhause", Icons.Default.Home) }
-            item {
+            if (Features.has(Feature.Waste)) item { SectionHeader("Zuhause", Icons.Default.Home) }
+            if (Features.has(Feature.Waste)) item {
                 StedeCard {
                     ValueRow(Icons.Default.Delete, C.green, "Abfuhr", street?.name ?: "Nicht gewählt") { showStreets = true }
                     street?.takeIf { it.needsSection }?.let { s ->
@@ -134,12 +134,13 @@ fun SettingsScreen() {
                 }
             }
 
-            item { SectionHeader("Unterwegs", Icons.Default.Train) }
-            item {
+            val bus = Features.has(Feature.Bus); val train = Features.has(Feature.Train) && tenant.stations.isNotEmpty()
+            if (bus || train) item { SectionHeader("Unterwegs", Icons.Default.Train) }
+            if (bus || train) item {
                 StedeCard {
-                    ValueRow(Icons.Default.DirectionsBus, C.teal, "Bushaltestelle", busStop(stopId).short) { showStops = true }
-                    HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
-                    Box {
+                    if (bus) ValueRow(Icons.Default.DirectionsBus, C.teal, "Bushaltestelle", busStop(stopId).short) { showStops = true }
+                    if (bus && train) HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
+                    if (train) Box {
                         ValueRow(Icons.Default.Train, C.red, "Bahnhof", station?.name ?: "–") { showStations = true }
                         DropdownMenu(showStations, { showStations = false }) {
                             tenant.stations.forEach { s ->
@@ -149,13 +150,15 @@ fun SettingsScreen() {
                             }
                         }
                     }
-                    HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SmallIcon(Icons.Default.SwapHoriz, C.red)
-                        Text("Bahn-Richtung", Modifier.weight(1f), color = C.text, fontSize = 16.sp)
+                    if (train) {
+                        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = C.text.copy(alpha = 0.12f))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SmallIcon(Icons.Default.SwapHoriz, C.red)
+                            Text("Bahn-Richtung", Modifier.weight(1f), color = C.text, fontSize = 16.sp)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Switcher(TrainDirection.entries, direction, { it.short(station) }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Switcher(TrainDirection.entries, direction, { it.short(station) }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
                 }
             }
 

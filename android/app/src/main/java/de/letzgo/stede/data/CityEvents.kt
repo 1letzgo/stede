@@ -13,7 +13,12 @@ import java.time.LocalDate
     @SerialName("starts_at") val startsAt: String? = null, @SerialName("ends_at") val endsAt: String? = null,
     val summary: String = "", val location: String? = null, val organizer: String? = null, val category: String? = null,
     @SerialName("series_note") val seriesNote: String? = null, @SerialName("detail_url") val detailUrl: String? = null,
-)
+    /** Nur manche Quellen (Langeoog): Anmeldung, Preis, ausgebucht, Vorschaubild im Bucket `content`. */
+    val registration: String? = null, val price: String? = null, @SerialName("sold_out") val soldOut: Boolean = false,
+    @SerialName("image_path") val imagePath: String? = null,
+) {
+    val imageUrl get() = imagePath?.let { "${Backend.URL}/storage/v1/object/public/content/$it" }
+}
 
 /** Stadt-Termine aus `city_events` für einen Tagesbereich; der Startbereich liegt offline im Dateicache. */
 object CityEvents {
@@ -22,7 +27,7 @@ object CityEvents {
     /** `from` bis einschließlich `through`; mit `cacheAs` wird das Ergebnis für den Offline-Start gemerkt. */
     suspend fun range(from: LocalDate, through: LocalDate, cacheAs: String? = null): List<CityEvent> {
         val tenant = Tenants.current()
-        val rows = Backend.supabase.from("city_events").select(Columns.raw("external_id,title,day,starts_at,ends_at,summary,location,organizer,category,series_note,detail_url")) {
+        val rows = Backend.supabase.from("city_events").select(Columns.raw("external_id,title,day,starts_at,ends_at,summary,location,organizer,category,series_note,detail_url,registration,price,sold_out,image_path")) {
             filter { eq("tenant_id", tenant.id); gte("day", from.toString()); lte("day", through.toString()); exact("deleted_at", null) }
             order("starts_at", Order.ASCENDING)
             limit(2000)

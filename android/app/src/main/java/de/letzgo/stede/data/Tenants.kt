@@ -27,12 +27,25 @@ import kotlinx.serialization.json.JsonObject
     val center: List<Double>,
     /** [Süd, West, Nord, Ost] — Kartenausschnitt. */
     val bbox: List<Double>,
-    val stations: List<TenantStation>,
-    val defaultStation: String,
-    val wasteTownID: Int,
-    val busDefaultStop: String,
+    /** Gemeinden ohne Bahn, Bus oder Abfuhr lassen deren Felder weg. */
+    val stations: List<TenantStation> = emptyList(),
+    val defaultStation: String = "",
+    val wasteTownID: Int = 0,
+    val busDefaultStop: String = "",
     /** `tenants.id` — für Termine, die nur in bestimmten Gemeinden erscheinen. */
     val tenantID: String? = null,
+    /** `tenants.region` — welche App die Gemeinde zeigt ([Brand.region]). */
+    val region: String? = null,
+    /** Bausteine; null = Standard der Marke ([Features]). */
+    val features: FeatureSet? = null,
+    val ferry: FerryConfig? = null,
+    val tides: TideConfig? = null,
+    /** UBA-Messstation für die Luftqualität, etwa „DENI058“. */
+    val airStation: String? = null,
+    /** Hinweise unter Ortslisten und im Kalender je Schlüssel (`health`, `trips`, `events`). */
+    val notes: Map<String, String>? = null,
+    /** Kacheln „Externe Anbieter“ auf Start. */
+    val external: List<ExternalLink>? = null,
 ) {
     val latitude get() = center.getOrElse(0) { 53.2575 }
     val longitude get() = center.getOrElse(1) { 7.9273 }
@@ -41,8 +54,22 @@ import kotlinx.serialization.json.JsonObject
         stations.firstOrNull { it.id == id } ?: stations.firstOrNull { it.id == defaultStation } ?: stations.firstOrNull()
 
     /** „Stadt Westerstede“, sonst „Gemeinde …“. */
-    val officialName get() = if (slug == Tenants.DEFAULT) "Stadt $municipality" else "Gemeinde $municipality"
+    val officialName get() = if (slug == Tenants.BUNDLE) "Stadt $municipality" else "Gemeinde $municipality"
 }
+
+/** Fähre über api.langeoog.de: `routes` „von/nach“, `mainland` das Hafenkürzel des Festlands. */
+@Serializable data class FerryConfig(
+    val routes: List<String>, val mainland: String,
+    @SerialName("mainland_name") val mainlandName: String, @SerialName("island_name") val islandName: String,
+    @SerialName("booking_url") val bookingUrl: String? = null, val source: String? = null,
+)
+
+/** Gezeiten als Datei im Bucket `content` (`path`), gemessene Pegel aus `water_levels` (`gauge`). */
+@Serializable data class TideConfig(
+    val file: String, val path: String, val gauge: String? = null, @SerialName("gauge_name") val gaugeName: String = "",
+)
+
+@Serializable data class ExternalLink(val title: String, val symbol: String, val url: String)
 
 @Serializable private data class TenantRow(val id: String, val slug: String, val municipality: String, val config: JsonObject)
 @Serializable private data class TenantRowConfig(
@@ -50,6 +77,8 @@ import kotlinx.serialization.json.JsonObject
     @SerialName("default_station") val defaultStation: String? = null,
     @SerialName("waste_town_id") val wasteTownId: Int? = null,
     @SerialName("bus_default_stop") val busDefaultStop: String? = null,
+    val features: FeatureSet? = null, val ferry: FerryConfig? = null, val tides: TideConfig? = null,
+    @SerialName("air_station") val airStation: String? = null, val notes: Map<String, String>? = null, val external: List<ExternalLink>? = null,
 )
 
 /**
@@ -57,23 +86,27 @@ import kotlinx.serialization.json.JsonObject
  * (`tenant.slug`); Stände je Gemeinde liegen in getrennten Ordnern, Westerstede behält die alten.
  */
 object Tenants {
-    const val DEFAULT = "stede"
+    /** Gemeinde der Marke; ihre Inhalte liegen in den alten Ordnern ohne Unterordner. */
+    val DEFAULT get() = Brand.current.defaultTenant
+    /** Gemeinde, deren Daten in den Assets liegen (Westerstede, nur im stede-Flavor). */
+    const val BUNDLE = "stede"
     const val KEY = "tenant.slug"
     /** Wird die Gemeinde gewechselt, gelten diese Einstellungen nicht mehr. */
     private val perTenantKeys = listOf("bus.stop", "train.station", "train.direction", "waste.street", "waste.section", "waste.branchSection", "waste.noOrganic", "waste.fourWeekly")
     private val listSerializer = ListSerializer(TenantConfig.serializer())
 
     /** Gewählte Gemeinde; null, solange beim ersten Start noch keine gewählt ist. Compose beobachtet den Wert. */
-    var chosen by mutableStateOf(Store.prefs.getString(KEY, null)); private set
+    var chosen by mutableStateOf(if (Brand.current.choosesTenant) Store.prefs.getString(KEY, null) else Brand.current.defaultTenant); private set
 
     val slug: String get() = chosen ?: DEFAULT
     val hasChosen get() = chosen != null
     /** Westerstede hat die Daten in den Assets; alle anderen nur aus dem Backend. */
-    val usesBundle get() = slug == DEFAULT
+    val usesBundle get() = slug == BUNDLE
 
     private val bundled: List<TenantConfig> by lazy {
-        runCatching { Http.json.decodeFromString(listSerializer, Store.asset("tenants.json")) }.getOrNull()?.takeIf { it.isNotEmpty() }
-            ?: listOf(TenantConfig(DEFAULT, "Westerstede", listOf(53.25752, 7.92734), listOf(53.15, 7.78, 53.36, 8.10),
+        runCatching { Http.json.decodeFromString(listSerializer, Store.asset("tenants.json")) }.getOrNull()
+            ?.filter { it.region == Brand.current.region }?.takeIf { it.isNotEmpty() }
+            ?: listOf(TenantConfig(BUNDLE, "Westerstede", listOf(53.25752, 7.92734), listOf(53.15, 7.78, 53.36, 8.10),
                 listOf(TenantStation("8004610", "Westerstede-Ocholt", "Westerstede-Ocholt", listOf("Oldenburg", "Leer"))), "8004610", 5, "009098661"))
     }
     private var remote: List<TenantConfig>? = null
@@ -112,13 +145,13 @@ object Tenants {
     suspend fun refresh() {
         runCatching {
             val list = Backend.supabase.from("tenants").select(Columns.raw("id,slug,municipality,config")) {
-                filter { eq("region", "ammerland") }
+                filter { eq("region", Brand.current.region) }
                 order("municipality", Order.ASCENDING)
             }.decodeList<TenantRow>().mapNotNull { row ->
                 val c = runCatching { Http.json.decodeFromJsonElement(TenantRowConfig.serializer(), row.config) }.getOrNull() ?: return@mapNotNull null
                 TenantConfig(row.slug, row.municipality, c.center ?: return@mapNotNull null, c.bbox ?: return@mapNotNull null,
-                    c.stations ?: return@mapNotNull null, c.defaultStation ?: return@mapNotNull null,
-                    c.wasteTownId ?: return@mapNotNull null, c.busDefaultStop ?: return@mapNotNull null, row.id)
+                    c.stations.orEmpty(), c.defaultStation.orEmpty(), c.wasteTownId ?: 0, c.busDefaultStop.orEmpty(), row.id,
+                    Brand.current.region, c.features, c.ferry, c.tides, c.airStation, c.notes, c.external)
             }
             if (list.isEmpty()) return
             Store.write("content", "tenants.json", Http.json.encodeToString(listSerializer, list))

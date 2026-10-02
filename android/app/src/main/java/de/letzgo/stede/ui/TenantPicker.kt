@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.letzgo.stede.data.Brand
 import de.letzgo.stede.data.ContentFiles
 import de.letzgo.stede.data.Places
 import de.letzgo.stede.data.Tenants
@@ -59,7 +60,7 @@ fun TenantPickerList(onboarding: Boolean, contentPadding: PaddingValues = Paddin
         if (onboarding) item {
             Column(Modifier.padding(top = 32.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Willkommen bei stede", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = C.text)
-                Text("Wähle deine Gemeinde im Ammerland. Du kannst sie später in den Einstellungen wechseln.", color = C.secondary)
+                Text("Wähle deine Gemeinde im ${Brand.current.regionName}. Du kannst sie später in den Einstellungen wechseln.", color = C.secondary)
             }
         }
         items(tenants, key = { it.slug }) { t ->

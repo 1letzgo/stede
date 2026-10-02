@@ -26,7 +26,15 @@ data class Place(
     /** Zusätzlicher Link neben der Website, z. B. ein Programm als PDF — nie Bestellplattformen. */
     val extraLinkTitle: String? = null,
     val extraLinkUrl: String? = null,
+    /** Foto im Bucket `content` (`places.image_path`) und Bildnachweis. */
+    val imagePath: String? = null,
+    val imageCredit: String? = null,
+    /** Weitere Standorte eines Verleihs; sonst nur `latitude`/`longitude`. */
+    val stations: List<PlaceStation> = emptyList(),
 ) {
+    val imageUrl get() = imagePath?.let { "${Backend.URL}/storage/v1/object/public/content/$it" }
+    /** Alle Kartenpunkte: Stationen, sonst die eigene Koordinate. */
+    val points: List<PlaceStation> get() = stations.ifEmpty { if (latitude != null && longitude != null) listOf(PlaceStation(street ?: "", street ?: "", latitude, longitude)) else emptyList() }
     /** Liefert nach Hause (laut Lieferando oder Google Maps) — eigene Filter-Pille unter „Gastro“. */
     val delivers get() = DELIVERY in features
     companion object { const val DELIVERY = "Lieferdienst" }
@@ -34,6 +42,7 @@ data class Place(
 
 @Serializable data class PlaceDirectory(val source: String = "", val fetchedAt: String = "", val places: List<Place> = emptyList())
 
+@Serializable data class PlaceStation(val label: String = "", val street: String = "", val latitude: Double = 0.0, val longitude: Double = 0.0)
 @Serializable private data class BikeStation(val label: String = "", val street: String = "", val latitude: Double = 0.0, val longitude: Double = 0.0)
 @Serializable private data class BikeProvider(val id: String, val name: String, val teaser: String? = null, val phone: String? = null, val email: String? = null, val website: String? = null, val features: List<String> = emptyList(), val stations: List<BikeStation> = emptyList())
 @Serializable private data class BikeDirectory(val source: String = "", val fetchedAt: String = "", val providers: List<BikeProvider> = emptyList())
@@ -44,6 +53,8 @@ data class Place(
     val hours: String? = null, @SerialName("rest_day") val restDay: String? = null, @SerialName("season_note") val seasonNote: String? = null,
     val features: List<String> = emptyList(), val lat: Double? = null, val lon: Double? = null, @SerialName("sort_order") val sortOrder: Int = 0,
     @SerialName("extra_link_title") val extraLinkTitle: String? = null, @SerialName("extra_link_url") val extraLinkUrl: String? = null,
+    @SerialName("image_path") val imagePath: String? = null, @SerialName("image_credit") val imageCredit: String? = null,
+    val stations: List<PlaceStation>? = null,
 )
 @Serializable private data class BusStopRow(@SerialName("stop_id") val id: String, val name: String, val lat: Double, val lon: Double)
 
@@ -98,13 +109,14 @@ object Places {
             val metas = Backend.supabase.from("place_directories").select(Columns.raw("directory,source,fetched_at")) { filter { eq("tenant_id", tenant.id) } }.decodeList<DirectoryRow>()
             for (meta in metas) {
                 if (meta.directory !in assets) continue
-                val rows = Backend.supabase.from("places").select(Columns.raw("external_id,directory,kind,name,teaser,street,phone,email,website,hours,rest_day,season_note,features,lat,lon,sort_order,extra_link_title,extra_link_url")) {
+                val rows = Backend.supabase.from("places").select(Columns.raw("external_id,directory,kind,name,teaser,street,phone,email,website,hours,rest_day,season_note,features,lat,lon,sort_order,extra_link_title,extra_link_url,image_path,image_credit,stations")) {
                     filter { eq("tenant_id", tenant.id); eq("directory", meta.directory); exact("deleted_at", null) }
                     order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
                 }.decodeList<PlaceRow>()
                 if (rows.isEmpty()) continue
                 val dir = PlaceDirectory(meta.source, meta.fetchedAt, rows.map {
-                    Place(it.externalId, it.name, it.kind, it.teaser, it.street, it.phone, it.email, it.website, it.hours, it.restDay, it.seasonNote, it.lat, it.lon, it.features, it.extraLinkTitle, it.extraLinkUrl)
+                    Place(it.externalId, it.name, it.kind, it.teaser, it.street, it.phone, it.email, it.website, it.hours, it.restDay, it.seasonNote, it.lat, it.lon, it.features,
+                        it.extraLinkTitle, it.extraLinkUrl, it.imagePath, it.imageCredit, it.stations.orEmpty())
                 })
                 Store.write(Tenants.folder("content", slug), "${meta.directory}.json", Http.json.encodeToString(dir))
                 cache["$slug/${meta.directory}"] = dir

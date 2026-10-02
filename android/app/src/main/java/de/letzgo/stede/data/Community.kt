@@ -32,6 +32,8 @@ import java.util.UUID
     /** Gruppen-Funktionen, in den Einstellungen schaltbar (fehlen in manchen Abfragen). */
     @SerialName("polls_enabled") val pollsEnabled: Boolean? = null,
     @SerialName("tasks_enabled") val tasksEnabled: Boolean? = null,
+    /** Sonderfunktion der Veranstaltungs-Gruppe: Termine an andere Gruppen übertragen (nur im Backend freischaltbar). */
+    @SerialName("can_transfer_events") val canTransferEvents: Boolean? = null,
 ) {
     val logoUrl get() = Backend.logoUrl(logoPath)
     val hasPolls get() = pollsEnabled ?: true
@@ -159,7 +161,7 @@ data class EventInfo(
 /** Alle Zugriffe auf den Community-Teil; RLS entscheidet, was sichtbar ist. */
 object CommunityApi {
     private val db get() = Backend.supabase
-    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled"
+    private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled,can_transfer_events"
     private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
@@ -168,7 +170,7 @@ object CommunityApi {
 
     /** Gruppen der eigenen Gemeinde plus die kreisweiten aus dem ganzen Ammerland. */
     private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrCountywide(tenantId: String) {
-        or { eq("tenant_id", tenantId); and { eq("countywide", true); eq("region", "ammerland") } }
+        or { eq("tenant_id", tenantId); and { eq("countywide", true); eq("region", Brand.current.region) } }
     }
 
     /** Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf andere Gemeinden beschränkt ist (`target_tenants`). */
@@ -178,7 +180,7 @@ object CommunityApi {
         // (auch die Heimatgemeinde muss dann gewählt sein).
         or {
             and { eq("countywide", false); eq("tenant_id", id) }
-            and { eq("countywide", true); eq("region", "ammerland"); exact("target_tenants", null) }
+            and { eq("countywide", true); eq("region", Brand.current.region); exact("target_tenants", null) }
             and { eq("countywide", true); contains("target_tenants", listOf(id)) }
         }
     }
@@ -243,6 +245,10 @@ object CommunityApi {
     suspend fun updateEvent(id: String, d: EventDraft) { db.from("community_events").update(d) { filter { eq("id", id) } } }
     /** Kommentare eines internen Termins ein- oder ausschalten (Schnellmenü der Karte). */
     suspend fun setEventComments(id: String, enabled: Boolean) { db.from("community_events").update({ set("comments_enabled", enabled) }) { filter { eq("id", id) } } }
+    /** Termin der Veranstaltungs-Gruppe an eine andere Gruppe übertragen; `series` nimmt alle künftigen Termine gleichen
+     *  Titels mit und leitet neue Importe dieser Reihe gleich dorthin. Liefert die Zahl der Termine. */
+    suspend fun transferEvents(eventId: String, target: String, series: Boolean): Int =
+        db.postgrest.rpc("transfer_events", buildJsonObject { put("p_event", eventId); put("p_target", target); put("p_series", series) }).decodeAs<Int>()
     suspend fun cancelEvent(id: String) { db.from("community_events").update({ set("cancelled_at", java.time.Instant.now().toString()) }) { filter { eq("id", id) } } }
 
     suspend fun comments(eventId: String) = db.from("event_comments").select(Columns.raw("id,event_id,user_id,body,created_at,profiles(user_id,display_name,avatar_url)")) {

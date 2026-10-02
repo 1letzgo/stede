@@ -40,6 +40,7 @@ private sealed class CalendarRow(val key: String) {
     data class Entry(val entry: CalendarEntry) : CalendarRow(when (entry) { is CalendarEntry.City -> "c${entry.e.externalId}${entry.e.day}"; is CalendarEntry.Community -> "m${entry.e.id}" })
     data class Later(val end: LocalDate) : CalendarRow("later$end")
     data object Footer : CalendarRow("footer")
+    data object Locked : CalendarRow("locked")
 }
 
 private const val PAGE_DAYS = 21L
@@ -53,7 +54,11 @@ fun CalendarScreen() {
     // Startet heute — Vergangenes nur über „Frühere Termine“.
     var start by remember { mutableStateOf(today) }
     var end by remember { mutableStateOf(today.plusDays(PAGE_DAYS - 1)) }
-    var filter by remember { mutableStateOf(runCatching { CalendarFilter.valueOf(Store.string("calendar.filter", "All")) }.getOrDefault(CalendarFilter.All)) }
+    // Ohne Gruppen gibt es nur die Gemeinde-Termine — keine Filter.
+    val groups = Features.has(Feature.Groups)
+    var filter by remember { mutableStateOf(if (!groups) CalendarFilter.All else runCatching { CalendarFilter.valueOf(Store.string("calendar.filter", "All")) }.getOrDefault(CalendarFilter.All)) }
+    // Baustein `plus` ohne Kauf: nur heute, dafür der ganze Tag.
+    val locked = !PlusStore.canChangeDay
     var city by remember { mutableStateOf(CityEvents.cached("feed")) }
     var community by remember { mutableStateOf<List<EventInfo>>(emptyList()) }
     var helpers by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
@@ -77,6 +82,7 @@ fun CalendarScreen() {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     suspend fun communityRange(from: LocalDate, through: LocalDate): List<EventInfo> {
+        if (!groups) return emptyList()
         val f = from.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val t = through.plusDays(1).atStartOfDay(Town.zone).toOffsetDateTime().toString()
         val tenant = Tenants.current()
         val own = CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) }
@@ -94,9 +100,7 @@ fun CalendarScreen() {
             .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }
         runCatching { community = communityRange(start, end) }
         communityLoaded = true
-        refreshHelpers()
-        refreshComments()
-        MyParticipation.load()
+        if (groups) { refreshHelpers(); refreshComments(); MyParticipation.load() }
     }
 
     fun loadLater() {
@@ -140,18 +144,19 @@ fun CalendarScreen() {
             val show = when (filter) { CalendarFilter.All -> true; CalendarFilter.City -> e.isImported; CalendarFilter.Communities -> !e.isImported; CalendarFilter.Mine -> mine }
             if (show) add(CalendarEntry.Community(e))
         }
-    }.filter { start.isBefore(today) || !it.isOver } // Vorbei ausgeblendet, bis frühere Termine angefordert sind
+    }.filter { locked || start.isBefore(today) || !it.isOver } // Vorbei ausgeblendet, bis frühere Termine angefordert sind
+        .filter { !locked || it.day == today }
         .sortedBy { it.sortKey }.groupBy { it.day }
 
     // Nur Tage mit Terminen, dazu immer heute.
     val rows = buildList {
-        add(CalendarRow.Earlier)
+        if (!locked) add(CalendarRow.Earlier)
         (entries.keys.filter { !it.isBefore(start) && !it.isAfter(end) } + today).distinct().sorted().forEach { day ->
             add(CalendarRow.Header(day))
             val list = entries[day].orEmpty()
             if (list.isEmpty()) add(CalendarRow.NoneToday(day)) else list.forEach { add(CalendarRow.Entry(it)) }
         }
-        if (end < today.plusDays(HORIZON_DAYS)) add(CalendarRow.Later(end))
+        if (locked) add(CalendarRow.Locked) else if (end < today.plusDays(HORIZON_DAYS)) add(CalendarRow.Later(end))
         add(CalendarRow.Footer)
     }
     val todayIndex = rows.indexOfFirst { it is CalendarRow.Header && it.day == today }
@@ -174,7 +179,8 @@ fun CalendarScreen() {
         })
     }, containerColor = C.sand) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { Switcher(CalendarFilter.entries, filter, { it.title }) { filter = it; Store.setString("calendar.filter", it.name) } }
+            if (groups) Box(Modifier.padding(top = 16.dp, bottom = Spacing)) { Switcher(CalendarFilter.entries, filter, { it.title }) { filter = it; Store.setString("calendar.filter", it.name) } }
+            else Spacer(Modifier.height(16.dp))
             if (city == null && error == null && community.isEmpty()) Loading()
             error?.let { Box(Modifier.padding(horizontal = 16.dp)) { InfoCard(it) } }
             LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -193,7 +199,8 @@ fun CalendarScreen() {
                                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
                                 LaunchedEffect(row.end) { loadLater() }
                             }
-                            CalendarRow.Footer -> SourceFooter(if (Tenants.usesBundle) "Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen"
+                            CalendarRow.Locked -> SelectionChip("Weitere Tage mit ${Brand.current.plusName}", false, Modifier.fillMaxWidth(), icon = Icons.Default.Lock) { AppNav.plusRequested++ }
+                            CalendarRow.Footer -> SourceFooter(Tenants.config.notes?.get("events") ?: if (Tenants.usesBundle) "Stadt Westerstede · westerstede.de/veranstaltungen und Gruppen"
                                 else "${Tenants.config.officialName} · Ammerland-Touristik (destination.one) und Gruppen")
                         }
                     }
@@ -222,15 +229,21 @@ internal suspend fun LazyListState.scrollItemToBottom(index: Int) {
 private fun CityEventRow(e: CityEvent, onClick: () -> Unit) {
     val start = Town.parse(e.startsAt); val end = Town.parse(e.endsAt)
     val time = start?.let { st -> st.format(Town.hm) + (end?.let { "–${it.format(Town.hm)}" } ?: "") } ?: "ganztägig"
-    StedeCard(onClick = if (e.detailUrl != null) onClick else null) {
+    // Vorschaubild als Kopf der Karte, wie bei den Gruppen-Terminen.
+    StedeCard(onClick = if (e.detailUrl != null) onClick else null, header = e.imageUrl?.let { url -> { EventPhoto(url, 170.dp) } }) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
             IconChip(Icons.Default.AccountBalance, C.mudflat)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(e.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(time, C.mudflat); e.category?.let { Pill(it, C.ink) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Pill(time, C.mudflat); e.category?.let { Pill(it, C.ink) }
+                    if (e.soldOut) Pill("ausgebucht", C.red)
+                    e.price?.let { Pill(it, C.teal) }
+                }
             }
         }
         // Ort linksbündig unter der Kopfzeile — wie bei den Gruppen-Terminen.
         e.location?.let { Box(Modifier.padding(top = 10.dp)) { LocationLine(it) } }
+        e.registration?.let { Box(Modifier.padding(top = 6.dp)) { InfoLine(Icons.Default.HowToReg, it) } }
     }
 }

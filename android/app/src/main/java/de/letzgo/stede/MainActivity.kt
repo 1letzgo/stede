@@ -16,6 +16,10 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import de.letzgo.stede.data.Backend
+import de.letzgo.stede.data.Brand
+import de.letzgo.stede.data.Feature
+import de.letzgo.stede.data.Features
+import de.letzgo.stede.data.Tides
 import de.letzgo.stede.data.Places
 import de.letzgo.stede.data.ContentFiles
 import de.letzgo.stede.data.Tenants
@@ -36,11 +40,20 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class AppTab(val title: String, val icon: ImageVector) { Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups), Settings("Einstellungen", Icons.Default.Settings) }
+enum class AppTab(private val label: String, val icon: ImageVector) {
+    Start("Start", Icons.Default.Home), Calendar("Kalender", Icons.Default.CalendarMonth), Community("Gruppen", Icons.Default.Groups),
+    Plus("Plus", Icons.Default.AutoAwesome), Settings("Einstellungen", Icons.Default.Settings);
+
+    val title get() = if (this == Plus) Brand.current.plusName else label
+    /** Gruppen nur mit dem Baustein `groups`, Plus nur mit `plus`. */
+    val isAvailable get() = when (this) { Community -> Features.has(Feature.Groups); Plus -> Features.has(Feature.Plus); else -> true }
+}
 
 /** Ziele, die auf einen Tab geschoben werden (wie HomeDestination in iOS). */
 sealed class Screen {
     data object Weather : Screen()
+    data object Tides : Screen()
+    data object Ferry : Screen()
     data object Train : Screen()
     data object Bus : Screen()
     data object Waste : Screen()
@@ -54,14 +67,19 @@ sealed class Screen {
 fun StedeApp() {
     var tab by rememberSaveable { mutableStateOf(AppTab.Start) }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) {
         Session.start(scope)
         Tenants.refresh()
         // Vor der ersten Gemeindewahl gibt es nichts nachzuladen.
         if (!Tenants.hasChosen) return@LaunchedEffect
+        PlusStore.start(context)
         runCatching { Places.sync() }
         runCatching { ContentFiles.sync() }
+        if (Features.has(Feature.Tides)) runCatching { Tides.events() }
     }
+    // Schloss in der Tagesleiste: zum Plus-Tab.
+    LaunchedEffect(AppNav.plusRequested) { if (AppNav.plusRequested > 0 && AppTab.Plus.isAvailable) tab = AppTab.Plus }
     // Gemeindewechsel: Mandant und Rollen neu laden.
     val slug = Tenants.slug
     var sessionSlug by remember { mutableStateOf(slug) }
@@ -85,7 +103,7 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             NavigationBar(containerColor = C.surface) {
-                AppTab.entries.forEach { t ->
+                AppTab.entries.filter { it.isAvailable }.forEach { t ->
                     NavigationBarItem(selected = tab == t, onClick = { if (tab == t) stacks.getValue(t).clear() else setTab(t) },
                         icon = { Icon(t.icon, null) }, label = { Text(t.title) },
                         colors = NavigationBarItemDefaults.colors(selectedIconColor = C.ink, selectedTextColor = C.ink, indicatorColor = C.teal.copy(alpha = 0.18f)))
@@ -99,9 +117,12 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
                     AppTab.Start -> StartScreen(open)
                     AppTab.Calendar -> CalendarScreen()
                     AppTab.Community -> CommunityScreen(open)
+                    AppTab.Plus -> PlusScreen()
                     AppTab.Settings -> SettingsScreen()
                 }
                 Screen.Weather -> WeatherScreen(back)
+                Screen.Tides -> TideScreen(back)
+                Screen.Ferry -> FerryScreen(back)
                 Screen.Train -> TrainScreen(back)
                 Screen.Bus -> BusScreen(back)
                 Screen.Waste -> WasteScreen(back) { stack.clear(); setTab(AppTab.Settings) }

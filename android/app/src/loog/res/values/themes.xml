@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Stede" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#1B4182</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

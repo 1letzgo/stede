@@ -36,8 +36,11 @@ val CardPadding = 16.dp
 
 /** Weiße Karte wie `.stedeCard`; hervorgehoben in blassem Türkis. */
 @Composable
-fun StedeCard(modifier: Modifier = Modifier, highlighted: Boolean = false, padding: Dp = CardPadding, onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.cardSurface(highlighted, onClick).padding(padding), content = content)
+fun StedeCard(modifier: Modifier = Modifier, highlighted: Boolean = false, padding: Dp = CardPadding, onClick: (() -> Unit)? = null,
+              /** Kopf über die volle Breite, ohne Innenabstand — etwa ein Foto. */
+              header: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+    if (header == null) Column(modifier.cardSurface(highlighted, onClick).padding(padding), content = content)
+    else Column(modifier.cardSurface(highlighted, onClick)) { header(); Column(Modifier.padding(padding), content = content) }
 }
 
 /** Kartenfläche wie `.stedeCard`: weiß mit feiner Kontur, hervorgehoben blass türkis ohne Kontur. */

@@ -5,28 +5,48 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import de.letzgo.stede.data.Brand
+import de.letzgo.stede.data.Feature
+import de.letzgo.stede.data.Features
 import de.letzgo.stede.data.Store
 
 /** Bereiche der Startseite — wie `HomeSection` auf iOS, gleiche Schlüssel. */
-enum class HomeSection(val key: String, val title: String, val icon: ImageVector) {
+enum class HomeSection(val key: String, private val label: String, val icon: ImageVector) {
+    Sea("sea", "Meer & Fähre", Icons.Default.Water),
     Transit("transit", "Unterwegs", Icons.Default.Train),
     Home("home", "Zuhause", Icons.Default.Home),
     City("city", "Stadt", Icons.Default.Map);
 
-    val tiles get() = HomeTileId.entries.filter { it.section == this }
+    /** „Stadt“ heißt je Marke anders („Insel“ in Loog). */
+    val title get() = if (this == City) Brand.current.placesTitle else label
+    /** Nur Kacheln, deren Baustein die Gemeinde hat. */
+    val tiles get() = HomeTileId.available.filter { it.section == this }
 }
 
 /** Einzelne Kacheln, ein- und ausblendbar — wie `HomeTileID` auf iOS. */
 enum class HomeTileId(val key: String, val section: HomeSection, val category: String? = null) {
+    Tides("tides", HomeSection.Sea), Ferry("ferry", HomeSection.Sea),
     Train("train", HomeSection.Transit), Bus("bus", HomeSection.Transit), Waste("waste", HomeSection.Home),
     Discover("discover", HomeSection.City, Catalog.DISCOVER), Gastro("gastro", HomeSection.City, Catalog.GASTRO),
-    Shopping("shopping", HomeSection.City, Catalog.SHOPPING), Playgrounds("playgrounds", HomeSection.City, Catalog.PLAYGROUNDS),
+    Shopping("shopping", HomeSection.City, Catalog.SHOPPING), Bikes("bikes", HomeSection.City, Catalog.BIKES),
+    Playgrounds("playgrounds", HomeSection.City, Catalog.PLAYGROUNDS),
     Health("health", HomeSection.City, Catalog.HEALTH),
     Volunteer("volunteer", HomeSection.City, Catalog.VOLUNTEER);
 
-    val title get() = when (this) { Train -> "Bahn"; Bus -> "Bus"; Waste -> "Abfuhr"; else -> category!! }
-    val icon get() = when (this) { Train -> Icons.Default.Train; Bus -> Icons.Default.DirectionsBus; Waste -> Icons.Default.Delete; else -> Catalog.icon(category!!) }
-    val color: Color @Composable get() = when (this) { Train -> C.red; Bus -> C.teal; Waste -> C.green; else -> Catalog.color(category!!) }
+    val title get() = when (this) { Tides -> "Gezeiten"; Ferry -> "Fähre"; Train -> "Bahn"; Bus -> "Bus"; Waste -> "Abfuhr"; else -> Catalog.tileTitle(category!!) }
+    val icon get() = when (this) { Tides -> Icons.Default.Waves; Ferry -> Icons.Default.DirectionsBoat; Train -> Icons.Default.Train; Bus -> Icons.Default.DirectionsBus; Waste -> Icons.Default.Delete; else -> Catalog.icon(category!!) }
+    val color: Color @Composable get() = when (this) { Tides -> C.teal; Ferry -> C.red; Train -> C.red; Bus -> C.teal; Waste -> C.green; else -> Catalog.color(category!!) }
+
+    /** Hat die Gemeinde den Baustein? Sonst gibt es die Kachel nicht — auch nicht in den Einstellungen. */
+    val isAvailable get() = when (this) {
+        Tides -> Features.has(Feature.Tides); Ferry -> Features.has(Feature.Ferry)
+        Train -> Features.has(Feature.Train); Bus -> Features.has(Feature.Bus); Waste -> Features.has(Feature.Waste)
+        Discover -> Features.hasPlaces("sights", "leisure", "trips"); Gastro -> Features.hasPlaces("gastro")
+        Shopping -> Features.hasPlaces("gastro", "bikes"); Bikes -> Features.hasPlaces("bikes") && !Brand.current.bikesInShopping
+        Playgrounds -> Features.hasPlaces("playgrounds"); Health -> Features.hasPlaces("health"); Volunteer -> Features.hasPlaces("volunteer")
+    }
+
+    companion object { val available get() = entries.filter { it.isAvailable } }
 }
 
 /** Prefs `home.order` / `home.hidden`, kommagetrennt wie die iOS-UserDefaults. */
@@ -37,7 +57,8 @@ object HomeLayout {
 
     fun order(): List<HomeSection> {
         val saved = Store.string(ORDER, "").split(",").mapNotNull { k -> HomeSection.entries.firstOrNull { it.key == k } }
-        return saved + HomeSection.entries.filter { it !in saved }
+        // Bereiche ohne Baustein (Bahn, Bus, Abfuhr fehlen der Gemeinde) gibt es nicht.
+        return (saved + HomeSection.entries.filter { it !in saved }).filter { it.tiles.isNotEmpty() }
     }
     fun setOrder(order: List<HomeSection>) = Store.setString(ORDER, order.joinToString(",") { it.key })
 
@@ -51,7 +72,7 @@ object HomeLayout {
         val saved = Store.string(TILES, "").split(",").mapNotNull { k -> HomeTileId.entries.firstOrNull { it.key == k } }
         return saved + HomeTileId.entries.filter { it !in saved }
     }
-    fun tiles(section: HomeSection) = tileOrder().filter { it.section == section }
+    fun tiles(section: HomeSection) = tileOrder().filter { it.section == section && it.isAvailable }
 
     /** Kachel innerhalb ihres Bereichs um `delta` Plätze verschieben. */
     fun moveTile(tile: HomeTileId, delta: Int) {

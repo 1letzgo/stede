@@ -620,7 +620,7 @@ fun CommunityEditorSheet(existing: Community?, onDismiss: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Kreisweit", color = C.text)
-                        Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen Ammerland-Gemeinden, nicht nur in ${Tenants.config.municipality}.", color = C.secondary, fontSize = 13.sp)
+                        Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen ${Brand.current.regionName}-Gemeinden, nicht nur in ${Tenants.config.municipality}.", color = C.secondary, fontSize = 13.sp)
                     }
                     Switch(countywide, { countywide = it })
                 }

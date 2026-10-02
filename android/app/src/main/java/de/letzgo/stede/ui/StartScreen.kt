@@ -32,10 +32,16 @@ fun StartScreen(open: (Screen) -> Unit) {
     var buses by remember { mutableStateOf(Buses.cached(stop, today)) }
     val selection = remember { Waste.selection() }
     var waste by remember { mutableStateOf(selection?.let { Waste.cachedUpcoming(it) }) }
+    var tides by remember { mutableStateOf(Tides.cachedEvents()) }
+    var ferry by remember { mutableStateOf<List<FerryTrip>?>(null) }
     LaunchedEffect(Unit) { runCatching { Weather.load(today) }.onSuccess { weather = it } }
-    LaunchedEffect(station?.id) { station?.let { s -> runCatching { Trains.load(s) }.onSuccess { trains = it } } }
-    LaunchedEffect(stop.id) { runCatching { Buses.load(stop, today) }.onSuccess { buses = it } }
-    LaunchedEffect(selection) { selection?.let { sel -> runCatching { Waste.upcoming(sel) }.onSuccess { waste = it } } }
+    // Nur Bausteine laden, die die Gemeinde hat.
+    LaunchedEffect(station?.id) { if (Features.has(Feature.Train)) station?.let { s -> runCatching { Trains.load(s) }.onSuccess { trains = it } } }
+    LaunchedEffect(stop.id) { if (Features.has(Feature.Bus)) runCatching { Buses.load(stop, today) }.onSuccess { buses = it } }
+    LaunchedEffect(selection) { if (Features.has(Feature.Waste)) selection?.let { sel -> runCatching { Waste.upcoming(sel) }.onSuccess { waste = it } } }
+    LaunchedEffect(Unit) { if (Features.has(Feature.Tides)) runCatching { Tides.events() }.onSuccess { tides = it } }
+    LaunchedEffect(Unit) { if (Features.has(Feature.Ferry)) ferry = runCatching { Ferry.trips(today) }.getOrDefault(emptyList()) }
+    val openUrl = rememberOpenUrl()
 
     val now = Town.now()
     val hour = now.hour
@@ -44,7 +50,7 @@ fun StartScreen(open: (Screen) -> Unit) {
     val order = remember { HomeLayout.order() }
     val hidden = remember { HomeLayout.hidden() }
 
-    Scaffold(topBar = { StedeTopBar("stede") }, containerColor = C.sand) { pad ->
+    Scaffold(topBar = { StedeTopBar(Brand.current.displayName) }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
                 Tile(tint, Modifier.height(120.dp), onClick = { open(Screen.Weather) }, icon = weatherIcon(current?.icon, current?.condition)) {
@@ -65,6 +71,27 @@ fun StartScreen(open: (Screen) -> Unit) {
                 if (tiles.isEmpty()) continue
                 item(key = section.key) { SectionHeader(section.title, section.icon) }
                 when (section) {
+                    HomeSection.Sea -> item(key = "sea-tiles") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                            for (t in tiles) {
+                                if (t == HomeTileId.Tides) {
+                                    val level = Tides.height(now, tides)
+                                    val next = tides.firstOrNull { it.time.isAfter(now) }
+                                    HomeTile("Gezeiten", Icons.Default.Waves, C.teal, Modifier.weight(1f), level?.let { Tides.meters(it) } ?: "–",
+                                        next?.let { "${it.label} um ${it.time.format(Town.hm)}" } ?: "Keine Vorhersage") { open(Screen.Tides) }
+                                }
+                                if (t == HomeTileId.Ferry) {
+                                    val config = Tenants.config.ferry
+                                    fun next(toIsland: Boolean) = ferry?.filter { it.toIsland == toIsland && !it.cancelled && it.departure.isAfter(now) }?.minByOrNull { it.departure }
+                                    val out = next(true); val back = next(false)
+                                    fun label(trip: FerryTrip?, harbor: String?) = trip?.let { "${it.departure.format(Town.hm)} ab $harbor" } ?: "keine Abfahrt mehr ab $harbor"
+                                    HomeTile("Fähre", Icons.Default.DirectionsBoat, C.red, Modifier.weight(1f),
+                                        when { ferry == null -> "–"; out == null && back == null -> "Feierabend"; else -> label(out, config?.mainlandName) },
+                                        when { ferry == null -> null; out == null && back == null -> "Heute keine Abfahrt mehr"; else -> label(back, config?.islandName) }) { open(Screen.Ferry) }
+                                }
+                            }
+                        }
+                    }
                     HomeSection.Transit -> item(key = "transit-tiles") {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                             fun next(d: TrainDirection) = trains.filter { it.direction == d && !it.cancelled && it.departure.isAfter(now) }.minByOrNull { it.departure }
@@ -112,9 +139,35 @@ fun StartScreen(open: (Screen) -> Unit) {
                     }
                 }
             }
-            if (hidden.size == HomeTileId.entries.size) item { InfoCard("Alle Kacheln sind ausgeblendet. Unter Einstellungen → Startseite kannst du sie wieder einblenden.") }
+            // Angebote, die auf fremden Seiten gebucht werden (Strandkörbe …).
+            Tenants.config.external?.takeIf { it.isNotEmpty() }?.let { links ->
+                item(key = "external-header") { SectionHeader("Externe Anbieter", Icons.Default.OpenInNew) }
+                links.chunked(4).forEachIndexed { i, row ->
+                    item(key = "external-$i") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                            row.forEach { link ->
+                                Tile(C.red, Modifier.weight(1f).height(86.dp), externalIcon(link.symbol), onClick = { openUrl(link.url) }) {
+                                    Text(link.title, color = C.red, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 2, lineHeight = 14.sp,
+                                        style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto, localeList = androidx.compose.ui.text.intl.LocaleList("de-DE")))
+                                }
+                            }
+                            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                    }
+                }
+            }
+            if (HomeTileId.available.all { it in hidden }) item { InfoCard("Alle Kacheln sind ausgeblendet. Unter Einstellungen → Startseite kannst du sie wieder einblenden.") }
         }
     }
+}
+
+/** SF-Symbol-Namen aus `tenants.config.external` auf Material-Symbole. */
+private fun externalIcon(symbol: String): ImageVector = when {
+    symbol.startsWith("beach") -> Icons.Default.BeachAccess
+    symbol.startsWith("ferry") -> Icons.Default.DirectionsBoat
+    symbol.startsWith("bicycle") -> Icons.Default.DirectionsBike
+    symbol.startsWith("ticket") -> Icons.Default.ConfirmationNumber
+    else -> Icons.Default.OpenInNew
 }
 
 /** Kachel mit blasser Füllung, Rand in der Bereichsfarbe und großem Symbol in der Ecke. */
@@ -142,7 +195,7 @@ private fun CategoryTile(category: String, modifier: Modifier, height: Dp, small
     val color = Catalog.color(category)
     Tile(color, modifier.height(height), Catalog.icon(category), onClick) {
         // Gleiche Schrifthöhe in allen Kacheln: lange Namen werden getrennt und stehen zweizeilig, statt zu schrumpfen.
-        Text(category, color = color, fontWeight = FontWeight.SemiBold,
+        Text(Catalog.tileTitle(category), color = color, fontWeight = FontWeight.SemiBold,
             fontSize = if (small) 12.sp else 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = if (small) 14.sp else 22.sp,
             style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto, localeList = androidx.compose.ui.text.intl.LocaleList("de-DE")))
     }

@@ -406,6 +406,7 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
                     targetTenants = if (on) targetTenants + id else targetTenants - id
                 }
             }
+            if (existing != null && community?.canTransferEvents == true) TransferSection(existing, communityId) { onDismiss() }
             error?.let { Text(it, color = C.red) }
             if (existing != null && !existing.isCancelled) ColorChip("Termin absagen", C.red, Modifier.fillMaxWidth(), icon = Icons.Default.EventBusy) { confirmCancel = true }
         }
@@ -419,6 +420,42 @@ fun EventEditorSheet(communityId: String, existing: EventInfo?, onDismiss: () ->
         title = { Text("Termin absagen?") }, text = { Text("Der Termin bleibt sichtbar, ist aber als abgesagt markiert.") },
         confirmButton = { TextButton({ confirmCancel = false; scope.launch { runCatching { CommunityApi.cancelEvent(existing.id) }; Changes.bump(); onDismiss() } }) { Text("Absagen", color = C.red) } },
         dismissButton = { TextButton({ confirmCancel = false }) { Text("Zurück") } })
+}
+
+/** Sonderfunktion der Veranstaltungs-Gruppe: Termin (oder ganze Reihe) an eine andere Gruppe übertragen. */
+@Composable
+private fun TransferSection(e: EventInfo, communityId: String, onDone: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var groups by remember { mutableStateOf<List<Community>>(emptyList()) }
+    var target by remember { mutableStateOf<Community?>(null) }
+    val series = e.isImported // immer die ganze Reihe
+    var choosing by remember { mutableStateOf(false) }
+    var confirm by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(communityId) {
+        groups = runCatching { CommunityApi.communities(Tenants.current().id) }.getOrDefault(emptyList())
+            .filter { it.status == "approved" && it.id != communityId }
+    }
+    SectionHeader("An Gruppe übertragen", Icons.Default.ArrowCircleRight)
+    StedeCard {
+        FormRow("Gruppe", target?.name ?: "Wählen …") { choosing = true }
+        Text("Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.",
+            color = C.secondary, fontSize = 13.sp)
+        ColorChip("Übertragen", C.ink, Modifier.fillMaxWidth(), icon = Icons.Default.ArrowCircleRight, enabled = target != null) { confirm = true }
+        error?.let { Text(it, color = C.red) }
+    }
+    if (choosing) AlertDialog(onDismissRequest = { choosing = false }, title = { Text("Gruppe wählen") },
+        text = { LazyColumn { items(groups.size) { i -> Text(groups[i].name, color = C.text, modifier = Modifier.fillMaxWidth().clickable { target = groups[i]; choosing = false }.padding(vertical = 12.dp)) } } },
+        confirmButton = { TextButton({ choosing = false }) { Text("Abbrechen") } })
+    val t = target
+    if (confirm && t != null) AlertDialog(onDismissRequest = { confirm = false },
+        title = { Text(if (series) "Reihe „${e.title}“ an ${t.name} übertragen?" else "Termin an ${t.name} übertragen?") },
+        text = { Text(if (series) "Alle künftigen Termine dieser Reihe gehen mit, und neue Importe landen direkt in der Gruppe." else "Der Termin gehört danach dieser Gruppe.") },
+        confirmButton = { TextButton({ confirm = false; scope.launch {
+            runCatching { CommunityApi.transferEvents(e.id, t.id, series) }
+                .onSuccess { Changes.bump(); onDone() }.onFailure { error = "Übertragen fehlgeschlagen: ${it.message}" }
+        } }) { Text("Übertragen") } },
+        dismissButton = { TextButton({ confirm = false }) { Text("Zurück") } })
 }
 
 /** Kreisweit oder nur ausgewählte Gemeinden — auch die Heimatgemeinde der Gruppe ist abwählbar. */
@@ -443,7 +480,7 @@ private fun ReachSection(home: String, countywide: Boolean, onCountywide: (Boole
                 }
             }
         }
-        Text(if (countywide) "Der Termin erscheint im Kalender aller Ammerland-Gemeinden."
+        Text(if (countywide) "Der Termin erscheint im Kalender aller ${Brand.current.regionName}-Gemeinden."
              else "Der Termin erscheint nur in den gewählten Gemeinden.",
             color = C.secondary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
     }

@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import de.letzgo.stede.data.Brand
 import de.letzgo.stede.data.Place
 import de.letzgo.stede.data.Places
 import de.letzgo.stede.data.Tenants
@@ -20,6 +21,10 @@ object Catalog {
     const val PLAYGROUNDS = "Spielplätze"; const val TRIPS = "Ausflüge"; const val HEALTH = "Gesundheit"
     /** Vergünstigungen der Ehrenamtskarte in Westerstede — optionale Kachel auf Start. */
     const val VOLUNTEER = "Ehrenamtskarte"
+    /** Fahrradläden und -verleihe; in stede unter „Einkaufen“, sonst eigene Kachel „Fahrräder“. */
+    const val BIKES = "Fahrrad"
+
+    fun tileTitle(category: String) = if (category == BIKES) "Fahrräder" else category
     private val nonGastro = setOf("Einkaufen", "Bäckerei", "Drogerie")
 
     fun places(category: String): List<Place> = when (category) {
@@ -31,7 +36,8 @@ object Catalog {
         }
         GASTRO -> Places.directory("gastro").places.filter { it.category !in nonGastro }
         SHOPPING -> Places.directory("gastro").places.filter { it.category == "Einkaufen" } + Places.directory("gastro").places.filter { it.category == "Drogerie" } +
-            Places.directory("gastro").places.filter { it.category == "Bäckerei" } + Places.directory("bikes").places
+            Places.directory("gastro").places.filter { it.category == "Bäckerei" } + if (Brand.current.bikesInShopping) Places.directory("bikes").places else emptyList()
+        BIKES -> Places.directory("bikes").places
         PLAYGROUNDS -> Places.directory("playgrounds").places
         TRIPS -> Places.directory("trips").places
         HEALTH -> Places.directory("health").places
@@ -45,6 +51,7 @@ object Catalog {
         PLAYGROUNDS -> Places.directory("playgrounds").source
         TRIPS -> Places.directory("trips").source
         HEALTH -> Places.directory("health").source
+        BIKES -> Places.directory("bikes").source
         VOLUNTEER -> Places.directory("volunteer").source
         else -> Places.directory("gastro").source
     }
@@ -82,8 +89,8 @@ object Catalog {
     }
 
     fun note(category: String): String? = when (category) {
-        TRIPS, DISCOVER -> "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um ${Tenants.config.municipality}."
-        HEALTH -> "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38."
+        TRIPS, DISCOVER -> Tenants.config.notes?.get("trips") ?: "Stadtführungen, Konzerte und Feste stehen im Kalender – hier nur Ziele rund um ${Tenants.config.municipality}."
+        HEALTH -> Tenants.config.notes?.get("health") ?: "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117."
         VOLUNTEER -> "Gilt nur mit der Ehrenamtskarte Niedersachsen/Bremen – beim Anbieter vorzeigen. Beantragung und alle Angebote im Land: freiwilligenserver.de/ehrenamtskarte."
         // Die Kinderrat-Bewertung gibt es nur für die Westersteder Spielplätze.
         PLAYGROUNDS -> if (Tenants.usesBundle) "Bewertung und Sauberkeit laut Kinderrat Westerstede, Stand der Stadtseite." else null

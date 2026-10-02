@@ -61,7 +61,9 @@ object MapData {
     suspend fun load(): Layers {
         val slug = Tenants.slug
         loaded?.takeIf { it.first == slug }?.let { return it.second }
-        return withContext(Dispatchers.Default) { build() }.also { loaded = slug to it }
+        // Ohne Kartendatei (erster Start vor dem Abgleich) nicht merken — beim nächsten Öffnen erneut versuchen.
+        val hasData = ContentFiles.text("inselkarte") != null || Tenants.usesBundle
+        return withContext(Dispatchers.Default) { build() }.also { if (hasData) loaded = slug to it }
     }
 
     /** Kartenrahmen aus der `bbox` der Gemeinde (wie die Kamera-Grenze in iOS). */

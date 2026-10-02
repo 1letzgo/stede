@@ -20,7 +20,7 @@ object Backend {
     const val KEY = "sb_publishable_5ptJm36r8qnhKrGoGOWd0A_5uOpaBmH"
 
     val supabase = createSupabaseClient(URL, KEY) {
-        install(Auth) { scheme = "stede"; host = "auth-callback" }
+        install(Auth) { scheme = Brand.current.id; host = "auth-callback" }
         install(Postgrest)
         install(Storage)
         install(Functions)
@@ -40,7 +40,7 @@ object Http {
     private const val UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
 
     /** Live-Dienste laufen zuerst über den Server-Zwischenspeicher (Edge Function `upstream`), sonst direkt — wie iOS. */
-    private val proxied = setOf("api.brightsky.dev", "dbf.finalrewind.org", "fahrplaner.vbn.de")
+    private val proxied = setOf("api.brightsky.dev", "dbf.finalrewind.org", "fahrplaner.vbn.de", "api.langeoog.de", "luftdaten.umweltbundesamt.de")
     private fun proxyUrl(url: String): String? {
         val host = runCatching { java.net.URI(url).host }.getOrNull() ?: return null
         return if (host in proxied) "${Backend.URL}/functions/v1/upstream?url=${java.net.URLEncoder.encode(url, "UTF-8")}" else null

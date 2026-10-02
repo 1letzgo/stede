@@ -45,14 +45,16 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
     var volunteerInfoHidden by remember { mutableStateOf(Store.bool("volunteer.infoHidden", false)) }
 
     Scaffold(topBar = {
-        StedeTopBar(category, onBack) {
+        StedeTopBar(Catalog.tileTitle(category), onBack) {
             IconButton(onClick = { showsMap = !showsMap; Store.setBool("island.showsMap", showsMap) }) { Icon(if (showsMap) Icons.Default.Map else Icons.Outlined.Map, "Karte") }
         }
     }, containerColor = C.sand) { pad ->
         Column(Modifier.padding(pad)) {
             if (showsMap) {
-                val pins = visible.mapNotNull { p -> if (p.latitude == null || p.longitude == null) null else MapPin(p.id, p.latitude, p.longitude, Catalog.icon(p.category), Catalog.color(p.category), p.name) }
-                OfflineMap(pins, selectedId, Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp).fillMaxWidth().height(260.dp)) { id ->
+                // Ein Pin je Standort; Verleihe mit mehreren Stationen bekommen mehrere („id#n“).
+                val pins = visible.flatMap { p -> p.points.mapIndexed { i, s -> MapPin(if (i == 0) p.id else "${p.id}#$i", s.latitude, s.longitude, Catalog.icon(p.category), Catalog.color(p.category), p.name) } }
+                OfflineMap(pins, selectedId, Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp).fillMaxWidth().height(260.dp)) { pin ->
+                    val id = pin.substringBefore('#')
                     selectedId = id
                     val index = visible.indexOfFirst { it.id == id }
                     if (index >= 0) scope.launch { listState.animateScrollToItem(index) }
@@ -99,7 +101,7 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
 @Composable
 private fun PlaceCard(p: Place, selected: Boolean, favorite: Boolean, toggleFavorite: () -> Unit, openUrl: (String) -> Unit, openIntent: (String) -> Unit, showOnMap: () -> Unit) {
     val color = Catalog.color(p.category)
-    StedeCard(highlighted = selected, onClick = showOnMap) {
+    StedeCard(highlighted = selected, onClick = showOnMap, header = p.imageUrl?.let { url -> { EventPhoto(url, 170.dp, credit = p.imageCredit) } }) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconChip(Catalog.icon(p.category), color)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -110,7 +112,8 @@ private fun PlaceCard(p: Place, selected: Boolean, favorite: Boolean, toggleFavo
         }
         p.teaser?.let { Text(it, fontSize = 15.sp, color = C.secondary, modifier = Modifier.padding(top = 8.dp)) }
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            p.street?.let { InfoLine(Icons.Default.Place, it) }
+            if (p.stations.size > 1) p.stations.forEach { InfoLine(Icons.Default.Place, listOf(it.label, it.street).filter(String::isNotBlank).joinToString(" · ")) }
+            else p.street?.let { InfoLine(Icons.Default.Place, it) }
             p.hours?.let { InfoLine(Icons.Default.Schedule, it) }
             p.restDay?.let { InfoLine(Icons.Default.Bedtime, "Ruhetag: $it") }
             p.seasonNote?.let { InfoLine(Icons.Default.CalendarMonth, it) }

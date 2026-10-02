@@ -11,11 +11,31 @@ android {
     namespace = "de.letzgo.stede"
     compileSdk = 36
     defaultConfig {
-        applicationId = "de.letzgo.stede"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0"
+    }
+    // Eine App je Region aus demselben Code (wie die App-Hüllen auf iOS): die Marke steht in
+    // BuildConfig.BRAND, Name, Paket und URL-Schema je Flavor; Bausteine kommen aus tenants.config.
+    flavorDimensions += "brand"
+    productFlavors {
+        create("stede") {
+            dimension = "brand"
+            applicationId = "de.letzgo.stede"
+            versionCode = 2
+            versionName = "1.0"
+            buildConfigField("String", "BRAND", "\"stede\"")
+            resValue("string", "app_name", "stede")
+            manifestPlaceholders["urlScheme"] = "stede"
+        }
+        create("loog") {
+            dimension = "brand"
+            applicationId = "de.letzgo.loog"
+            versionCode = 1
+            versionName = "1.3"
+            buildConfigField("String", "BRAND", "\"loog\"")
+            resValue("string", "app_name", "Loog")
+            manifestPlaceholders["urlScheme"] = "loog"
+        }
     }
     // Upload-Schlüssel liegt außerhalb von Repo und iCloud; ohne die Datei
     // entsteht ein unsignierter Release-Build.
@@ -42,7 +62,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     // pdfbox zieht BouncyCastle mit; dessen Post-Quanten-Tabellen (~8 MB) braucht
     // das Lesen des Abfuhr-PDFs nicht.
     packaging { resources { excludes += "org/bouncycastle/pqc/**" } }
@@ -71,4 +91,6 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation("androidx.browser:browser:1.8.0")
+    // Baustein „plus“ (loog+): Einmalkauf und Monatsabo über Google Play.
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
 }

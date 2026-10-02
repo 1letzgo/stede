@@ -4,7 +4,7 @@
     <application
         android:name=".StedeApplication"
         android:allowBackup="true"
-        android:label="stede"
+        android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Stede">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
@@ -12,12 +12,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Rückkehr aus der Magic-Link-Mail: stede://auth-callback -->
+            <!-- Rückkehr aus der Magic-Link-Mail: <schema>://auth-callback (stede://, loog://) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="stede" android:host="auth-callback" />
+                <data android:scheme="${urlScheme}" android:host="auth-callback" />
             </intent-filter>
         </activity>
         <!-- Terminbild zum Teilen (WhatsApp, Signal …) aus dem Cache freigeben -->

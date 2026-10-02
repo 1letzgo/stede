@@ -40,6 +40,8 @@ fun WeatherScreen(onBack: () -> Unit) {
     var weather by remember { mutableStateOf<WeatherDay?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedHour by remember { mutableStateOf<String?>(null) }
+    var air by remember { mutableStateOf<List<AirHour>>(emptyList()) }
+    LaunchedEffect(day) { air = emptyList(); if (Features.has(Feature.Air)) air = runCatching { Air.hours(day) }.getOrDefault(emptyList()) }
     LaunchedEffect(day) {
         weather = Weather.cached(day); error = null; selectedHour = null
         runCatching { Weather.load(day) }.onSuccess { weather = it }.onFailure { if (weather == null) error = it.message }
@@ -95,8 +97,12 @@ fun WeatherScreen(onBack: () -> Unit) {
                             Triple("Bewölkung", h.cloudCover?.let { "${it.roundToInt()} %" } ?: "–", Icons.Default.Cloud),
                             Triple("Sonne", h.sunshine?.let { "${it.roundToInt()} min" } ?: "–", Icons.Default.WbSunny),
                         )
+                        // Luftqualität der Stunde (UBA), nur mit dem Baustein `air`.
+                        val airHour = air.minByOrNull { kotlin.math.abs(java.time.Duration.between(it.start, h.time).toMinutes()) }
+                            ?.takeIf { kotlin.math.abs(java.time.Duration.between(it.start, h.time).toMinutes()) <= 45 }
+                        val all = tiles + listOfNotNull(airHour?.let { Triple("Luft", it.label, Icons.Default.Masks) })
                         Column(verticalArrangement = Arrangement.spacedBy(Spacing)) {
-                            tiles.chunked(2).forEach { row ->
+                            all.chunked(2).forEach { row ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                                     row.forEach { (label, value, icon) ->
                                         StedeCard(Modifier.weight(1f)) {
@@ -109,7 +115,8 @@ fun WeatherScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                item { SourceFooter("Deutscher Wetterdienst über Bright Sky${w.station?.let { " · Station $it" } ?: ""}") }
+                item { SourceFooter("Deutscher Wetterdienst über Bright Sky${w.station?.let { " · Station $it" } ?: ""}" +
+                    (Tenants.config.airStation?.takeIf { air.isNotEmpty() }?.let { " · Luft: Umweltbundesamt $it" } ?: "")) }
             }
             DayBar(day, latest = Town.today().plusDays(9), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)) { day = it }
         }
