@@ -158,6 +158,8 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var price: String?
     public var registration: String?
     public var soldOut: Bool
+    /// Veranstalter eines übernommenen Termins (Tabelle `organizers`).
+    public var organizerID: UUID?
 
     public nonisolated struct CommunityName: Codable, Hashable, Sendable {
         public let name: String
@@ -196,6 +198,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case sourceName = "source_name"
         case imageCredit = "image_credit"
         case soldOut = "sold_out"
+        case organizerID = "organizer_id"
     }
 
     public var origin: EventOrigin {
@@ -240,6 +243,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         price = try c.decodeIfPresent(String.self, forKey: .price)
         registration = try c.decodeIfPresent(String.self, forKey: .registration)
         soldOut = try c.decodeIfPresent(Bool.self, forKey: .soldOut) ?? false
+        organizerID = try c.decodeIfPresent(UUID.self, forKey: .organizerID)
     }
 }
 

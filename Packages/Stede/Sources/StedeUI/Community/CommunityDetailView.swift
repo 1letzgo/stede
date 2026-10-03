@@ -644,6 +644,8 @@ struct EventEditorView: View {
     @State private var transferTarget: UUID?
     @State private var confirmTransfer = false
     @State private var transferring = false
+    /// Alle Termine des Veranstalters statt nur der Reihe (gleicher Titel) übertragen.
+    @State private var transferByOrganizer = false
 
     /// Neue Termine beginnen zur nächsten vollen Stunde (10:23 → 11:00), nicht zur aktuellen Minute.
     static var nextFullHour: Date {
@@ -740,7 +742,9 @@ struct EventEditorView: View {
             .confirmationDialog(transferQuestion, isPresented: $confirmTransfer, titleVisibility: .visible) {
                 Button("Übertragen") { Task { await transfer() } }
             } message: {
-                Text(existing?.externalKey != nil
+                Text(transferByOrganizer && transferOrganizer != nil
+                     ? "Alle künftigen Termine dieses Veranstalters gehen mit, und neue Importe von ihm landen direkt in der Gruppe."
+                     : existing?.externalKey != nil
                      ? "Alle künftigen Termine dieser Reihe gehen mit, und neue Importe landen direkt in der Gruppe."
                      : "Der Termin gehört danach dieser Gruppe.")
             }
@@ -773,8 +777,14 @@ struct EventEditorView: View {
     // MARK: Übertragen (Sonderfunktion der Veranstaltungs-Gruppe)
 
     private var transferTargetName: String { transferGroups.first { $0.id == transferTarget }?.name ?? "" }
+    /// Veranstalter des übernommenen Termins — nur dann gibt es „Alle Termine von …“.
+    private var transferOrganizer: String? {
+        guard let existing, existing.externalKey != nil, existing.organizerID != nil else { return nil }
+        return existing.organizer
+    }
     private var transferQuestion: String {
-        existing?.externalKey != nil ? "Reihe „\(title)“ an \(transferTargetName) übertragen?" : "Termin an \(transferTargetName) übertragen?"
+        if transferByOrganizer, let organizer = transferOrganizer { return "Alle Termine von „\(organizer)“ an \(transferTargetName) übertragen?" }
+        return existing?.externalKey != nil ? "Reihe „\(title)“ an \(transferTargetName) übertragen?" : "Termin an \(transferTargetName) übertragen?"
     }
 
     @ViewBuilder private var transferSection: some View {
@@ -786,12 +796,20 @@ struct EventEditorView: View {
             #if !os(macOS)
             .pickerStyle(.navigationLink)
             #endif
+            if let organizer = transferOrganizer {
+                Picker("Umfang", selection: $transferByOrganizer) {
+                    Text("Diese Reihe").tag(false)
+                    Text("Alle von \(organizer)").tag(true)
+                }
+            }
             Button(transferring ? "Überträgt …" : "Übertragen", systemImage: "arrow.right.circle") { confirmTransfer = true }
                 .disabled(transferTarget == nil || transferring)
         } header: {
             StedeFormHeader(title: "An Gruppe übertragen", symbol: "arrow.right.circle")
         } footer: {
-            Text("Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.")
+            Text(transferByOrganizer
+                 ? "Verknüpft den Veranstalter mit der Gruppe: alle seine künftigen Termine, auch später importierte, gehören danach ihr. Ihre Admins bearbeiten sie dort."
+                 : "Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.")
         }
     }
 
@@ -800,7 +818,11 @@ struct EventEditorView: View {
         transferring = true
         defer { transferring = false }
         do {
-            try await CommunityClient().transferEvents(eventID: existing.id, to: transferTarget, series: true)
+            if transferByOrganizer, transferOrganizer != nil {
+                _ = try await CommunityClient().transferOrganizer(eventID: existing.id, to: transferTarget)
+            } else {
+                _ = try await CommunityClient().transferEvents(eventID: existing.id, to: transferTarget, series: true)
+            }
             await onTransferred?()
             dismiss()
         } catch {

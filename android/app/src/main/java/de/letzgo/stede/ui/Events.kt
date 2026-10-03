@@ -430,6 +430,9 @@ private fun TransferSection(e: EventInfo, communityId: String, onDone: () -> Uni
     var groups by remember { mutableStateOf<List<Community>>(emptyList()) }
     var target by remember { mutableStateOf<Community?>(null) }
     val series = e.isImported // immer die ganze Reihe
+    // Übernommene Termine mit Veranstalter: wahlweise alle Termine dieses Veranstalters.
+    val organizer = e.origin.organizer?.takeIf { e.isImported && e.organizerId != null }
+    var byOrganizer by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -440,7 +443,12 @@ private fun TransferSection(e: EventInfo, communityId: String, onDone: () -> Uni
     SectionHeader("An Gruppe übertragen", Icons.Default.ArrowCircleRight)
     StedeCard {
         FormRow("Gruppe", target?.name ?: "Wählen …") { choosing = true }
-        Text("Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.",
+        if (organizer != null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SelectionChip("Diese Reihe", !byOrganizer, Modifier.weight(1f), compact = true) { byOrganizer = false }
+            SelectionChip("Alle von $organizer", byOrganizer, Modifier.weight(1f), compact = true) { byOrganizer = true }
+        }
+        Text(if (byOrganizer) "Verknüpft den Veranstalter mit der Gruppe: alle seine künftigen Termine, auch später importierte, gehören danach ihr. Ihre Admins bearbeiten sie dort."
+             else "Überträgt immer die ganze Reihe: alle künftigen Termine mit diesem Titel, auch später importierte. Danach gehören sie der gewählten Gruppe, ihre Admins bearbeiten sie dort.",
             color = C.secondary, fontSize = 13.sp)
         ColorChip("Übertragen", C.ink, Modifier.fillMaxWidth(), icon = Icons.Default.ArrowCircleRight, enabled = target != null) { confirm = true }
         error?.let { Text(it, color = C.red) }
@@ -450,10 +458,16 @@ private fun TransferSection(e: EventInfo, communityId: String, onDone: () -> Uni
         confirmButton = { TextButton({ choosing = false }) { Text("Abbrechen") } })
     val t = target
     if (confirm && t != null) AlertDialog(onDismissRequest = { confirm = false },
-        title = { Text(if (series) "Reihe „${e.title}“ an ${t.name} übertragen?" else "Termin an ${t.name} übertragen?") },
-        text = { Text(if (series) "Alle künftigen Termine dieser Reihe gehen mit, und neue Importe landen direkt in der Gruppe." else "Der Termin gehört danach dieser Gruppe.") },
+        title = { Text(when {
+            byOrganizer && organizer != null -> "Alle Termine von „$organizer“ an ${t.name} übertragen?"
+            series -> "Reihe „${e.title}“ an ${t.name} übertragen?"
+            else -> "Termin an ${t.name} übertragen?" }) },
+        text = { Text(when {
+            byOrganizer && organizer != null -> "Alle künftigen Termine dieses Veranstalters gehen mit, und neue Importe von ihm landen direkt in der Gruppe."
+            series -> "Alle künftigen Termine dieser Reihe gehen mit, und neue Importe landen direkt in der Gruppe."
+            else -> "Der Termin gehört danach dieser Gruppe." }) },
         confirmButton = { TextButton({ confirm = false; scope.launch {
-            runCatching { CommunityApi.transferEvents(e.id, t.id, series) }
+            runCatching { if (byOrganizer && organizer != null) CommunityApi.transferOrganizer(e.id, t.id) else CommunityApi.transferEvents(e.id, t.id, series) }
                 .onSuccess { Changes.bump(); onDone() }.onFailure { error = "Übertragen fehlgeschlagen: ${it.message}" }
         } }) { Text("Übertragen") } },
         dismissButton = { TextButton({ confirm = false }) { Text("Zurück") } })

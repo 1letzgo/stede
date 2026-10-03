@@ -180,7 +180,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, external_key, rsvp_enabled, all_day, organizer, category, source_url, source_name, image_credit, price, registration, sold_out, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, external_key, rsvp_enabled, all_day, organizer, category, source_url, source_name, image_credit, price, registration, sold_out, organizer_id, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)
@@ -239,6 +239,13 @@ public nonisolated struct CommunityClient: Sendable {
     public func transferEvents(eventID: UUID, to target: UUID, series: Bool) async throws -> Int {
         struct Params: Encodable { let p_event: UUID; let p_target: UUID; let p_series: Bool }
         return try await client.rpc("transfer_events", params: Params(p_event: eventID, p_target: target, p_series: series)).execute().value
+    }
+
+    /// Verknüpft den Veranstalter des Termins mit der Zielgruppe: alle künftigen Termine dieses Veranstalters
+    /// wandern dorthin, neue Importe landen direkt dort. Liefert die Zahl der verschobenen Termine.
+    public func transferOrganizer(eventID: UUID, to target: UUID) async throws -> Int {
+        struct Params: Encodable { let p_event: UUID; let p_target: UUID }
+        return try await client.rpc("transfer_organizer", params: Params(p_event: eventID, p_target: target)).execute().value
     }
 
     public func cancelEvent(id: UUID) async throws {

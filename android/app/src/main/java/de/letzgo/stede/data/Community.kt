@@ -67,6 +67,8 @@ import java.util.UUID
     @SerialName("source_url") val sourceUrl: String? = null, @SerialName("source_name") val sourceName: String? = null,
     @SerialName("image_credit") val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
     @SerialName("sold_out") val soldOut: Boolean = false,
+    /** Veranstalter eines übernommenen Termins (Tabelle `organizers`). */
+    @SerialName("organizer_id") val organizerId: String? = null,
 ) {
     val isPublic get() = visibility == "public" && publishedAt != null
     val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration, soldOut)
@@ -134,6 +136,8 @@ data class EventInfo(
     val origin: EventOrigin = EventOrigin(),
     /** Aus: keine Zusage-Chips, keine Helfer, keine Zusagenliste. */
     val rsvpEnabled: Boolean = true,
+    /** Veranstalter eines übernommenen Termins — für „Alle Termine von …“ übertragen. */
+    val organizerId: String? = null,
 ) {
     val isImported get() = origin.isImported
     /** `community` ist der Veranstalter eines übernommenen Termins (statt „stede Veranstaltungen“ usw.). */
@@ -145,7 +149,7 @@ data class EventInfo(
             e.id, e.title, e.origin.shownOrganizer ?: e.community?.name?.ifBlank { null } ?: fallbackName,
             if (e.origin.shownOrganizer != null) null else Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
-            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants, e.origin, e.rsvpEnabled,
+            e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants, e.origin, e.rsvpEnabled, e.organizerId,
         )
         fun of(e: PublicEvent) = EventInfo(
             e.id, e.title, e.origin.shownOrganizer ?: e.communityName,
@@ -173,7 +177,7 @@ data class EventInfo(
 object CommunityApi {
     private val db get() = Backend.supabase
     private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled,can_transfer_events"
-    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,sold_out,communities(name,logo_path)"
+    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,sold_out,organizer_id,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()
@@ -260,6 +264,10 @@ object CommunityApi {
      *  Titels mit und leitet neue Importe dieser Reihe gleich dorthin. Liefert die Zahl der Termine. */
     suspend fun transferEvents(eventId: String, target: String, series: Boolean): Int =
         db.postgrest.rpc("transfer_events", buildJsonObject { put("p_event", eventId); put("p_target", target); put("p_series", series) }).decodeAs<Int>()
+    /** Verknüpft den Veranstalter des Termins mit der Zielgruppe: alle künftigen Termine dieses Veranstalters
+     *  wandern dorthin, neue Importe landen direkt dort. Liefert die Zahl der verschobenen Termine. */
+    suspend fun transferOrganizer(eventId: String, target: String): Int =
+        db.postgrest.rpc("transfer_organizer", buildJsonObject { put("p_event", eventId); put("p_target", target) }).decodeAs<Int>()
     suspend fun cancelEvent(id: String) { db.from("community_events").update({ set("cancelled_at", java.time.Instant.now().toString()) }) { filter { eq("id", id) } } }
 
     suspend fun comments(eventId: String) = db.from("event_comments").select(Columns.raw("id,event_id,user_id,body,created_at,profiles(user_id,display_name,avatar_url)")) {
