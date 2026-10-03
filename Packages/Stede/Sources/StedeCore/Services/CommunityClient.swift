@@ -180,7 +180,7 @@ public nonisolated struct CommunityClient: Sendable {
 
     // MARK: Termine
 
-    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, external_key, rsvp_enabled, all_day, organizer, category, source_url, source_name, image_credit, price, registration, communities(name, logo_path)"
+    private static let eventColumns = "id, community_id, title, description, starts_at, ends_at, location, image_path, visibility, published_at, cancelled_at, version, created_by, updated_at, helpers_needed, comments_enabled, target_tenants, external_key, rsvp_enabled, all_day, organizer, category, source_url, source_name, image_credit, price, registration, sold_out, communities(name, logo_path)"
 
     public func events(communityID: UUID, from: Date) async throws -> [CommunityEvent] {
         try await client.from("community_events").select(Self.eventColumns)

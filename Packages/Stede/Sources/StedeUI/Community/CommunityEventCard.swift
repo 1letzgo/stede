@@ -6,8 +6,11 @@ import SwiftUI
 struct CommunityEventInfo: Identifiable, Hashable {
     let id: UUID
     let title: String
+    /// Gruppenname — bei übernommenen Terminen mit Veranstalter steht hier der Veranstalter statt der Sammelgruppe.
     let community: String
     let communityLogoURL: URL?
+    /// `community` ist der Veranstalter eines übernommenen Termins.
+    let showsOrganizer: Bool
     let starts: Date
     let ends: Date?
     let location: String?
@@ -27,7 +30,8 @@ struct CommunityEventInfo: Identifiable, Hashable {
     let rsvpEnabled: Bool
 
     init(_ event: CommunityEvent) {
-        id = event.id; title = event.title; community = event.communityName; communityLogoURL = event.communityLogoURL
+        id = event.id; title = event.title
+        (community, communityLogoURL, showsOrganizer) = Self.owner(group: event.communityName, logo: event.communityLogoURL, origin: event.origin)
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = event.isPublic; isCancelled = event.cancelledAt != nil
         helpersNeeded = event.helpersNeeded; createdBy = event.createdBy; communityId = event.communityId
@@ -37,13 +41,20 @@ struct CommunityEventInfo: Identifiable, Hashable {
     }
 
     init(_ event: PublicEvent) {
-        id = event.id; title = event.title; community = event.communityName; communityLogoURL = event.communityLogoURL
+        id = event.id; title = event.title
+        (community, communityLogoURL, showsOrganizer) = Self.owner(group: event.communityName, logo: event.communityLogoURL, origin: event.origin)
         starts = event.startsAt; ends = event.endsAt; location = event.location; description = event.description
         imageURL = event.imageURL; isPublic = true; isCancelled = false
         helpersNeeded = event.helpersNeeded; createdBy = nil; communityId = nil
         commentsEnabled = false
         origin = event.origin
         rsvpEnabled = event.rsvpEnabled ?? true
+    }
+
+    /// Übernommene Termine zeigen ihren Veranstalter statt der Sammelgruppe („stede Veranstaltungen“, „loog Veranstaltungen“).
+    private static func owner(group: String, logo: URL?, origin: EventOrigin) -> (String, URL?, Bool) {
+        if origin.isImported, let organizer = origin.organizer, !organizer.isEmpty { return (organizer, nil, true) }
+        return (group, logo, false)
     }
 
     static let dateFormat = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
@@ -193,6 +204,7 @@ private struct EventBody: View {
                             if info.isCancelled { StedeTagPill(text: "abgesagt", color: StedeTheme.harborRed) }
                             else if isPast { StedeTagPill(text: "vorbei", color: StedeTheme.mudflat) }
                             if let category = info.origin.category { StedeTagPill(text: category, color: StedeTheme.ink) }
+                            if info.origin.soldOut { StedeTagPill(text: "ausgebucht", color: StedeTheme.harborRed) }
                             if info.rsvpEnabled, info.helpersNeeded > 0 {
                                 StedeTagPill(text: helperCount >= info.helpersNeeded ? "Helfer komplett" : "Helfer \(helperCount)/\(info.helpersNeeded)", color: helperCount >= info.helpersNeeded ? StedeTheme.duneGreen : StedeTheme.heather)
                             }
@@ -211,12 +223,15 @@ private struct EventBody: View {
             if compact, let location = info.location, !location.isEmpty {
                 Label(location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
+            if compact, info.showsOrganizer {
+                Label(info.community, systemImage: "person.crop.square").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
             if !info.description.isEmpty {
                 Text(info.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(compact ? 4 : nil)
             }
             if !compact {
                 Label { Text(info.longTimeLabel) } icon: { Image(systemName: "clock").foregroundStyle(tint) }.font(.caption)
-                Label { Text(info.community) } icon: { Image(systemName: "person.3.fill").foregroundStyle(tint) }.font(.caption)
+                Label { Text(info.community) } icon: { Image(systemName: info.showsOrganizer ? "person.crop.square" : "person.3.fill").foregroundStyle(tint) }.font(.caption)
             }
             if !compact, let location = info.location, !location.isEmpty {
                 Label { Text(location) } icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(tint) }.font(.caption)
@@ -374,16 +389,13 @@ struct PhotoCredit: View {
     }
 }
 
-/// Detailansicht übernommener Gemeinde-Termine: Veranstalter, Preis, Anmeldung und die Quelle als Link.
+/// Detailansicht übernommener Gemeinde-Termine: Preis, Anmeldung und die Quelle als Link (der Veranstalter steht schon oben).
 private struct EventOriginDetails: View {
     let origin: EventOrigin
     let tint: Color
     @State private var page: BrowserPage?
 
     var body: some View {
-        if let organizer = origin.organizer {
-            Label { Text(organizer) } icon: { Image(systemName: "person.crop.square").foregroundStyle(tint) }.font(.caption)
-        }
         if let price = origin.price {
             Label { Text(price) } icon: { Image(systemName: "eurosign.circle").foregroundStyle(tint) }.font(.caption)
         }

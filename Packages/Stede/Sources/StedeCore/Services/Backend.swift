@@ -29,8 +29,10 @@ public nonisolated enum Backend {
     }
 
     /// Öffentlicher Bucket `event-photos`; Pfad `<community_id>/<uuid>.jpg`.
+    /// Termin-Fotos liegen in `event-photos`; übernommene Inseltermine verweisen mit `content/…` auf den Bucket `content`.
     public static func eventPhotoURL(path: String) -> URL {
-        url.appending(path: "storage/v1/object/public/event-photos/\(path)")
+        if path.hasPrefix("content/") { return url.appending(path: "storage/v1/object/public/\(path)") }
+        return url.appending(path: "storage/v1/object/public/event-photos/\(path)")
     }
 
     public static func feedURL(token: String, scope: String = "mine") -> URL {

@@ -28,7 +28,8 @@ object Backend {
 
     fun logoUrl(path: String?) = path?.let { "$URL/storage/v1/object/public/community-logos/$it" }
     fun avatarUrl(path: String?) = path?.takeIf { it.isNotBlank() }?.let { if (it.startsWith("http")) it else "$URL/storage/v1/object/public/avatars/$it" }
-    fun photoUrl(path: String?) = path?.let { "$URL/storage/v1/object/public/event-photos/$it" }
+    /** Termin-Fotos liegen in `event-photos`; übernommene Inseltermine verweisen mit `content/…` auf den Bucket `content`. */
+    fun photoUrl(path: String?) = path?.let { if (it.startsWith("content/")) "$URL/storage/v1/object/public/$it" else "$URL/storage/v1/object/public/event-photos/$it" }
     fun feedUrl(token: String, scope: String = "mine") = "$URL/functions/v1/calendar-feed/$token.ics?scope=$scope"
     fun webcalUrl(token: String, scope: String = "mine") = feedUrl(token, scope).replace("https://", "webcal://")
 }

@@ -179,9 +179,11 @@ struct EventView: View {
         auth.memberships.filter { $0.status == .active }.map(\.communityId)
     }
 
+    /// Öffentliche Termine (auch übernommene Gemeinde-Termine) lädt jede App; Gruppen-Termine und Zusagen nur mit dem Baustein Gruppen.
     private func loadCommunity() async {
-        guard Features.has(.groups) else { return }
-        await community.load(from: model.start, to: IslandTime.day(model.end, adding: 1), tenantID: auth.tenant?.id, memberCommunityIDs: memberCommunityIDs, userID: auth.userID)
+        let groups = Features.has(.groups)
+        await community.load(from: model.start, to: IslandTime.day(model.end, adding: 1), tenantID: auth.tenant?.id ?? Tenants.current.tenantID,
+                             memberCommunityIDs: groups ? memberCommunityIDs : [], userID: groups ? auth.userID : nil)
     }
 
     private func dayID(_ date: Date) -> String { "day-\(IslandTime.isoDate(date))" }

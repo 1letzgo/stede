@@ -3,6 +3,7 @@ package de.letzgo.stede.ui
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import de.letzgo.stede.data.Brand
 import de.letzgo.stede.data.EventInfo
 import de.letzgo.stede.data.Http
 import de.letzgo.stede.data.Town
@@ -21,7 +22,7 @@ object EventShare {
         e.location?.takeIf { it.isNotBlank() }?.let { parts += "Ort: $it" }
         val desc = e.description.trim()
         if (desc.isNotEmpty()) parts += if (desc.length > 450) desc.take(450) + "…" else desc
-        parts += "${e.community} · geteilt aus der stede-App"
+        parts += "${e.community} · geteilt aus der ${Brand.current.displayName}-App"
         return parts.joinToString("\n\n")
     }
 

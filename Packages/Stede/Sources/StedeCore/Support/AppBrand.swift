@@ -66,7 +66,7 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         defaultTenant: "spiekeroog", choosesTenant: false, urlScheme: "spoog", palette: "Spoog",
         allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
         defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
-        placesTitle: "Insel", bikesInShopping: false, privacyURL: nil
+        placesTitle: "Insel", bikesInShopping: false, privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 
     public static let all: [AppBrand] = [.stede, .loog, .spoog]

@@ -81,11 +81,11 @@ fun CalendarScreen() {
     val scope = rememberCoroutineScope()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+    // Öffentliche (auch übernommene) Termine lädt jede App; Gruppen-Termine nur mit dem Baustein Gruppen.
     suspend fun communityRange(from: LocalDate, through: LocalDate): List<EventInfo> {
-        if (!groups) return emptyList()
         val f = from.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val t = through.plusDays(1).atStartOfDay(Town.zone).toOffsetDateTime().toString()
         val tenant = Tenants.current()
-        val own = CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) }
+        val own = if (groups) CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) } else emptyList()
         val ownIds = own.map { it.id }.toSet()
         return own + CommunityApi.publicEvents(tenant.id, f, t).filter { it.id !in ownIds }.map { EventInfo.of(it) }
     }

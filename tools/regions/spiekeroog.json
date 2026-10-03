@@ -1,7 +1,7 @@
 {
   "region": "spiekeroog", "regionName": "Spiekeroog",
   "brand": {"id": "spoog", "displayName": "spoog", "appName": "Spoog", "bundleId": "de.letzgo.spoog",
-            "placesTitle": "Insel", "bikesInShopping": false, "privacyURL": null,
+            "placesTitle": "Insel", "bikesInShopping": false, "privacyURL": "https://loog.shelf.am/datenschutz.html",
             "colors": {"bar": "#00773D", "accent": "#00A855"}, "icon": "store/spoog/icon-1024.png"},
   "features": {"weather": true, "calendar": true, "ferry": true, "tides": true, "air": true, "plus": true,
                "places": ["gastro", "health", "leisure", "sights", "playgrounds"]},

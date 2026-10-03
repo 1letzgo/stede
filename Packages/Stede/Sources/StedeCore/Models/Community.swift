@@ -157,6 +157,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
     public var imageCredit: String?
     public var price: String?
     public var registration: String?
+    public var soldOut: Bool
 
     public nonisolated struct CommunityName: Codable, Hashable, Sendable {
         public let name: String
@@ -194,11 +195,12 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         case sourceURL = "source_url"
         case sourceName = "source_name"
         case imageCredit = "image_credit"
+        case soldOut = "sold_out"
     }
 
     public var origin: EventOrigin {
         EventOrigin(allDay: allDay, organizer: organizer, category: category, sourceURL: sourceURL, sourceName: sourceName,
-                    imageCredit: imageCredit, price: price, registration: registration)
+                    imageCredit: imageCredit, price: price, registration: registration, soldOut: soldOut)
     }
 
     public var communityName: String { community?.name ?? "" }
@@ -237,6 +239,7 @@ public nonisolated struct CommunityEvent: Codable, Hashable, Sendable, Identifia
         imageCredit = try c.decodeIfPresent(String.self, forKey: .imageCredit)
         price = try c.decodeIfPresent(String.self, forKey: .price)
         registration = try c.decodeIfPresent(String.self, forKey: .registration)
+        soldOut = try c.decodeIfPresent(Bool.self, forKey: .soldOut) ?? false
     }
 }
 
@@ -251,11 +254,13 @@ public nonisolated struct EventOrigin: Hashable, Sendable {
     public var imageCredit: String?
     public var price: String?
     public var registration: String?
+    public var soldOut = false
 
     public init(allDay: Bool = false, organizer: String? = nil, category: String? = nil, sourceURL: String? = nil, sourceName: String? = nil,
-                imageCredit: String? = nil, price: String? = nil, registration: String? = nil) {
+                imageCredit: String? = nil, price: String? = nil, registration: String? = nil, soldOut: Bool = false) {
         self.allDay = allDay; self.organizer = organizer; self.category = category; self.sourceURL = sourceURL
         self.sourceName = sourceName; self.imageCredit = imageCredit; self.price = price; self.registration = registration
+        self.soldOut = soldOut
     }
 
     /// Aus einem Gemeinde-Kalender übernommen.
@@ -285,10 +290,11 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
     public let price: String?
     public let registration: String?
     public let rsvpEnabled: Bool?
+    public let soldOut: Bool?
 
     public var origin: EventOrigin {
         EventOrigin(allDay: allDay ?? false, organizer: organizer, category: category, sourceURL: sourceURL, sourceName: sourceName,
-                    imageCredit: imageCredit, price: price, registration: registration)
+                    imageCredit: imageCredit, price: price, registration: registration, soldOut: soldOut ?? false)
     }
 
     public var imageURL: URL? { imagePath.map(Backend.eventPhotoURL) }
@@ -309,6 +315,7 @@ public nonisolated struct PublicEvent: Codable, Hashable, Sendable, Identifiable
         case sourceName = "source_name"
         case imageCredit = "image_credit"
         case rsvpEnabled = "rsvp_enabled"
+        case soldOut = "sold_out"
     }
 }
 

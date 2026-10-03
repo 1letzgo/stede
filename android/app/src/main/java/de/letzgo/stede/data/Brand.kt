@@ -96,7 +96,7 @@ data class Brand(
         val spoog = Brand("spoog", "spoog", "spiekeroog", "Spiekeroog", "spiekeroog", false,
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
-            "Insel", false, null)
+            "Insel", false, "https://loog.shelf.am/datenschutz.html")
 
         val all = listOf(stede, loog, spoog)
         // brands: end

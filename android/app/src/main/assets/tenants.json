@@ -527,7 +527,8 @@
     "symbol": "beach.umbrella.fill",
     "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335"
    }
-  ]
+  ],
+  "tenantID": "edd930d3-7382-42b3-a724-54395af72bbd"
  },
  {
   "slug": "spiekeroog",
@@ -586,6 +587,7 @@
    "gauge": "662c4b5e-0241-456d-ac7d-9f62fd95c0d1",
    "gauge_name": "Spiekeroog"
   },
-  "airStation": "DENI058"
+  "airStation": "DENI058",
+  "tenantID": "faf847fe-9b06-4438-afd8-d699c6ce22b7"
  }
 ]

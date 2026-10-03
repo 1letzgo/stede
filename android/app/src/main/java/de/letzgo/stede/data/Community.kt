@@ -66,9 +66,10 @@ import java.util.UUID
     @SerialName("all_day") val allDay: Boolean = false, val organizer: String? = null, val category: String? = null,
     @SerialName("source_url") val sourceUrl: String? = null, @SerialName("source_name") val sourceName: String? = null,
     @SerialName("image_credit") val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
+    @SerialName("sold_out") val soldOut: Boolean = false,
 ) {
     val isPublic get() = visibility == "public" && publishedAt != null
-    val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration)
+    val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration, soldOut)
 }
 
 @Serializable data class PublicEvent(
@@ -79,7 +80,8 @@ import java.util.UUID
     @SerialName("all_day") val allDay: Boolean = false, val organizer: String? = null, val category: String? = null,
     @SerialName("source_url") val sourceUrl: String? = null, @SerialName("source_name") val sourceName: String? = null,
     @SerialName("image_credit") val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
-) { val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration) }
+    @SerialName("sold_out") val soldOut: Boolean = false,
+) { val origin get() = EventOrigin(allDay, organizer, category, sourceUrl, sourceName, imageCredit, price, registration, soldOut) }
 
 /** Ende eines Termins fürs Ausblenden und die Pille „vorbei“ (EventTiming in iOS). */
 fun eventEnd(starts: ZonedDateTime, ends: ZonedDateTime?, allDay: Boolean): ZonedDateTime = when {
@@ -93,7 +95,12 @@ fun eventEnd(starts: ZonedDateTime, ends: ZonedDateTime?, allDay: Boolean): Zone
 data class EventOrigin(
     val allDay: Boolean = false, val organizer: String? = null, val category: String? = null, val sourceUrl: String? = null,
     val sourceName: String? = null, val imageCredit: String? = null, val price: String? = null, val registration: String? = null,
-) { val isImported get() = sourceName != null }
+    val soldOut: Boolean = false,
+) {
+    val isImported get() = sourceName != null
+    /** Übernommene Termine zeigen ihren Veranstalter statt der Sammelgruppe. */
+    val shownOrganizer get() = organizer?.takeIf { isImported && it.isNotBlank() }
+}
 
 /** Standardbild einer Community — als Termin-Kopfbild wählbar; liegt in event-photos/<community>/defaults/. */
 @Serializable data class HeaderImage(
@@ -129,16 +136,20 @@ data class EventInfo(
     val rsvpEnabled: Boolean = true,
 ) {
     val isImported get() = origin.isImported
+    /** `community` ist der Veranstalter eines übernommenen Termins (statt „stede Veranstaltungen“ usw.). */
+    val showsOrganizer get() = origin.shownOrganizer != null
     /** Vorbei wie EventTiming in iOS: mit Ende ab dem Ende, ganztägig ab Mitternacht danach, sonst zwei Stunden nach Beginn. */
     val isOver get() = !eventEnd(starts, ends, origin.allDay).isAfter(Town.now())
     companion object {
         fun of(e: CommunityEvent, fallbackName: String = "", fallbackLogo: String? = null) = EventInfo(
-            e.id, e.title, e.community?.name?.ifBlank { null } ?: fallbackName, Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
+            e.id, e.title, e.origin.shownOrganizer ?: e.community?.name?.ifBlank { null } ?: fallbackName,
+            if (e.origin.shownOrganizer != null) null else Backend.logoUrl(e.community?.logoPath) ?: fallbackLogo,
             Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location, e.description, Backend.photoUrl(e.imagePath), e.isPublic, e.cancelledAt != null,
             e.helpersNeeded, e.createdBy, e.communityId, e.commentsEnabled, e.targetTenants, e.origin, e.rsvpEnabled,
         )
         fun of(e: PublicEvent) = EventInfo(
-            e.id, e.title, e.communityName, Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,
+            e.id, e.title, e.origin.shownOrganizer ?: e.communityName,
+            if (e.origin.shownOrganizer != null) null else Backend.logoUrl(e.communityLogoPath), Town.parse(e.startsAt)!!, Town.parse(e.endsAt), e.location,
             e.description, Backend.photoUrl(e.imagePath), true, false, e.helpersNeeded, null, null, origin = e.origin, rsvpEnabled = e.rsvpEnabled,
         )
     }
@@ -162,7 +173,7 @@ data class EventInfo(
 object CommunityApi {
     private val db get() = Backend.supabase
     private const val COMMUNITY = "id,tenant_id,name,description,visibility,join_policy,status,invite_code,logo_path,created_by,member_count,countywide,polls_enabled,tasks_enabled,can_transfer_events"
-    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,communities(name,logo_path)"
+    private const val EVENT = "id,community_id,title,description,starts_at,ends_at,location,image_path,helpers_needed,comments_enabled,target_tenants,visibility,published_at,cancelled_at,created_by,external_key,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration,sold_out,communities(name,logo_path)"
 
     suspend fun isTenantAdmin(tenantId: String) = db.from("tenant_admins").select(Columns.raw("tenant_id")) { filter { eq("tenant_id", tenantId) } }.decodeList<Map<String, String>>().isNotEmpty()
     suspend fun profile(userId: String) = db.from("profiles").select { filter { eq("user_id", userId) } }.decodeSingle<Profile>()

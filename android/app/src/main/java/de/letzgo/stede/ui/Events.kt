@@ -143,6 +143,7 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
                     Pill(timeLabel(e), tint)
                     if (e.isCancelled) Pill("abgesagt", C.red) else if (isPast) Pill("vorbei", C.mudflat)
                     e.origin.category?.let { Pill(it, C.ink) }
+                    if (e.origin.soldOut) Pill("ausgebucht", C.red)
                     if (e.rsvpEnabled && e.helpersNeeded > 0) Pill(if (count >= e.helpersNeeded) "Helfer komplett" else "Helfer $count/${e.helpersNeeded}", if (count >= e.helpersNeeded) C.green else C.heather)
                 }
             }
@@ -152,10 +153,11 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
         }
         // Karte: Ort linksbündig direkt unter der Kopfzeile, grau, einzeilig — wie bei den Stadt-Terminen.
         if (compact) e.location?.takeIf { it.isNotBlank() }?.let { LocationLine(it) }
+        if (compact && e.showsOrganizer) SmallLabel(Icons.Default.Business, e.community, C.secondary)
         if (e.description.isNotBlank()) Text(e.description, color = C.secondary, fontSize = 15.sp, maxLines = if (compact) 4 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
         if (!compact) {
             SmallLabel(Icons.Default.Schedule, longTimeLabel(e), tint)
-            SmallLabel(Icons.Default.Groups, e.community, tint)
+            SmallLabel(if (e.showsOrganizer) Icons.Default.Business else Icons.Default.Groups, e.community, tint)
         }
         if (!compact) e.location?.takeIf { it.isNotBlank() }?.let { SmallLabel(Icons.Default.Place, it, tint) }
         if (!compact) EventOriginDetails(e.origin, tint)
@@ -167,11 +169,10 @@ private fun EventBody(e: EventInfo, helpers: Int?, compact: Boolean, onSignIn: (
     }
 }
 
-/** Detail übernommener Gemeinde-Termine: Veranstalter, Preis, Anmeldung und die Quelle als Link. */
+/** Detail übernommener Gemeinde-Termine: Preis, Anmeldung und die Quelle als Link (der Veranstalter steht schon oben). */
 @Composable
 private fun EventOriginDetails(o: EventOrigin, tint: Color) {
     val openUrl = rememberOpenUrl()
-    o.organizer?.let { SmallLabel(Icons.Default.Business, it, tint) }
     o.price?.let { SmallLabel(Icons.Default.Euro, it, tint) }
     o.registration?.let { SmallLabel(Icons.Default.EditNote, "Anmeldung: $it", tint) }
     val name = o.sourceName ?: return

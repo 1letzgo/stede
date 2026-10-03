@@ -441,6 +441,56 @@ async function fetchTypo3List(slug: string, src: { url: string; name?: string },
   return rows;
 }
 
+// MARK: Detailseiten der Inselquellen (Veranstalter, Langtext, Kategorie)
+
+const SOURCE_DETAIL_BUDGET = 60; // Seiten je Lauf
+
+interface SourceDetail { organizer: string | null; description: string | null; category: string | null }
+
+function parseLangeoogDetail(html: string): SourceDetail {
+  const organizer = strip(html.match(/<label>Veranstalter:\s*<\/label>\s*<\/div>\s*<div class="span7">\s*<label>([\s\S]*?)<\/label>/)?.[1] ?? "");
+  const body = html.match(/<div class="span12">\s*((?:<p>[\s\S]*?<\/p>\s*)+)<\/div>/)?.[1] ?? "";
+  return { organizer: organizer && organizer !== "-" ? organizer : null, description: text(body) || null, category: null };
+}
+
+function parseTypo3Detail(html: string): SourceDetail {
+  const organizer = strip(html.match(/<strong>Veranstalter[^<:]*:<\/strong>\s*([^<]+)/)?.[1] ?? "");
+  const category = strip(html.match(/infoBlock__category__item">([^<]+)</)?.[1] ?? "");
+  const body = (html.match(/<div class="baseArticle__text">([\s\S]*?)<\/div>/)?.[1] ?? "").replace(/<h2[\s\S]*?<\/h2>/, "");
+  return { organizer: organizer && organizer !== "-" ? organizer : null, description: text(body) || null, category: category || null };
+}
+
+/** Langeoog (eine Seite je Termin) und spiekeroog.de (eine Seite je Reihe): Details stückweise nachladen.
+ *  Gleiche Seite bzw. — bei Langeoog — gleicher Titel teilen Veranstalter und Text. */
+async function fetchSourceDetails(tenantID: string, type: string): Promise<number> {
+  const { data } = await admin.from("city_events").select("detail_url, title").eq("tenant_id", tenantID).is("deleted_at", null)
+    .is("detail_fetched_at", null).not("detail_url", "is", null).gte("day", iso(new Date())).order("day").limit(1000);
+  const pages = new Map<string, string>();
+  const titles = new Set<string>();
+  for (const r of data ?? []) {
+    if (pages.size >= SOURCE_DETAIL_BUDGET) break;
+    if (type === "langeoog" && titles.has(r.title)) continue;
+    if (!pages.has(r.detail_url)) { pages.set(r.detail_url, r.title); titles.add(r.title); }
+  }
+  let done = 0;
+  await pool([...pages], 6, async ([url, title]) => {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": UA } });
+      if (!res.ok) return;
+      const html = await res.text();
+      const d = type === "langeoog" ? parseLangeoogDetail(html) : parseTypo3Detail(html);
+      const patch: Record<string, unknown> = { organizer: d.organizer, description: d.description, detail_fetched_at: new Date().toISOString() };
+      if (d.category) patch.category = d.category;
+      await admin.from("city_events").update(patch).eq("tenant_id", tenantID).eq("detail_url", url);
+      if (type === "langeoog") {
+        await admin.from("city_events").update(patch).eq("tenant_id", tenantID).eq("title", title).is("detail_fetched_at", null);
+      }
+      done++;
+    } catch { /* nächster Lauf */ }
+  });
+  return done;
+}
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const days = Number(url.searchParams.get("days") ?? "60");
@@ -467,7 +517,14 @@ Deno.serve(async (req: Request) => {
       if (group && source.type === "destination_one") await attachImages(group, rows);
       const seen = new Map<string, Row>();
       for (const r of rows) seen.set(`${r.external_id}|${r.day}`, r);
-      const unique = [...seen.values()].map(({ media: _m, ...r }) => ({ ...r, tenant_id: tenant.id, deleted_at: null }));
+      // Langeoog und spiekeroog.de liefern Veranstalter und Kategorie erst über die Detailseite — die Liste
+      // darf sie nicht stündlich wieder leeren.
+      const detailed = source.type === "langeoog" || source.type === "typo3_list";
+      const unique = [...seen.values()].map(({ media: _m, ...r }) => {
+        const row: Record<string, unknown> = { ...r, tenant_id: tenant.id, deleted_at: null };
+        if (detailed) { delete row.organizer; delete row.category; }
+        return row;
+      });
       for (let i = 0; i < unique.length; i += 200) {
         const { error: upErr } = await admin.from("city_events").upsert(unique.slice(i, i + 200), { onConflict: "tenant_id,external_id,day" });
         if (upErr) throw upErr;
@@ -479,6 +536,7 @@ Deno.serve(async (req: Request) => {
         await admin.from("city_events").update({ deleted_at: new Date().toISOString() }).in("id", gone.slice(i, i + 200));
       }
       let details = 0, mirror: unknown = null;
+      if (detailed) details = await fetchSourceDetails(tenant.id, source.type);
       if (group) {
         if (source.type === "nolis") details = await fetchNolisDetails(tenant.id, group);
         const m = await admin.rpc("mirror_city_events", { p_tenant: tenant.id });
