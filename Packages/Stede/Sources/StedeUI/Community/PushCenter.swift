@@ -92,16 +92,25 @@ public final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotif
         // Ohne Token eben keine Nachrichten — z. B. im Simulator ohne Push-Unterstützung.
     }
 
+    // Bewusst die Varianten mit Completion-Handler, aufgerufen auf dem Main-Thread: bei den async-Varianten
+    // ruft das System den Handler nach dem Return auf einem Hintergrund-Thread auf, und UIKit bricht beim
+    // Start per Mitteilung mit einer Assertion ab (TestFlight-Absturz Build 18).
+
     /// Auch im Vordergrund als Banner zeigen.
-    public nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    public nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                                   withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
     }
 
-    public nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    public nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                                   withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let info = response.notification.request.content.userInfo
         let type = info["type"] as? String
         let communityID = info["community_id"] as? String
-        await MainActor.run { PushCenter.shared.open(type: type, communityID: communityID) }
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { PushCenter.shared.open(type: type, communityID: communityID) }
+            completionHandler()
+        }
     }
 }
 #endif
