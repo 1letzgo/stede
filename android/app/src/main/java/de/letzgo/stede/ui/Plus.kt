@@ -44,7 +44,9 @@ object PlusStore : PurchasesUpdatedListener {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var client: BillingClient? = null
 
-    var unlocked by mutableStateOf(Store.bool(KEY, false)); private set
+    /** Debug-Builds haben Plus immer frei — zum Testen ohne Kauf; Release fragt Play. */
+    private val debugUnlocked = de.letzgo.stede.BuildConfig.DEBUG
+    var unlocked by mutableStateOf(debugUnlocked || Store.bool(KEY, false)); private set
     var lifetime by mutableStateOf<ProductDetails?>(null); private set
     var monthly by mutableStateOf<ProductDetails?>(null); private set
     var loading by mutableStateOf(false); private set
@@ -118,7 +120,7 @@ object PlusStore : PurchasesUpdatedListener {
         runCatching { client?.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) }
     }
 
-    private fun set(value: Boolean) { unlocked = value; Store.setBool(KEY, value) }
+    private fun set(value: Boolean) { unlocked = value || debugUnlocked; Store.setBool(KEY, value) }
 }
 
 private fun Context.activity(): Activity? = when (this) { is Activity -> this; is ContextWrapper -> baseContext.activity(); else -> null }

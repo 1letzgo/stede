@@ -28,7 +28,7 @@ nonisolated enum PlusProduct: String, CaseIterable, Sendable {
 @Observable
 final class PlusStore {
     private(set) var products: [Product] = []
-    private(set) var isUnlocked = false
+    private(set) var isUnlocked = PlusStore.debugUnlocked
     private(set) var isLoadingProducts = false
     private(set) var purchaseError: String?
 
@@ -114,6 +114,14 @@ final class PlusStore {
             if let expiry = transaction.expirationDate, expiry <= Date() { continue }
             unlocked = true
         }
-        isUnlocked = unlocked
+        isUnlocked = unlocked || Self.debugUnlocked
     }
+
+    /// Debug-Builds (Xcode, Gerät per Kabel) haben Plus immer frei — zum Testen ohne Kauf.
+    /// TestFlight und App Store sind Release-Builds und fragen StoreKit.
+    #if DEBUG
+    static let debugUnlocked = true
+    #else
+    static let debugUnlocked = false
+    #endif
 }
