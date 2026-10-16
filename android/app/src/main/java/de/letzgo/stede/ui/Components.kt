@@ -193,6 +193,8 @@ fun StedeTopBar(title: String, onBack: (() -> Unit)? = null, subtitle: String? =
         },
         navigationIcon = { if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück", tint = Color.White) } },
         actions = actions,
+        // Flach wie die iOS-Leiste (44 pt) statt Material-Standard 64 dp.
+        expandedHeight = 48.dp,
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = C.bar, titleContentColor = Color.White, actionIconContentColor = Color.White, navigationIconContentColor = Color.White),
     )
 }

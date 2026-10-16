@@ -23,3 +23,6 @@
 -keep class com.tom_roush.harmony.** { *; }
 -dontwarn com.gemalto.jp2.**
 -dontwarn com.tom_roush.pdfbox.filter.JPXFilter
+
+# jsoup (Ratsinfo-Parser): optionale re2j-Unterstützung fehlt absichtlich.
+-dontwarn com.google.re2j.**

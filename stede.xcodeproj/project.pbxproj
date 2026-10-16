@@ -9,12 +9,14 @@
 /* Begin PBXBuildFile section */
 		5A7E0001000000000000C0DE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5A7E0002000000000000C0DE /* StedeUI */; };
 		4C00600100000000000000BF /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4C00600C0000000000000001 /* StedeUI */; };
+		F56A3D045A2CEE3267836B4F /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 895F8426E0772BD5F7F6857F /* StedeUI */; };
 		DBF4F58FAE06915C23382AFE /* StedeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 73F1A306A8624131A8FC909C /* StedeUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		37BF9B7E30376E7B005C411F /* stede.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = stede.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C0060020000000000000001 /* loog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = loog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6E07F60985BA42DCDFFD36A /* wooge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wooge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B098F2232C374BC25DA42D3 /* spoog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = spoog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -33,6 +35,14 @@
 				Loog.storekit,
 			);
 			target = 4C0060060000000000000001 /* loog */;
+		};
+		9F85E6386A319902E9893B96 /* Exceptions for "wooge" folder in "wooge" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Wooge.storekit,
+			);
+			target = 808849D18370ECE9B2942302 /* wooge */;
 		};
 		887AE9CFD90EDC121A313DC7 /* Exceptions for "spoog" folder in "spoog" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -59,6 +69,14 @@
 				4C0060030000000000000001 /* Exceptions for "loog" folder in "loog" target */,
 			);
 			path = loog;
+			sourceTree = "<group>";
+		};
+		F08033A30727986AC7BA3826 /* wooge */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9F85E6386A319902E9893B96 /* Exceptions for "wooge" folder in "wooge" target */,
+			);
+			path = wooge;
 			sourceTree = "<group>";
 		};
 		7B3E37C1C2D8D2F74755ED1A /* spoog */ = {
@@ -88,6 +106,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E79F6B1EAF9A79036F2251C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F56A3D045A2CEE3267836B4F /* StedeUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2167066670B397E5BEB68435 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -114,6 +140,7 @@
 			children = (
 				37BF9B7E30376E7B005C411F /* stede.app */,
 				4C0060020000000000000001 /* loog.app */,
+				E6E07F60985BA42DCDFFD36A /* wooge.app */,
 				9B098F2232C374BC25DA42D3 /* spoog.app */,
 			);
 			name = Products;
@@ -168,6 +195,29 @@
 			productReference = 4C0060020000000000000001 /* loog.app */;
 			productType = "com.apple.product-type.application";
 		};
+		808849D18370ECE9B2942302 /* wooge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5FE527F21CFF7D5D014B2DD4 /* Build configuration list for PBXNativeTarget "wooge" */;
+			buildPhases = (
+				9F06861A2067B68B3ADA397C /* Sources */,
+				E79F6B1EAF9A79036F2251C3 /* Frameworks */,
+				C6AC909E122C1F5BC952C7B0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F08033A30727986AC7BA3826 /* wooge */,
+			);
+			name = wooge;
+			packageProductDependencies = (
+				895F8426E0772BD5F7F6857F /* StedeUI */,
+			);
+			productName = wooge;
+			productReference = E6E07F60985BA42DCDFFD36A /* wooge.app */;
+			productType = "com.apple.product-type.application";
+		};
 		EC2A904518A103AA5ECF3191 /* spoog */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 368AE304008AF4690C2804F3 /* Build configuration list for PBXNativeTarget "spoog" */;
@@ -207,7 +257,7 @@
 					4C0060060000000000000001 = {
 						CreatedOnToolsVersion = 26.3;
 					};
-					4C0060060000000000000001 = {
+					808849D18370ECE9B2942302 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 					EC2A904518A103AA5ECF3191 = {
@@ -234,6 +284,7 @@
 			targets = (
 				37BF9B7D30376E7B005C411F /* stede */,
 				4C0060060000000000000001 /* loog */,
+				808849D18370ECE9B2942302 /* wooge */,
 				EC2A904518A103AA5ECF3191 /* spoog */,
 			);
 		};
@@ -248,6 +299,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4C0060080000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C6AC909E122C1F5BC952C7B0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -272,6 +330,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4C0060070000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9F06861A2067B68B3ADA397C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -411,7 +476,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = stede/stede.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = 699G2QY959;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -459,7 +524,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = stede/stede.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = 699G2QY959;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -533,6 +598,54 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.loog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		ABFC4A23EA9498B976228A15 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = wooge/wooge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = wooge/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wooge";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.wooge;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -644,6 +757,54 @@
 			};
 			name = Release;
 		};
+		C6187C3C6DD514446E17D000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = wooge/wooge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 699G2QY959;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = wooge/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wooge";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = de.letzgo.wooge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 		7D1A01165C55BD830413B8DA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -722,6 +883,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		5FE527F21CFF7D5D014B2DD4 /* Build configuration list for PBXNativeTarget "wooge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ABFC4A23EA9498B976228A15 /* Debug */,
+				C6187C3C6DD514446E17D000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		368AE304008AF4690C2804F3 /* Build configuration list for PBXNativeTarget "spoog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -746,6 +916,10 @@
 			productName = StedeUI;
 		};
 		4C00600C0000000000000001 /* StedeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StedeUI;
+		};
+		895F8426E0772BD5F7F6857F /* StedeUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StedeUI;
 		};

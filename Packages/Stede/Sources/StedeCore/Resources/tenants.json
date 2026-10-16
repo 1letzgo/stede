@@ -383,10 +383,14 @@
     "sights",
     "trips",
     "volunteer"
-   ]
+   ],
+   "politics": true
   },
   "notes": {
    "health": "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117 · Notaufnahme in der Ammerland-Klinik, Lange Straße 38, Westerstede."
+  },
+  "ris": {
+   "url": "https://ris.westerstede.de/bi/"
   }
  },
  {
@@ -589,5 +593,62 @@
   },
   "airStation": "DENI058",
   "tenantID": "faf847fe-9b06-4438-afd8-d699c6ce22b7"
+ },
+ {
+  "slug": "wangerooge",
+  "municipality": "Wangerooge",
+  "region": "wangerooge",
+  "center": [
+   53.7915,
+   7.9
+  ],
+  "bbox": [
+   53.755,
+   7.8,
+   53.82,
+   8.02
+  ],
+  "features": {
+   "weather": true,
+   "calendar": true,
+   "ferry": true,
+   "tides": true,
+   "air": true,
+   "plus": true,
+   "places": [
+    "gastro",
+    "health",
+    "leisure",
+    "playgrounds",
+    "sights"
+   ]
+  },
+  "notes": {
+   "health": "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117.",
+   "events": "Kurverwaltung Wangerooge · wangerooge.de (destination.one)"
+  },
+  "ferry": {
+   "type": "pdf",
+   "layout": "siw",
+   "file": "ferry",
+   "pdf_url": "https://www.siw-wangerooge.de/resource/blob/13349990/ffab09e05dac73fdad3c488b7b1afbc7/Wangerooge-Fahrplan-2026-data.pdf",
+   "pdf_days": 400,
+   "refresh_days": 30,
+   "mainland_name": "Harlesiel",
+   "island_name": "Wangerooge",
+   "booking_url": "https://ticket.siw-wangerooge.de",
+   "source": "Schiffahrt und Inselbahn Wangerooge · Fahrplan (PDF)",
+   "vessels": {
+    "": "Schiff & Inselbahn"
+   }
+  },
+  "tides": {
+   "file": "tides",
+   "path": "wangerooge/tides-777P.json",
+   "bshnr": "777P",
+   "gauge": "70039212-c8a8-43fc-82a5-150d95831772",
+   "gauge_name": "Wangerooge West"
+  },
+  "airStation": "DENI058"
  }
 ]

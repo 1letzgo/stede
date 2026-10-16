@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.*
+import kotlinx.coroutines.launch
 
 /** Tab „Einstellungen“ wie SettingsView: Konto, Straße und Haltestelle, Aufbau der Startseite. */
 @Composable
@@ -49,6 +50,13 @@ fun SettingsScreen() {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0) }.getOrNull()
             ?.let { "${it.versionName} (${it.longVersionCode})" } ?: "–"
     }
+
+    val fromPlay = remember { AppUpdate.fromPlayStore(context) }
+    var checking by remember { mutableStateOf(false) }
+    var updateStatus by remember { mutableStateOf<String?>(null) }
+    var found by remember { mutableStateOf<AppUpdate.Release?>(null) }
+    val scope = rememberCoroutineScope()
+    found?.let { AppUpdateDialog(it) { found = null } }
 
     Scaffold(topBar = { StedeTopBar("Einstellungen") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -164,7 +172,28 @@ fun SettingsScreen() {
                 }
             }
 
-            item { StedeCard { Row { Text("Version", Modifier.weight(1f), color = C.text); Text(version, color = C.secondary) } } }
+            item {
+                StedeCard {
+                    Row { Text("Version", Modifier.weight(1f), color = C.text); Text(version, color = C.secondary) }
+                    // APKs von GitHub prüfen selbst auf Updates; Play-Installationen aktualisiert Play.
+                    if (!fromPlay) {
+                        Spacer(Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(updateStatus ?: "", Modifier.weight(1f), color = C.secondary, fontSize = 13.sp)
+                            ActionChip(if (checking) "Suche …" else "Nach Updates suchen", Icons.Default.SystemUpdate) {
+                                if (checking) return@ActionChip
+                                scope.launch {
+                                    checking = true; updateStatus = null
+                                    runCatching { AppUpdate.newer() }
+                                        .onSuccess { found = it; if (it == null) updateStatus = "Du hast die neueste Version." }
+                                        .onFailure { updateStatus = "GitHub ist gerade nicht erreichbar." }
+                                    checking = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             item { Spacer(Modifier.height(24.dp)) }
         }
     }

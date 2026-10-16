@@ -21,7 +21,7 @@ android {
         create("stede") {
             dimension = "brand"
             applicationId = "de.letzgo.stede"
-            versionCode = 3
+            versionCode = 4
             versionName = "1.0"
             buildConfigField("String", "BRAND", "\"stede\"")
             resValue("string", "app_name", "stede")
@@ -44,6 +44,15 @@ android {
             buildConfigField("String", "BRAND", "\"spoog\"")
             resValue("string", "app_name", "Spoog")
             manifestPlaceholders["urlScheme"] = "spoog"
+        }
+        create("wooge") {
+            dimension = "brand"
+            applicationId = "de.letzgo.wooge"
+            versionCode = 1
+            versionName = "1.4"
+            buildConfigField("String", "BRAND", "\"wooge\"")
+            resValue("string", "app_name", "Wooge")
+            manifestPlaceholders["urlScheme"] = "wooge"
         }
         // brands: end (neue Flavors fügt der Skill `new-region-app` davor ein)
     }
@@ -100,6 +109,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("org.jsoup:jsoup:1.18.3")
     implementation("androidx.browser:browser:1.8.0")
     // Baustein „plus“ (loog+): Einmalkauf und Monatsabo über Google Play.
     implementation("com.android.billingclient:billing-ktx:7.1.1")

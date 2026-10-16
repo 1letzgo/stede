@@ -7,6 +7,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
     case transit
     case home
     case city
+    case politics
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
         case .transit: "Unterwegs"
         case .home: "Zuhause"
         case .city: AppBrand.current.placesTitle
+        case .politics: "Politik"
         }
     }
 
@@ -25,6 +27,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
         case .transit: "tram.fill"
         case .home: "house.fill"
         case .city: "map.fill"
+        case .politics: "building.columns.fill"
         }
     }
 
@@ -35,6 +38,7 @@ enum HomeSection: String, CaseIterable, Identifiable {
 /// Einzelne Kachel der Startseite, ein- und ausblendbar.
 enum HomeTileID: String, CaseIterable, Identifiable {
     case tides, ferry, train, bus, waste, discover, gastro, shopping, bikes, playgrounds, health, volunteer
+    case sessions, papers
 
     var id: String { rawValue }
 
@@ -43,6 +47,7 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .tides, .ferry: .sea
         case .train, .bus: .transit
         case .waste: .home
+        case .sessions, .papers: .politics
         default: .city
         }
     }
@@ -68,6 +73,8 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .train: "Bahn"
         case .bus: "Bus"
         case .waste: "Abfuhr"
+        case .sessions: "Sitzungen"
+        case .papers: "Vorlagen"
         default: category.map(IslandCatalog.tileTitle(for:)) ?? rawValue
         }
     }
@@ -79,6 +86,8 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .train: "tram.fill"
         case .bus: "bus.fill"
         case .waste: "trash.fill"
+        case .sessions: "person.3.fill"
+        case .papers: "doc.text.fill"
         default: category.map(IslandCatalog.symbol(for:)) ?? "square"
         }
     }
@@ -98,6 +107,7 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .playgrounds: Features.hasPlaces(["playgrounds"])
         case .health: Features.hasPlaces(["health"])
         case .volunteer: Features.hasPlaces(["volunteer"])
+        case .sessions, .papers: Features.has(.politics) && Tenants.current.ris != nil
         }
     }
 
@@ -110,6 +120,8 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .train: StedeTheme.harborRed
         case .bus: StedeTheme.seaTeal
         case .waste: StedeTheme.duneGreen
+        case .sessions: StedeTheme.seaTeal
+        case .papers: StedeTheme.sunAmber
         default: category.map(IslandCatalog.color(for:)) ?? StedeTheme.ink
         }
     }

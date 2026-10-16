@@ -3,6 +3,8 @@ import Foundation
 /// Ein Baustein, den eine Gemeinde zeigen kann. Schlüssel wie in `tenants.config.features`.
 public nonisolated enum Feature: String, Codable, Sendable, CaseIterable {
     case weather, calendar, train, bus, waste, ferry, tides, air, groups, plus
+    /// Politik: Sitzungen und Vorlagen aus dem Ratsinformationssystem (`tenants.config.ris`).
+    case politics
 }
 
 /// Was eine Gemeinde zeigt (`tenants.config.features`), etwa

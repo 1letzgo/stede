@@ -120,6 +120,10 @@ public struct ContentView: View {
                             case .waste: WasteView()
                             case let .island(category):
                                 IslandView(category: category)
+                            case .councilSessions: CouncilSessionsView()
+                            case .councilPapers: CouncilPapersView()
+                            case let .councilSession(session): CouncilSessionDetailView(session: session)
+                            case let .councilPaper(id, number): CouncilPaperDetailView(id: id, number: number)
                             }
                         }
                 }

@@ -10,6 +10,10 @@ enum HomeDestination: Hashable {
     case bus
     case waste
     case island(category: String)
+    case councilSessions
+    case councilPapers
+    case councilSession(CouncilSession)
+    case councilPaper(id: Int, number: String)
 }
 
 struct HomeView: View {
@@ -24,6 +28,8 @@ struct HomeView: View {
     @State private var waste = WasteViewModel()
     @State private var tides = TideViewModel()
     @State private var ferry = FerryViewModel()
+    @State private var council = CouncilSessionsModel()
+    @State private var councilPapers = CouncilPapersModel()
     @State private var page: BrowserPage?
     @AppStorage("waste.street") private var wasteStreetID: Int = 0
     @AppStorage("waste.section") private var wasteSectionID: Int = 0
@@ -109,6 +115,12 @@ struct HomeView: View {
             guard Features.has(.train) else { return }
             await loadTrains(day: IslandTime.startOfDay(Date()), force: false)
         }
+        .task {
+            guard HomeTileID.sessions.isAvailable else { return }
+            async let sessions: Void = council.load(force: false)
+            async let papers: Void = councilPapers.loadLatest()
+            _ = await (sessions, papers)
+        }
         .task(id: wasteSelection?.cacheKey ?? "") {
             guard Features.has(.waste) else { return }
             await waste.load(selection: wasteSelection)
@@ -151,6 +163,18 @@ struct HomeView: View {
             }
             .buttonStyle(StedeCardButtonStyle())
             .foregroundStyle(.primary)
+        case .politics:
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: tiles.count),
+                      spacing: StedeTheme.cardSpacing) {
+                ForEach(tiles) { tile in
+                    NavigationLink(value: tile == .sessions ? HomeDestination.councilSessions : HomeDestination.councilPapers) {
+                        tile == .sessions ? sessionsTile : papersTile
+                    }
+                    .buttonStyle(StedeCardButtonStyle())
+                    .foregroundStyle(.primary)
+                    .frame(maxHeight: .infinity)
+                }
+            }
         case .city:
             // Die ersten beiden Kacheln groß nebeneinander, die übrigen klein darunter.
             let large = Array(tiles.prefix(2))
@@ -326,6 +350,38 @@ struct HomeView: View {
             detail: street.name,
             isLoading: isLoading,
             compact: true
+        )
+    }
+
+    /// Nächste Sitzung eines Gremiums.
+    private var sessionsTile: HomeTile {
+        let next = council.upcoming.first
+        let isLoading = next == nil && council.state == .loading
+        let format = Date.FormatStyle(locale: IslandTime.germanLocale, timeZone: IslandTime.timeZone)
+            .weekday(.abbreviated).day().month(.abbreviated)
+        return HomeTile(
+            title: "Sitzungen",
+            symbol: "person.3.fill",
+            tint: StedeTheme.seaTeal,
+            headline: next.map { session in
+                session.start.formatted(format) + (session.hasTime ? " · \(session.start.formatted(timeStyle))" : "")
+            } ?? (isLoading ? "–" : "Keine Termine"),
+            detail: next?.committee ?? "Rat und Ausschüsse",
+            isLoading: isLoading
+        )
+    }
+
+    /// Neueste Vorlage im Ratsinformationssystem.
+    private var papersTile: HomeTile {
+        let latest = councilPapers.items.first
+        let isLoading = latest == nil && councilPapers.state == .loading
+        return HomeTile(
+            title: "Vorlagen",
+            symbol: "doc.text.fill",
+            tint: StedeTheme.sunAmber,
+            headline: latest.map { "\($0.number) · \($0.date.prefix(6))" } ?? (isLoading ? "–" : "Ratsinfo"),
+            detail: latest?.subject ?? "Beschlüsse und Anträge",
+            isLoading: isLoading
         )
     }
 

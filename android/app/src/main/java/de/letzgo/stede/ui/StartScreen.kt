@@ -41,6 +41,13 @@ fun StartScreen(open: (Screen) -> Unit) {
     LaunchedEffect(selection) { if (Features.has(Feature.Waste)) selection?.let { sel -> runCatching { Waste.upcoming(sel) }.onSuccess { waste = it } } }
     LaunchedEffect(Unit) { if (Features.has(Feature.Tides)) runCatching { Tides.events() }.onSuccess { tides = it } }
     LaunchedEffect(Unit) { if (Features.has(Feature.Ferry)) ferry = runCatching { Ferry.trips(today) }.getOrDefault(emptyList()) }
+    var sessions by remember { mutableStateOf(Council.cachedSessions()) }
+    var papers by remember { mutableStateOf(Council.cachedPapers()) }
+    LaunchedEffect(Unit) {
+        if (!Council.isAvailable) return@LaunchedEffect
+        if (sessions == null || !Council.isFresh("sessions.json")) runCatching { Council.upcomingSessions() }.onSuccess { sessions = it }
+        if (papers == null || !Council.isFresh("papers.json")) runCatching { Council.papers().items.also(Council::savePapers) }.onSuccess { papers = it }
+    }
     val openUrl = rememberOpenUrl()
 
     val now = Town.now()
@@ -117,6 +124,24 @@ fun StartScreen(open: (Screen) -> Unit) {
                         if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", height = 112.dp) { open(Screen.Waste) }
                         else HomeTile("Abfuhr", next?.let { wasteIcon(it.kind) } ?: Icons.Default.Delete, next?.let { wasteColor(it.kind) } ?: C.green, Modifier.fillMaxWidth(),
                             next?.let { n -> "${n.day.format(Town.dayShort)} · ${waste.orEmpty().filter { it.date == n.date }.joinToString(", ") { it.label }}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
+                    }
+                    HomeSection.Politics -> item(key = "politics-tiles") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
+                            for (t in tiles) {
+                                if (t == HomeTileId.Sessions) {
+                                    val next = sessions?.firstOrNull { !it.isOver }
+                                    HomeTile("Sitzungen", Icons.Default.Groups, C.teal, Modifier.weight(1f),
+                                        next?.let { s -> s.startTime.format(Town.dayShort) + if (s.hasTime) " · ${s.startTime.format(Town.hm)}" else "" } ?: if (sessions == null) "–" else "Keine Termine",
+                                        next?.committee ?: "Rat und Ausschüsse") { open(Screen.CouncilSessions) }
+                                }
+                                if (t == HomeTileId.Papers) {
+                                    val latest = papers?.firstOrNull()
+                                    HomeTile("Vorlagen", Icons.Default.Description, C.amber, Modifier.weight(1f),
+                                        latest?.let { "${it.number} · ${it.date.take(6)}" } ?: if (papers == null) "–" else "Ratsinfo",
+                                        latest?.subject ?: "Beschlüsse und Anträge") { open(Screen.CouncilPapers) }
+                                }
+                            }
+                        }
                     }
                     HomeSection.City -> {
                         // Die ersten beiden Kacheln groß, die übrigen klein darunter.

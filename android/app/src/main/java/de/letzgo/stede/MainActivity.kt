@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import de.letzgo.stede.data.Backend
 import de.letzgo.stede.data.Brand
+import de.letzgo.stede.data.CouncilSession
 import de.letzgo.stede.data.Feature
 import de.letzgo.stede.data.Features
 import de.letzgo.stede.data.Tides
@@ -60,6 +61,10 @@ sealed class Screen {
     /** `tasks`: gleich im Reiter „Aufgaben“ öffnen (aus „Meine Aufgaben“). */
     data class CommunityDetail(val id: String, val tasks: Boolean = false) : Screen()
     data object MyTasks : Screen()
+    data object CouncilSessions : Screen()
+    data object CouncilPapers : Screen()
+    data class CouncilSessionDetail(val session: CouncilSession) : Screen()
+    data class CouncilPaperDetail(val id: Int, val number: String) : Screen()
 
 }
 
@@ -87,6 +92,7 @@ fun StedeApp() {
     if (!Tenants.hasChosen) { TenantOnboardingScreen(); return }
     // Neue Gemeinde → alle Screens und ihr Zustand frisch.
     key(slug) { StedeTabs(tab) { tab = it } }
+    AppUpdateCheck()
 }
 
 @Composable
@@ -132,6 +138,10 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
                 Screen.Waste -> WasteScreen(back) { stack.clear(); setTab(AppTab.Settings) }
                 is Screen.Category -> CategoryScreen(top.name, back)
                 Screen.MyTasks -> MyTasksScreen(open, back)
+                Screen.CouncilSessions -> CouncilSessionsScreen(open, back)
+                Screen.CouncilPapers -> CouncilPapersScreen(open, back)
+                is Screen.CouncilSessionDetail -> CouncilSessionScreen(top.session, open, back)
+                is Screen.CouncilPaperDetail -> CouncilPaperScreen(top.id, top.number, back)
                 is Screen.CommunityDetail -> CommunityDetailScreen(top.id, back, if (top.tasks) CommunityTab.Tasks else CommunityTab.Events)
             }
         }

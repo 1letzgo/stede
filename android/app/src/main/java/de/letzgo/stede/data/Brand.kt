@@ -21,6 +21,8 @@ import kotlinx.serialization.json.put
 enum class Feature(val key: String) {
     Weather("weather"), Calendar("calendar"), Train("train"), Bus("bus"), Waste("waste"),
     Ferry("ferry"), Tides("tides"), Air("air"), Groups("groups"), Plus("plus"),
+    /** Politik: Sitzungen und Vorlagen aus dem Ratsinformationssystem (`tenants.config.ris`). */
+    Politics("politics"),
 }
 
 /**
@@ -98,7 +100,13 @@ data class Brand(
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
             "Insel", false, "https://loog.shelf.am/datenschutz.html")
 
-        val all = listOf(stede, loog, spoog)
+        /** Wangerooge (Skill new-region-app). */
+        val wooge = Brand("wooge", "wooge", "wangerooge", "Wangerooge", "wangerooge", false,
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            "Insel", false, "https://loog.shelf.am/datenschutz.html")
+
+        val all = listOf(stede, loog, spoog, wooge)
         // brands: end
 
         val current: Brand = all.firstOrNull { it.id == BuildConfig.BRAND } ?: stede
