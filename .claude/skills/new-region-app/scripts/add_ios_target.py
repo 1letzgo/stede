@@ -50,7 +50,7 @@ def main(region, dry):
         def rename(s):
             s = swap(s)
             s = s.replace("de.letzgo.loog", b["bundleId"]).replace("INFOPLIST_KEY_CFBundleDisplayName = Loog;", f'INFOPLIST_KEY_CFBundleDisplayName = "{b["appName"]}";')
-            s = s.replace("MARKETING_VERSION = 1.3;", "MARKETING_VERSION = 1.0;").replace("CURRENT_PROJECT_VERSION = 17;", "CURRENT_PROJECT_VERSION = 1;")
+            s = re.sub(r"CURRENT_PROJECT_VERSION = \d+;", "CURRENT_PROJECT_VERSION = 1;", re.sub(r"MARKETING_VERSION = [\d.]+;", "MARKETING_VERSION = 1.0;", s))
             s = s.replace("loog/loog.entitlements", f"{bid}/{bid}.entitlements").replace("loog/Info.plist", f"{bid}/Info.plist")
             s = s.replace("\t\t\t\tLoog.storekit,\n", f"\t\t\t\t{prefix}.storekit,\n" if has_storekit else "")
             s = s.replace('"loog"', f'"{bid}"').replace("loog.app", f"{bid}.app").replace("/* loog */", f"/* {bid} */")
@@ -61,21 +61,19 @@ def main(region, dry):
             src = block(text, oid)
             i = text.index(src) + len(src)
             text = text[:i] + rename(src) + text[i:]
-        # Verweise in Listen (Gruppe, Produkte, Targets, TargetAttributes)
+        # Verweise in Listen (Gruppe, Produkte, Targets, TargetAttributes): neue Zeile direkt hinter loog —
+        # loog muss nicht der letzte Eintrag sein (spoog steht dahinter).
         refs = [
             (f"\t\t\t\t{LOOG['GRP']} /* loog */,\n", f"\t\t\t\t{ids['GRP']} /* {bid} */,\n"),
             (f"\t\t\t\t{LOOG['FILE']} /* loog.app */,\n", f"\t\t\t\t{ids['FILE']} /* {bid}.app */,\n"),
-            (f"\t\t\t\t{LOOG['TGT']} /* loog */,\n\t\t\t);\n\t\t}};\n/* End PBXProject section */",
-             f"\t\t\t\t{LOOG['TGT']} /* loog */,\n\t\t\t\t{ids['TGT']} /* {bid} */,\n\t\t\t);\n\t\t}};\n/* End PBXProject section */"),
+            (f"\t\t\t\t{LOOG['TGT']} /* loog */,\n", f"\t\t\t\t{ids['TGT']} /* {bid} */,\n"),
             (f"\t\t\t\t\t{LOOG['TGT']} = {{\n\t\t\t\t\t\tCreatedOnToolsVersion = 26.3;\n\t\t\t\t\t}};\n",
-             f"\t\t\t\t\t{LOOG['TGT']} = {{\n\t\t\t\t\t\tCreatedOnToolsVersion = 26.3;\n\t\t\t\t\t}};\n\t\t\t\t\t{ids['TGT']} = {{\n\t\t\t\t\t\tCreatedOnToolsVersion = 26.3;\n\t\t\t\t\t}};\n"),
+             f"\t\t\t\t\t{ids['TGT']} = {{\n\t\t\t\t\t\tCreatedOnToolsVersion = 26.3;\n\t\t\t\t\t}};\n"),
         ]
         for old, new in refs:
             if old not in text:
                 raise SystemExit(f"Verweis nicht gefunden: {old.strip()[:60]}")
-            if old.endswith("/* End PBXProject section */"):
-                text = text.replace(old, new, 1)
-            else:
+            if new not in text:
                 text = text.replace(old, old + new, 1)
         S.write_if_changed(p, text, dry)
 

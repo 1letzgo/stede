@@ -4,6 +4,9 @@
 // eine Zeile = Uhrzeit + Schiffskürzel, gehört zum letzten Datum darüber) und legt
 // content/<slug>/<file>.json + content_files ab. Täglich per Cron `sync-ferry-pdf`; gearbeitet wird nur,
 // wenn der letzte erfolgreiche Lauf älter als refresh_days (Standard 30) ist oder ?force=1.
+// layout "siw" (Wangerooge): Jahresfahrplan der SIW, je Seite fünf Blöcke mit Datum „Do, 01.01.“ und den
+// Spalten „Harlesiel ab“ / „Wangerooge Bahnhof ab“ (Zeiten „11.00“ untereinander, kein Schiffskürzel);
+// pdf_url ohne Platzhalter, Fahrten von heute bis +pdf_days.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as pdfjs from "npm:pdfjs-dist@4.10.38/legacy/build/pdf.mjs";
@@ -47,6 +50,32 @@ async function parseTimetable(bytes: Uint8Array, start: Date): Promise<Trip[]> {
     .sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
 }
 
+// SIW-Jahresfahrplan: eine Uhrzeit gehört zum Block links von ihr und zum letzten Datum darüber;
+// Spalte direkt neben dem Datum = ab Festland, die zweite = ab Insel.
+async function parseSiw(bytes: Uint8Array): Promise<Trip[]> {
+  const doc = await pdfjs.getDocument({ data: bytes, disableFontFace: true, useSystemFonts: false, isEvalSupported: false }).promise;
+  const trips: Trip[] = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const items = (await (await doc.getPage(p)).getTextContent()).items
+      .filter((it: any) => it.str?.trim()).map((it: any) => ({ x: it.transform[4], y: it.transform[5], s: it.str.trim() }));
+    const year = Number(items.map((i) => i.s.match(/Fahrplan\s+(\d{4})/)?.[1]).find(Boolean));
+    const dates = items.filter((i) => /^\d{2}\.\d{2}\.$/.test(i.s));
+    if (!year || !dates.length) continue;
+    const blockXs = [...new Set(dates.map((d) => Math.round(d.x)))].sort((a, b) => a - b);
+    for (const it of items) {
+      const m = it.s.match(/^(\d{2})\.(\d{2})$/);
+      if (!m) continue;
+      const bx = blockXs.filter((x) => x < it.x).pop();
+      if (bx === undefined) continue;
+      const date = dates.filter((d) => Math.round(d.x) === bx && d.y >= it.y - 1).sort((a, b) => a.y - b.y)[0];
+      if (!date) continue;
+      const [dd, mm] = date.s.split(".").map(Number);
+      trips.push({ day: `${year}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`, time: `${m[1]}:${m[2]}`, toIsland: it.x - date.x < 70, vessel: "" });
+    }
+  }
+  return trips.sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
+}
+
 async function sha(text: string) {
   const d = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
   return Array.from(d, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -76,7 +105,10 @@ Deno.serve(async (req) => {
       const pdfUrl = ferry.pdf_url.replaceAll("{from}", iso(start)).replaceAll("{to}", iso(end));
       const res = await fetch(pdfUrl, { headers: { "User-Agent": UA } });
       if (!res.ok || !(res.headers.get("content-type") ?? "").includes("pdf")) throw new Error(`PDF HTTP ${res.status} ${res.headers.get("content-type")}`);
-      const trips = await parseTimetable(new Uint8Array(await res.arrayBuffer()), start);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const trips = ferry.layout === "siw"
+        ? (await parseSiw(bytes)).filter((x) => x.day >= iso(start) && x.day <= iso(end))
+        : await parseTimetable(bytes, start);
       if (trips.length < 10) throw new Error(`nur ${trips.length} Fahrten erkannt — Layout geändert?`);
       const body = JSON.stringify({ source: ferry.source ?? "Fahrplan der Reederei (PDF)", fetched_at: new Date().toISOString(), from: iso(start), to: iso(end), trips });
       const name = ferry.file ?? "ferry";

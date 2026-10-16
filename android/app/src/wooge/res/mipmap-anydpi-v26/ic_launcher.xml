@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App-Icon (Skill new-region-app): auf die sichtbaren 72 dp skaliert, am Rand fortgesetzt;
+     ohne eigenes Monochrom-Motiv. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_back" />
+    <foreground android:drawable="@android:color/transparent" />
+</adaptive-icon>

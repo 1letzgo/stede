@@ -43,7 +43,14 @@ data class Palette(
             deep = Tone(0xFF00773D, 0xFF00592E), bar = Tone(0xFF00773D, 0xFF00592E), ink = Tone(0xFF00773D, 0xFF91FFC9),
             heather = Tone(0xFF8B579C, 0xFFCAA3DB), mudflat = Tone(0xFF8B6B4B, 0xFFD5B793),
         )
-        val all = mapOf("stede" to stede, "loog" to loog, "spoog" to spoog)
+        /** wooge: Palette `Wooge*` (Skill new-region-app). */
+        val wooge = Palette(
+            sand = Tone(0xFFF5F3EE, 0xFF10171C), surface = Tone(0xFFFFFFFF, 0xFF1A242C), harbor = Tone(0xFFC4453B, 0xFFE88074),
+            dune = Tone(0xFF3E7C4F, 0xFF7FC08F), sun = Tone(0xFFE0A100, 0xFFF5C542), sea = Tone(0xFF2F6A7E, 0xFF7FB3C6),
+            deep = Tone(0xFF183A4D, 0xFF122C3A), bar = Tone(0xFF183A4D, 0xFF122C3A), ink = Tone(0xFF183A4D, 0xFFA9C7D6),
+            heather = Tone(0xFF8B579C, 0xFFCAA3DB), mudflat = Tone(0xFF8B6B4B, 0xFFD5B793),
+        )
+        val all = mapOf("stede" to stede, "loog" to loog, "spoog" to spoog, "wooge" to wooge)
         // brands: end
 
         val current: Palette = all[Brand.current.id] ?: stede

@@ -1,0 +1,60 @@
+{
+  "identifier" : "6E7A1C33",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "A1F2C9D0",
+      "localizations" : [
+        {
+          "description" : "Alle Tage dauerhaft freischalten",
+          "displayName" : "wooge+ einmalig",
+          "locale" : "de_DE"
+        }
+      ],
+      "productID" : "de.letzgo.wooge.plus.lifetime",
+      "referenceName" : "wooge plus lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6751508206",
+    "_developerTeamID" : "699G2QY959",
+    "_lastSynchronizedDate" : 780000000
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21500001",
+      "localizations" : [],
+      "name" : "wooge plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "0.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "B3E4A7F1",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Alle Tage, monatlich kündbar",
+              "displayName" : "wooge+ monatlich",
+              "locale" : "de_DE"
+            }
+          ],
+          "productID" : "de.letzgo.wooge.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "wooge plus monthly",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

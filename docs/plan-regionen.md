@@ -167,6 +167,7 @@ und baut Marke, iOS-Target und Android-Flavor. Die Checkliste unten beschreibt, 
 | ammerland | stede (`de.letzgo.stede`) | 6 | 09/2026 |
 | langeoog | Loog (`de.letzgo.loog`) | 1 | 10/2026 (vorher eigenes Repo) |
 | spiekeroog | spoog (`de.letzgo.spoog`) | 1 | 10/2026 (erste Region per Skill; Fähre aus PDF) |
+| wangerooge | wooge (`de.letzgo.wooge`) | 1 | 10/2026 (Fähre aus SIW-Jahres-PDF, Layout `siw`; PDF-URL jährlich in `config.ferry.pdf_url` tauschen) |
 
 ## Checkliste „Neue Region“ (Ziel nach Phase 5)
 

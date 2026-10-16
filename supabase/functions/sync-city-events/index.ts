@@ -282,7 +282,9 @@ async function fetchDestinationOne(src: { experience: string; city?: string; nam
       const credit = photo ? `Foto: ${author ?? sourceName}${photo.license ? ` (${photo.license})` : ""}${author ? ` · ${sourceName}` : ""}` : null;
       for (const o of occurrences(it.timeIntervals, iso(from), iso(to))) {
         rows.push({ external_id: `d1-${it.id}`, title: strip(it.title ?? ""), day: o.day, starts_at: o.start, ends_at: o.end, summary, location,
-          organizer: it.company || null, category: (it.categories ?? [])[0] ?? null, series_note: null,
+          // Veranstalter steht bei destination.one unter addresses (rel "organizer"), `company` ist meist leer.
+          organizer: strip((it.addresses ?? []).find((a: any) => a.rel === "organizer")?.name ?? "") || it.company || null,
+          category: (it.categories ?? [])[0] ?? null, series_note: null,
           detail_url: it.web || (it.media_objects ?? []).find((m: any) => m.rel === "canonical")?.url || null,
           description, source_name: sourceName, media, image_credit: credit });
       }

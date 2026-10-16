@@ -69,7 +69,16 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         placesTitle: "Insel", bikesInShopping: false, privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 
-    public static let all: [AppBrand] = [.stede, .loog, .spoog]
+    /// Wangerooge (Skill new-region-app).
+    public static let wooge = AppBrand(
+        id: "wooge", displayName: "wooge", region: "wangerooge", regionName: "Wangerooge",
+        defaultTenant: "wangerooge", choosesTenant: false, urlScheme: "wooge", palette: "Wooge",
+        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        placesTitle: "Insel", bikesInShopping: false, privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
+    )
+
+    public static let all: [AppBrand] = [.stede, .loog, .spoog, .wooge]
     // brands: end
 
     /// Die Marke dieser App; ohne Eintrag in der Info.plist stede.
