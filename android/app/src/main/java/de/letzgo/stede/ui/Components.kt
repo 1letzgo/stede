@@ -61,8 +61,11 @@ fun RowCard(modifier: Modifier = Modifier, content: @Composable RowScope.() -> U
 
 /** Eingabefeld in Karten: sandfarbene Kapsel statt Material-Rahmen (StedeTextField). */
 @Composable
-fun StedeTextField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+fun StedeTextField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
+                   keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
+                   keyboardActions: androidx.compose.foundation.text.KeyboardActions = androidx.compose.foundation.text.KeyboardActions.Default) {
     androidx.compose.foundation.text.BasicTextField(value, onChange, singleLine = true,
+        keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
         textStyle = androidx.compose.ui.text.TextStyle(color = C.text, fontSize = 16.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(C.teal),
         modifier = modifier.heightIn(min = ChipHeight).background(C.sand, RoundedCornerShape(50)).padding(horizontal = 14.dp),

@@ -1,6 +1,8 @@
 package de.letzgo.stede.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,8 +30,6 @@ import kotlinx.coroutines.launch
 // Politik — wie PoliticsView.swift in iOS: Sitzungen, Tagesordnungen und Vorlagen aus dem Ratsinfo.
 
 private val monthTitle = Town.fmt("MMMM yyyy")
-private val weekday = Town.fmt("EE")
-private val dayNumber = Town.fmt("d")
 
 @Composable
 fun CouncilSessionsScreen(open: (Screen) -> Unit, onBack: () -> Unit) {
@@ -79,29 +80,25 @@ fun CouncilSessionsScreen(open: (Screen) -> Unit, onBack: () -> Unit) {
 @Composable
 private fun CouncilSessionCard(s: CouncilSession, isNext: Boolean, onClick: () -> Unit) {
     StedeCard(Modifier.alpha(if (s.isOver) 0.6f else 1f), highlighted = isNext, onClick = onClick) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            DateChip(s)
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconChip(Icons.Default.Groups, C.teal)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(s.committee, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                val detail = listOfNotNull(
-                    if (s.hasTime) (s.endTime?.let { "${s.startTime.format(Town.hm)}–${it.format(Town.hm)} Uhr" } ?: "${s.startTime.format(Town.hm)} Uhr") else null,
-                    s.room,
-                ).joinToString(" · ")
-                if (detail.isNotEmpty()) Text(detail, color = C.secondary, fontSize = 14.sp)
-                if (!s.hasAgenda) Pill(if (s.isOver) "ohne Tagesordnung" else "Tagesordnung folgt", C.mudflat)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (isNext) Pill("Nächste", C.teal)
+                    if (!s.hasAgenda) Pill(if (s.isOver) "ohne Tagesordnung" else "Tagesordnung folgt", C.mudflat)
+                }
             }
-            Icon(Icons.Default.ChevronRight, null, tint = C.tertiary)
+        }
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            InfoLine(Icons.Default.CalendarMonth, s.startTime.format(Town.dayLong) + if (s.hasTime) ", " + timeRange(s) else "")
+            s.room?.let { InfoLine(Icons.Default.Place, it) }
         }
     }
 }
 
-@Composable
-private fun DateChip(s: CouncilSession) {
-    Column(Modifier.size(44.dp).background(C.teal.copy(alpha = 0.16f), ChipShape), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text(s.startTime.format(weekday), color = C.teal, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        Text(s.startTime.format(dayNumber), color = C.teal, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-    }
-}
+private fun timeRange(s: CouncilSession) =
+    s.endTime?.let { "${s.startTime.format(Town.hm)}–${it.format(Town.hm)} Uhr" } ?: "${s.startTime.format(Town.hm)} Uhr"
 
 @Composable
 fun CouncilSessionScreen(session: CouncilSession, open: (Screen) -> Unit, onBack: () -> Unit) {
@@ -116,16 +113,18 @@ fun CouncilSessionScreen(session: CouncilSession, open: (Screen) -> Unit, onBack
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
                 StedeCard {
-                    Text(session.title, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = C.text)
-                    Spacer(Modifier.height(8.dp))
-                    Line(Icons.Default.CalendarMonth, session.startTime.format(Town.fmt("EEEE, d. MMMM")))
-                    if (session.hasTime) Line(Icons.Default.Schedule, (agenda?.time?.takeIf { it.isNotEmpty() } ?: session.startTime.format(Town.hm)) + " Uhr")
-                    session.room?.let { Line(Icons.Default.Place, it) }
-                    agenda?.place?.takeIf { it.isNotEmpty() && it != session.room }?.let { Line(Icons.Default.Business, it) }
-                    DocumentChips(agenda?.documents.orEmpty(), null, documents)
-                    if (session.hasAgenda) {
-                        Spacer(Modifier.height(8.dp))
-                        ActionChip("Im Ratsinfo öffnen", Icons.Default.OpenInBrowser) { openUrl(Council.agendaUrl(session.id)) }
+                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        IconChip(Icons.Default.Groups, C.teal)
+                        Text(session.title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+                    }
+                    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        InfoLine(Icons.Default.CalendarMonth, session.startTime.format(Town.fmt("EEEE, d. MMMM yyyy")))
+                        if (session.hasTime) InfoLine(Icons.Default.Schedule, agenda?.time?.takeIf { it.isNotEmpty() }?.let { "$it Uhr" } ?: timeRange(session))
+                        session.room?.let { InfoLine(Icons.Default.Place, it) }
+                        agenda?.place?.takeIf { it.isNotEmpty() && it != session.room }?.let { InfoLine(Icons.Default.Business, it) }
+                    }
+                    ActionChips(agenda?.documents.orEmpty(), null, documents) {
+                        if (session.hasAgenda) ActionChip("Im Ratsinfo öffnen", Icons.Default.Language) { openUrl(Council.agendaUrl(session.id)) }
                     }
                 }
             }
@@ -148,27 +147,22 @@ fun CouncilSessionScreen(session: CouncilSession, open: (Screen) -> Unit, onBack
 }
 
 @Composable
-private fun Line(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, null, tint = C.secondary, modifier = Modifier.size(18.dp))
-        Text(text, color = C.text, fontSize = 15.sp)
-    }
-}
-
-@Composable
 private fun AgendaRow(item: CouncilAgendaItem, onClick: (() -> Unit)?) {
-    StedeCard(padding = 12.dp, onClick = onClick) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(item.number.removePrefix("Ö ").trim(), fontWeight = FontWeight.SemiBold, color = if (item.isPublic) C.ink else C.secondary, modifier = Modifier.widthIn(min = 26.dp))
+    StedeCard(onClick = onClick) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // TOP-Nummer in einer Kachel wie die Symbole der übrigen Karten.
+            Box(Modifier.size(38.dp).background((if (item.isPublic) C.ink else C.mudflat).copy(alpha = 0.14f), ChipShape), contentAlignment = Alignment.Center) {
+                Text(item.number.removePrefix("Ö ").trim(), fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = if (item.isPublic) C.ink else C.mudflat)
+            }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(item.title, color = C.text, fontSize = 15.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(item.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = C.text)
+                val pills = listOfNotNull(item.paperNumber, item.result, if (!item.isPublic) "nicht öffentlich" else null)
+                if (pills.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     item.paperNumber?.let { Pill(it, C.amber) }
                     item.result?.let { Pill(it, resultColor(it)) }
                     if (!item.isPublic) Pill("nicht öffentlich", C.mudflat)
                 }
             }
-            if (onClick != null) Icon(Icons.Default.ChevronRight, null, tint = C.tertiary)
         }
     }
 }
@@ -208,12 +202,15 @@ fun CouncilPapersScreen(open: (Screen) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = { StedeTopBar("Vorlagen", onBack) }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
-                OutlinedTextField(query, { query = it; if (it.isEmpty() && shownQuery.isNotEmpty()) scope.launch { search("") } },
-                    Modifier.fillMaxWidth(), placeholder = { Text("Betreff durchsuchen") }, singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { scope.launch { search(query.trim()) } }),
-                    shape = CardShape)
+                StedeCard(padding = 12.dp) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Default.Search, null, tint = C.secondary, modifier = Modifier.padding(start = 4.dp))
+                        StedeTextField(query, { query = it; if (it.isEmpty() && shownQuery.isNotEmpty()) scope.launch { search("") } },
+                            "Betreff durchsuchen", Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { scope.launch { search(query.trim()) } }))
+                    }
+                }
             }
             if (shownQuery.isEmpty()) total?.let { item { Text("Rund $it Vorlagen, die neuesten zuerst", color = C.secondary, fontSize = 13.sp) } }
             when {
@@ -244,17 +241,18 @@ fun CouncilPapersScreen(open: (Screen) -> Unit, onBack: () -> Unit) {
 
 @Composable
 private fun PaperCard(p: CouncilPaper, onClick: () -> Unit) {
-    StedeCard(padding = 14.dp, onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Pill(p.number, C.amber)
-            Text(p.kind, color = C.secondary, fontSize = 12.sp)
-            if (p.hasAttachments) Icon(Icons.Default.AttachFile, "mit Anlagen", tint = C.secondary, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.weight(1f))
-            Text(p.date, color = C.secondary, fontSize = 12.sp)
+    StedeCard(onClick = onClick) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconChip(Icons.Default.Description, C.amber)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(p.subject, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Pill(p.number, C.amber); if (p.kind.isNotEmpty()) Pill(p.kind, C.ink) }
+            }
         }
-        Spacer(Modifier.height(6.dp))
-        Text(p.subject, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = C.text, maxLines = 4)
-        Text(p.office, color = C.secondary, fontSize = 12.sp, maxLines = 1)
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (p.office.isNotEmpty()) InfoLine(Icons.Default.Business, p.office)
+            InfoLine(Icons.Default.CalendarMonth, if (p.hasAttachments) "${p.date} · mit Anlagen" else p.date)
+        }
     }
 }
 
@@ -273,28 +271,38 @@ fun CouncilPaperScreen(id: Int, number: String, onBack: () -> Unit) {
                 else -> {
                     item {
                         StedeCard {
-                            SelectionContainer { Text(p.subject, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = C.text) }
-                            Spacer(Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (p.kind.isNotEmpty()) Pill(p.kind, C.amber)
-                                if (p.status.isNotEmpty()) Pill(p.status, C.ink)
+                            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                IconChip(Icons.Default.Description, C.amber)
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    SelectionContainer { Text(p.subject, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text) }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        if (p.kind.isNotEmpty()) Pill(p.kind, C.amber)
+                                        if (p.status.isNotEmpty()) Pill(p.status, C.ink)
+                                    }
+                                }
                             }
-                            Spacer(Modifier.height(6.dp))
-                            if (p.office.isNotEmpty()) Line(Icons.Default.Business, p.office)
-                            if (p.clerk.isNotEmpty()) Line(Icons.Default.Person, p.clerk)
-                            DocumentChips(p.documents + p.attachments, p.id, documents)
+                            Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (p.office.isNotEmpty()) InfoLine(Icons.Default.Business, p.office)
+                                if (p.clerk.isNotEmpty()) InfoLine(Icons.Default.Person, p.clerk)
+                            }
+                            ActionChips(p.documents + p.attachments, p.id, documents)
                         }
                     }
                     if (p.consultations.isNotEmpty()) {
                         item { SectionHeader("Beratungsfolge", Icons.Default.AccountTree) }
                         items(p.consultations) { step ->
                             val done = step.status == "Erledigt"
-                            RowCard {
-                                Icon(if (done) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, tint = if (done) C.green else C.heather)
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(step.committee, fontWeight = FontWeight.SemiBold, color = C.text)
-                                    Text(listOf(step.role, step.date, step.status).filter { !it.isNullOrEmpty() }.joinToString(" · "), color = C.secondary, fontSize = 12.sp)
-                                    step.result?.let { Pill(it, resultColor(it)) }
+                            StedeCard {
+                                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    IconChip(if (done) Icons.Default.Check else Icons.Default.Schedule, if (done) C.green else C.heather)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(step.committee, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Pill(step.status.ifEmpty { "offen" }, if (done) C.green else C.heather)
+                                            step.result?.let { Pill(it, resultColor(it)) }
+                                        }
+                                        Text(listOf(step.role, step.date).filter { !it.isNullOrEmpty() }.joinToString(" · "), color = C.secondary, fontSize = 13.sp)
+                                    }
                                 }
                             }
                         }
@@ -304,7 +312,7 @@ fun CouncilPaperScreen(id: Int, number: String, onBack: () -> Unit) {
                         item {
                             StedeCard {
                                 SelectionContainer {
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { section.paragraphs.forEach { Text(it, color = C.text, fontSize = 15.sp) } }
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { section.paragraphs.forEach { Text(it, color = C.secondary, fontSize = 15.sp) } }
                                 }
                             }
                         }
@@ -338,11 +346,10 @@ private fun rememberDocumentOpener(): DocumentOpener {
     }, opening)
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** PDFs und weitere Aktionen als Kapselzeile wie in den Ortskarten. */
 @Composable
-private fun DocumentChips(documents: List<CouncilDocument>, paperId: Int?, opener: DocumentOpener) {
-    if (documents.isEmpty()) return
-    FlowRow(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun ActionChips(documents: List<CouncilDocument>, paperId: Int?, opener: DocumentOpener, extra: @Composable () -> Unit = {}) {
+    Row(Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         documents.forEach { d ->
             // Anlagen heißen wie die Datei („Präsentation (2169 KB)“) — Größe hinten weg.
             val title = d.title.replace(Regex("\\s*\\(\\d+ KB\\)$"), "").replace(Regex("\\.pdf$", RegexOption.IGNORE_CASE), "")
@@ -350,5 +357,6 @@ private fun DocumentChips(documents: List<CouncilDocument>, paperId: Int?, opene
                 if (opener.opening == null) opener.open(d, paperId)
             }
         }
+        extra()
     }
 }
