@@ -51,7 +51,7 @@ fun SettingsScreen() {
             ?.let { "${it.versionName} (${it.longVersionCode})" } ?: "–"
     }
 
-    val fromPlay = remember { AppUpdate.fromPlayStore(context) }
+    val updatesEnabled = remember { AppUpdate.isEnabled(context) }
     var checking by remember { mutableStateOf(false) }
     var updateStatus by remember { mutableStateOf<String?>(null) }
     var found by remember { mutableStateOf<AppUpdate.Release?>(null) }
@@ -176,7 +176,7 @@ fun SettingsScreen() {
                 StedeCard {
                     Row { Text("Version", Modifier.weight(1f), color = C.text); Text(version, color = C.secondary) }
                     // APKs von GitHub prüfen selbst auf Updates; Play-Installationen aktualisiert Play.
-                    if (!fromPlay) {
+                    if (updatesEnabled) {
                         Spacer(Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(updateStatus ?: "", Modifier.weight(1f), color = C.secondary, fontSize = 13.sp)

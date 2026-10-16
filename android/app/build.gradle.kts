@@ -21,7 +21,7 @@ android {
         create("stede") {
             dimension = "brand"
             applicationId = "de.letzgo.stede"
-            versionCode = 5
+            versionCode = 6
             versionName = "1.0"
             buildConfigField("String", "BRAND", "\"stede\"")
             resValue("string", "app_name", "stede")
@@ -74,7 +74,16 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfigs.findByName("upload")?.let { signingConfig = it }
+            buildConfigField("Boolean", "SIDELOAD", "false")
         }
+        // APK für GitHub und Tower: wie release, aber mit Update-Download in der App
+        // (REQUEST_INSTALL_PACKAGES nur hier, nicht im Play-Bundle).
+        create("sideload") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            buildConfigField("Boolean", "SIDELOAD", "true")
+        }
+        debug { buildConfigField("Boolean", "SIDELOAD", "true") }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
