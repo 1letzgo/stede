@@ -162,38 +162,16 @@ function openEditor({ title, fields, values, hint, extra = "", buttons = [], onS
 // ---------- Anmeldung ----------
 
 async function start() {
-  // vor getSession abonnieren, sonst geht PASSWORD_RECOVERY aus dem Link verloren
+  // INITIAL_SESSION kommt auch nach dem Einlösen des Links (?code=…)
   sb.auth.onAuthStateChange((event, session) => {
     if (event === "INITIAL_SESSION" || (session?.user?.id ?? null) !== (state.user?.id ?? null)) setSession(session);
-    // Link aus „Passwort vergessen“: gleich ein neues Passwort festlegen
-    if (event === "PASSWORD_RECOVERY") setTimeout(() => changePassword(true), 0);
   });
-}
-
-function changePassword(recovery = false) {
-  openEditor({
-    title: recovery ? "Neues Passwort festlegen" : "Passwort ändern",
-    fields: [
-      { key: "pw", label: "Neues Passwort (mind. 8 Zeichen)", full: true },
-      { key: "pw2", label: "Wiederholen", full: true },
-    ],
-    values: {},
-    onSave: async (v) => {
-      if (!v.pw || v.pw.length < 8) { toast("Mindestens 8 Zeichen", true); throw new Error("zu kurz"); }
-      if (v.pw !== v.pw2) { toast("Passwörter stimmen nicht überein", true); throw new Error("ungleich"); }
-      await run(sb.auth.updateUser({ password: v.pw }));
-      toast("Passwort gespeichert");
-    },
-  });
-  const form = $("#editor-form");
-  for (const name of ["pw", "pw2"]) { form.elements[name].type = "password"; form.elements[name].autocomplete = "new-password"; }
 }
 
 async function setSession(session) {
   state.user = session?.user ?? null;
   $("#login").hidden = !!state.user;
   $("#logout").hidden = !state.user;
-  $("#change-pw").hidden = !state.user;
   $("#who").textContent = state.user?.email ?? "";
   if (!state.user) { $("#app").hidden = true; $("#noadmin").hidden = true; $("#tenant").hidden = true; return; }
 
@@ -220,19 +198,16 @@ async function setSession(session) {
 
 $("#login-form").onsubmit = async (e) => {
   e.preventDefault();
-  const { error } = await sb.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#password").value });
-  $("#login-msg").textContent = !error ? "" : error.code === "invalid_credentials"
-    ? "E-Mail oder Passwort falsch. Noch kein Passwort? „Passwort vergessen“ nutzen."
-    : error.message;
+  // shouldCreateUser: false – hier meldet man sich nur mit einem bestehenden Konto an
+  const { error } = await sb.auth.signInWithOtp({
+    email: $("#email").value.trim(),
+    options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: false },
+  });
+  $("#login-msg").textContent = !error ? "Link ist unterwegs – bitte im selben Browser öffnen."
+    : error.code === "otp_disabled" || /signups not allowed/i.test(error.message)
+      ? "Zu dieser Adresse gibt es kein Konto."
+      : error.message;
 };
-$("#forgot").onclick = async (e) => {
-  e.preventDefault();
-  const email = $("#email").value.trim();
-  if (!email) { $("#login-msg").textContent = "Bitte zuerst die E-Mail-Adresse eintragen."; return; }
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-  $("#login-msg").textContent = error ? error.message : "Link ist unterwegs – bitte im selben Browser öffnen.";
-};
-$("#change-pw").onclick = () => changePassword();
 $("#logout").onclick = () => sb.auth.signOut();
 $("#tenant").onchange = (e) => {
   state.tenant = state.tenants.find((t) => t.slug === e.target.value);

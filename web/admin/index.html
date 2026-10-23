@@ -14,19 +14,16 @@
     <select id="tenant" hidden></select>
     <span class="spacer"></span>
     <span id="who" class="muted"></span>
-    <button id="change-pw" class="ghost" hidden>Passwort</button>
     <button id="logout" class="ghost" hidden>Abmelden</button>
   </header>
 
   <main id="login" class="card narrow" hidden>
     <h2>Anmelden</h2>
-    <p class="muted">Für Gemeinde-Admins.</p>
+    <p class="muted">Für Gemeinde-Admins. Du bekommst einen Anmeldelink per E-Mail.</p>
     <form id="login-form" class="list">
-      <input id="email" type="email" placeholder="E-Mail-Adresse" required autocomplete="username">
-      <input id="password" type="password" placeholder="Passwort" required autocomplete="current-password">
-      <button type="submit">Anmelden</button>
+      <input id="email" type="email" placeholder="E-Mail-Adresse" required autocomplete="email">
+      <button type="submit">Link senden</button>
     </form>
-    <p class="muted"><a href="#" id="forgot">Passwort vergessen oder noch keins?</a> Du bekommst einen Link per E-Mail und legst danach ein Passwort fest.</p>
     <p id="login-msg" class="muted"></p>
   </main>
 

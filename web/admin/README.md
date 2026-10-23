@@ -17,7 +17,7 @@ ghcr.io/1letzgo/stede-admin:latest
    Ist das GHCR-Paket privat: Registry-Zugang mit GitHub-Benutzer + Token (`read:packages`) eintragen – oder das Paket auf GitHub öffentlich stellen.
 2. Domain → Port **80**.
 3. Optional Umgebung: `SUPABASE_URL`, `SUPABASE_KEY` (Standard: Projekt „lokalz“, Publishable Key).
-4. Supabase → Authentication → URL Configuration → Redirect URLs: `https://<domain>/**` ergänzen, sonst landet der Link aus „Passwort vergessen“ nicht auf der Seite. Anmeldung: E-Mail + Passwort; wer noch keins hat (Apple-Login, Magic Link), setzt es über „Passwort vergessen“.
+4. Supabase → Authentication → URL Configuration → Redirect URLs: `https://<domain>/**` ergänzen, sonst landet der Anmeldelink nicht auf der Seite. Anmeldung per Link an die E-Mail-Adresse, nur für bestehende Konten.
 5. Für Updates „Deploy“ in Easypanel (zieht `latest` neu) oder Auto-Deploy-Webhook der App in einen GitHub-Workflow eintragen.
 
 ## Lokal
