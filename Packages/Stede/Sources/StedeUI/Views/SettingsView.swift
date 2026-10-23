@@ -33,44 +33,7 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                // Reihenfolge: Plus · Ansicht · Konto · Zuhause · Unterwegs · Kalender · Startseite · App.
-                if Features.has(.plus) {
-                    PlusSection()
-                }
-
-                StedeSectionHeader(title: "Ansicht", symbol: "person.2.fill")
-                SettingsCard {
-                    ForEach(Audience.allCases, id: \.self) { audience in
-                        Button {
-                            withAnimation(.snappy) { audienceRaw = audience.rawValue }
-                        } label: {
-                            HStack(spacing: 12) {
-                                SettingsIcon(symbol: audience.symbol, tint: audience == .tourist ? StedeTheme.seaTeal : StedeTheme.duneGreen)
-                                Text(audience.title)
-                                Spacer(minLength: 8)
-                                if audienceRaw == audience.rawValue {
-                                    Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(StedeTheme.ink)
-                                }
-                            }
-                            .frame(minHeight: 32)
-                            .contentShape(Rectangle())
-                            .stedeRowCard()
-                        }
-                        .buttonStyle(StedeCardButtonStyle())
-                        .foregroundStyle(.primary)
-                        .accessibilityAddTraits(audienceRaw == audience.rawValue ? .isSelected : [])
-                    }
-                }
-
-                if AppBrand.current.choosesTenant {
-                    StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
-                    SettingsCard {
-                        pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {
-                            showsTenants = true
-                        }
-                    }
-                }
-
+                // Reihenfolge: Konto · Plus · Ansicht · (Gemeinde) · Zuhause · Unterwegs · Kalender · Startseite · App.
                 if Features.has(.groups) {
                     StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                     SettingsCard {
@@ -105,6 +68,43 @@ struct SettingsView: View {
                             .foregroundStyle(.primary)
                         }
                         #endif
+                    }
+                }
+
+                if Features.has(.plus) {
+                    PlusSection()
+                }
+
+                StedeSectionHeader(title: "Ansicht", symbol: "person.2.fill")
+                SettingsCard {
+                    ForEach(Audience.allCases, id: \.self) { audience in
+                        Button {
+                            withAnimation(.snappy) { audienceRaw = audience.rawValue }
+                        } label: {
+                            HStack(spacing: 12) {
+                                SettingsIcon(symbol: audience.symbol, tint: audience == .tourist ? StedeTheme.seaTeal : StedeTheme.duneGreen)
+                                Text(audience.title)
+                                Spacer(minLength: 8)
+                                if audienceRaw == audience.rawValue {
+                                    Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(StedeTheme.ink)
+                                }
+                            }
+                            .frame(minHeight: 32)
+                            .contentShape(Rectangle())
+                            .stedeRowCard()
+                        }
+                        .buttonStyle(StedeCardButtonStyle())
+                        .foregroundStyle(.primary)
+                        .accessibilityAddTraits(audienceRaw == audience.rawValue ? .isSelected : [])
+                    }
+                }
+
+                if AppBrand.current.choosesTenant {
+                    StedeSectionHeader(title: "Gemeinde", symbol: "mappin.and.ellipse")
+                    SettingsCard {
+                        pickerRow("Gemeinde", value: Tenants.current.municipality, symbol: "mappin.and.ellipse", tint: StedeTheme.ink) {
+                            showsTenants = true
+                        }
                     }
                 }
 

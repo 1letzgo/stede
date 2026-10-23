@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.*
 import kotlinx.coroutines.launch
 
-/** Tab „Einstellungen“ wie SettingsView: Plus, Ansicht, Gemeinde, Konto, Zuhause, Unterwegs, Kalender, Startseite, App. */
+/** Tab „Einstellungen“ wie SettingsView: Konto, Plus, Ansicht, Gemeinde, Zuhause, Unterwegs, Kalender, Startseite, App. */
 @Composable
 fun SettingsScreen() {
     var streetId by remember { mutableIntStateOf(Store.int("waste.street")) }
@@ -60,16 +60,6 @@ fun SettingsScreen() {
 
     Scaffold(topBar = { StedeTopBar("Einstellungen") }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
-            // Baustein `plus`: große Kachel ganz oben, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
-            if (Features.has(Feature.Plus)) item { PlusCard() }
-            item { SectionHeader("Ansicht", Icons.Default.People) }
-            item { AudienceOptions() }
-
-            if (Brand.current.choosesTenant) item { SectionHeader("Gemeinde", Icons.Default.Place) }
-            if (Brand.current.choosesTenant) item {
-                StedeCard { ValueRow(Icons.Default.Place, C.ink, "Gemeinde", tenant.municipality) { showTenants = true } }
-            }
-
             if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
             if (Features.has(Feature.Groups)) item {
                 RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
@@ -79,6 +69,16 @@ fun SettingsScreen() {
                     Text(if (Session.signedIn) profile?.displayName ?: "Konto" else "Anmelden", Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
                     Chevron()
                 }
+            }
+
+            // Baustein `plus`: große Kachel unter dem Konto, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
+            if (Features.has(Feature.Plus)) item { PlusCard() }
+            item { SectionHeader("Ansicht", Icons.Default.People) }
+            item { AudienceOptions() }
+
+            if (Brand.current.choosesTenant) item { SectionHeader("Gemeinde", Icons.Default.Place) }
+            if (Brand.current.choosesTenant) item {
+                StedeCard { ValueRow(Icons.Default.Place, C.ink, "Gemeinde", tenant.municipality) { showTenants = true } }
             }
 
             if (Features.has(Feature.Waste)) item { SectionHeader("Zuhause", Icons.Default.Home) }

@@ -106,7 +106,11 @@ fun CalendarScreen(open: (de.letzgo.stede.Screen) -> Unit = {}) {
     suspend fun communityRange(from: LocalDate, through: LocalDate): List<EventInfo> {
         val f = from.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val t = through.plusDays(1).atStartOfDay(Town.zone).toOffsetDateTime().toString()
         val tenant = Tenants.current()
-        val own = if (groups) CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) } else emptyList()
+        // Auf andere Gemeinden beschränkte Gruppentermine (etwa der Sammelgruppe) nur mit „Termine der Region“.
+        val regionWide = RegionEvents.isOn
+        val own = if (groups) CommunityApi.events(memberIds, f, t)
+            .filter { e -> regionWide || e.targetTenants?.contains(tenant.id) ?: true }
+            .map { EventInfo.of(it) } else emptyList()
         val ownIds = own.map { it.id }.toSet()
         return own + CommunityApi.publicEvents(tenant.id, f, t, RegionEvents.isOn).filter { it.id !in ownIds }.map { EventInfo.of(it) }
     }
