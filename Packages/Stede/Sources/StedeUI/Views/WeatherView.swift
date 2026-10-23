@@ -6,6 +6,7 @@ struct WeatherView: View {
     @Environment(SelectedDateStore.self) private var dateStore
     @State private var weather = WeatherViewModel()
     @State private var air = AirQualityViewModel()
+    @State private var marine = MarineViewModel()
     /// Vom Nutzer angetippte Stunde; `nil` heißt „jetzt" bzw. Mittag.
     @State private var selectedHourID: WeatherHour.ID?
 
@@ -22,6 +23,13 @@ struct WeatherView: View {
                                 badge: badge(for: selected),
                                 overview: WeatherDayOverview(summary: summary)
                             )
+
+                            // Inseln: Wind und Seegang vor der Küste gleich unter dem Kopf.
+                            if let wind = marine.hour(near: selected.timestamp) {
+                                StedeSectionHeader(title: "Wind & See", symbol: "wind")
+                                MarineWindCard(hour: wind, day: marine.hours(on: dateStore.selectedDate),
+                                               place: Tenants.current.marine?.name)
+                            }
 
                             StedeSectionHeader(title: "Stündlich", symbol: "clock")
                             WeatherHourStrip(
@@ -96,6 +104,7 @@ struct WeatherView: View {
         async let weatherLoad: Void = weather.load(day: dateStore.selectedDate, force: force)
         async let horizon = WeatherStore.latestAvailableDay()
         if Features.has(.air) { await air.load(day: dateStore.selectedDate, force: force) }
+        await marine.load(force: force)
         await weatherLoad
         dateStore.limit(to: await horizon)
     }

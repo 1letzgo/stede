@@ -48,6 +48,8 @@ import kotlinx.serialization.json.JsonObject
     val external: List<ExternalLink>? = null,
     /** Ratsinformationssystem (Baustein `politics`). */
     val ris: RisConfig? = null,
+    /** Seepunkt vor der Insel für Wind und Seegang (`marine_forecasts`). */
+    val marine: MarineConfig? = null,
 ) {
     val latitude get() = center.getOrElse(0) { 53.2575 }
     val longitude get() = center.getOrElse(1) { 7.9273 }
@@ -80,6 +82,9 @@ import kotlinx.serialization.json.JsonObject
 /** ALLRIS-net-Bürgerinfo der Gemeinde, `{"url": "https://ris.westerstede.de/bi/"}`. */
 @Serializable data class RisConfig(val url: String)
 
+/** `{"lat": 53.80, "lon": 7.48, "name": "Seegebiet vor Langeoog"}`. */
+@Serializable data class MarineConfig(val lat: Double, val lon: Double, val name: String? = null)
+
 @Serializable private data class TenantRow(val id: String, val slug: String, val municipality: String, val config: JsonObject)
 @Serializable private data class TenantRowConfig(
     val center: List<Double>? = null, val bbox: List<Double>? = null, val stations: List<TenantStation>? = null,
@@ -89,6 +94,7 @@ import kotlinx.serialization.json.JsonObject
     val features: FeatureSet? = null, val ferry: FerryConfig? = null, val tides: TideConfig? = null,
     @SerialName("air_station") val airStation: String? = null, val notes: Map<String, String>? = null, val external: List<ExternalLink>? = null,
     val ris: RisConfig? = null,
+    val marine: MarineConfig? = null,
 )
 
 /**
@@ -161,7 +167,7 @@ object Tenants {
                 val c = runCatching { Http.json.decodeFromJsonElement(TenantRowConfig.serializer(), row.config) }.getOrNull() ?: return@mapNotNull null
                 TenantConfig(row.slug, row.municipality, c.center ?: return@mapNotNull null, c.bbox ?: return@mapNotNull null,
                     c.stations.orEmpty(), c.defaultStation.orEmpty(), c.wasteTownId ?: 0, c.busDefaultStop.orEmpty(), row.id,
-                    Brand.current.region, c.features, c.ferry, c.tides, c.airStation, c.notes, c.external, c.ris)
+                    Brand.current.region, c.features, c.ferry, c.tides, c.airStation, c.notes, c.external, c.ris, c.marine)
             }
             if (list.isEmpty()) return
             Store.write("content", "tenants.json", Http.json.encodeToString(listSerializer, list))

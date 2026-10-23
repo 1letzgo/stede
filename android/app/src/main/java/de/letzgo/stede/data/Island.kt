@@ -40,17 +40,19 @@ object Ferry {
     suspend fun trips(day: LocalDate): List<FerryTrip> {
         val ferry = Tenants.config.ferry ?: return emptyList()
         if (ferry.type == "pdf") return timetable(ferry, day)
-        val byId = linkedMapOf<Int, FerryTrip>()
-        for (route in ferry.routes) {
-            val rows = Http.json.decodeFromString<List<FerryTripDto>>(Http.text("https://api.langeoog.de/fahrten/$route/$day"))
-            rows.forEach { r ->
-                val dep = Town.parse(r.abfahrt) ?: return@forEach
-                byId[r.fahrtnummer] = FerryTrip(r.fahrtnummer, dep, Town.parse(r.ankunft) ?: dep, r.ausgangshafen, r.ausflug,
-                    r.fahrzeug ?: r.fahrzeugtyp, r.ausgefallen, r.auslastung, r.ausgangshafen == ferry.mainland)
-            }
-        }
-        return byId.values.sortedBy { it.departure }
+        // Der Server holt die Fahrten per Cron (`sync-ferry`) in `ferry_days`; die App fragt nie die Reederei.
+        val tenant = Tenants.config.tenantID ?: return emptyList()
+        val rows = Backend.supabase.from("ferry_days").select(Columns.raw("trips")) {
+            filter { eq("tenant_id", tenant); eq("day", day.toString()) }
+        }.decodeList<FerryDayRow>()
+        return rows.firstOrNull()?.trips.orEmpty().mapNotNull { r ->
+            val dep = Town.parse(r.abfahrt) ?: return@mapNotNull null
+            FerryTrip(r.fahrtnummer, dep, Town.parse(r.ankunft) ?: dep, r.ausgangshafen, r.ausflug,
+                r.fahrzeug ?: r.fahrzeugtyp, r.ausgefallen, r.auslastung, r.ausgangshafen == ferry.mainland)
+        }.sortedBy { it.departure }
     }
+
+    @Serializable private data class FerryDayRow(val trips: List<FerryTripDto> = emptyList())
 
     @Serializable private data class TimetableRow(val day: String, val time: String, val toIsland: Boolean, val vessel: String = "")
     @Serializable private data class Timetable(val trips: List<TimetableRow> = emptyList())
@@ -179,5 +181,39 @@ object Air {
                 AirHour(start, index, pollutants)
             }
         }.sortedBy { it.start }
+    }
+}
+
+// MARK: Wind und Seegang
+
+/** Eine Stunde aus `marine_forecasts` (DWD-Seegangsmodell wie marineforecast.bsh.de) — wie MarineHour in iOS. */
+data class MarineHour(val time: ZonedDateTime, /** m/s */ val windSpeed: Double?, /** Grad, woher */ val windDirection: Double?, /** m */ val waveHeight: Double?) {
+    val kmh get() = windSpeed?.let { it * 3.6 }
+    val knots get() = windSpeed?.let { it * 1.94384 }
+    val beaufort: Int? get() = windSpeed?.let { v -> LIMITS.indexOfFirst { v < it }.let { if (it < 0) 12 else it } }
+    val beaufortName get() = beaufort?.let { NAMES[it] } ?: "–"
+    /** „SW“ — woher der Wind kommt. */
+    val compass get() = windDirection?.let { listOf("N", "NO", "O", "SO", "S", "SW", "W", "NW")[(((it % 360) + 382.5) / 45).toInt() % 8] }
+
+    companion object {
+        private val LIMITS = listOf(0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7)
+        private val NAMES = listOf("Windstille", "leiser Zug", "leichte Brise", "schwache Brise", "mäßige Brise", "frische Brise",
+            "starker Wind", "steifer Wind", "stürmischer Wind", "Sturm", "schwerer Sturm", "orkanartiger Sturm", "Orkan")
+    }
+}
+
+object Marine {
+    @Serializable private data class Row(val ts: String, @SerialName("wind_speed") val windSpeed: Double? = null,
+        @SerialName("wind_direction") val windDirection: Double? = null, @SerialName("wave_height") val waveHeight: Double? = null)
+
+    /** Stunden von vor drei Stunden bis zum Ende der Vorhersage (rund drei Tage). */
+    suspend fun hours(): List<MarineHour> {
+        if (Tenants.config.marine == null) return emptyList()
+        val tenant = Tenants.config.tenantID ?: return emptyList()
+        val from = Town.now().minusHours(3).toOffsetDateTime().toString()
+        return Backend.supabase.from("marine_forecasts").select(Columns.raw("ts,wind_speed,wind_direction,wave_height")) {
+            filter { eq("tenant_id", tenant); gte("ts", from) }
+            order("ts", Order.ASCENDING); limit(200)
+        }.decodeList<Row>().mapNotNull { r -> Town.parse(r.ts)?.let { MarineHour(it, r.windSpeed, r.windDirection, r.waveHeight) } }
     }
 }

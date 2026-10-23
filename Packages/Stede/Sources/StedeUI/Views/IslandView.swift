@@ -32,6 +32,17 @@ enum IslandPlace: Identifiable {
         }
     }
 
+    /// Text, den die Suche durchsucht: Name, Art, Kurzbeschreibung, Adresse, Merkmale.
+    var searchText: String {
+        switch self {
+        case .gastro(let place):
+            ([place.name, place.category, place.teaser, place.street] + (place.features ?? []).map(Optional.some))
+                .compactMap { $0 }.joined(separator: " ")
+        case .bike(let provider):
+            [provider.name, IslandCatalog.bikeCategory, provider.teaser].compactMap { $0 }.joined(separator: " ")
+        }
+    }
+
     /// Liefert nach Hause — zählt zusätzlich zur eigenen Art für die Pille „Lieferdienst“.
     var delivers: Bool {
         if case .gastro(let place) = self { return place.delivers }
@@ -282,6 +293,8 @@ struct IslandView: View {
     @State private var page: BrowserPage?
     @State private var selectedID: String?
     @AppStorage("island.showsMap") private var showsMap = true
+    /// Suche über Name, Art, Beschreibung und Adresse — wirkt zusätzlich zu Favoriten und Arten.
+    @State private var query = ""
 
     var body: some View {
         // Ohne refresh-Closure: alle Daten liegen im Bundle, es gibt nichts
@@ -309,7 +322,8 @@ struct IslandView: View {
                         LazyVStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
                             if places.isEmpty {
                                 InfoCard {
-                                    Text(favoritesOnly ? "Noch keine Favoriten — tippe auf den Stern einer Karte." : "Keine Einträge.")
+                                    Text(!searchTerms.isEmpty ? "Nichts gefunden für „\(query.trimmingCharacters(in: .whitespaces))“."
+                                         : favoritesOnly ? "Noch keine Favoriten — tippe auf den Stern einer Karte." : "Keine Einträge.")
                                         .foregroundStyle(.secondary)
                                 }
                             }
@@ -377,6 +391,17 @@ struct IslandView: View {
             }
         }
         .mapToggle(isOn: $showsMap)
+        .searchable(text: $query, prompt: "\(IslandCatalog.tileTitle(for: category)) durchsuchen")
+    }
+
+    /// Suchbegriffe; jeder muss vorkommen (Groß-/Kleinschreibung und Akzente egal).
+    private var searchTerms: [String] {
+        query.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
+    private func matches(_ place: IslandPlace) -> Bool {
+        let text = place.searchText
+        return searchTerms.allSatisfy { text.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
     }
 
     /// Die Favoriten-Pille steht fest links; die Pillen der Arten (nur bei
@@ -476,6 +501,7 @@ struct IslandView: View {
         let selected = activeKinds
         return allPlaces.filter { place in
             (!favoritesOnly || favorites.contains(place.id))
+                && (searchTerms.isEmpty || matches(place))
                 && (selected.isEmpty || selected.contains(place.category)
                     || (place.delivers && selected.contains(GastroPlace.deliveryFeature)))
         }

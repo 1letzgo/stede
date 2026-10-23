@@ -39,7 +39,12 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
     val favorites = Favorites.ids
     // Gespeicherte Arten, die es hier nicht mehr gibt (etwa „Spiel & Familie“ nach „Spiel & Spaß“), filtern nicht.
     val activeKinds = selectedKinds intersect kinds.toSet()
-    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (activeKinds.isEmpty() || it.category in activeKinds || (it.delivers && Place.DELIVERY in activeKinds)) }
+    // Suche über Name, Art, Beschreibung, Adresse und Merkmale; jeder Begriff muss vorkommen.
+    var query by remember(category) { mutableStateOf("") }
+    val terms = query.split(Regex("\\s+")).filter { it.isNotBlank() }.map { it.fold() }
+    fun matches(p: Place) = listOfNotNull(p.name, p.category, p.teaser, p.street).plus(p.features).joinToString(" ").fold()
+        .let { text -> terms.all { it in text } }
+    val visible = all.filter { (!favoritesOnly || it.id in favorites) && (terms.isEmpty() || matches(it)) && (activeKinds.isEmpty() || it.category in activeKinds || (it.delivers && Place.DELIVERY in activeKinds)) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val openUrl = rememberOpenUrl(); val openIntent = rememberOpenIntent()
@@ -81,7 +86,16 @@ fun CategoryScreen(category: String, onBack: () -> Unit) {
                 if (category == Catalog.VOLUNTEER && !volunteerInfoHidden) item(key = "volunteer-info") {
                     VolunteerInfoCard(openUrl) { volunteerInfoHidden = true; Store.setBool("volunteer.infoHidden", true) }
                 }
-                if (visible.isEmpty()) item { InfoCard(if (favoritesOnly) "Noch keine Favoriten — tippe auf den Stern einer Karte." else "Keine Einträge.") }
+                item(key = "search") {
+                    StedeCard(padding = 12.dp) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.Search, null, tint = C.secondary, modifier = Modifier.padding(start = 4.dp))
+                            StedeTextField(query, { query = it }, "${Catalog.tileTitle(category)} durchsuchen", Modifier.weight(1f))
+                            if (query.isNotEmpty()) Icon(Icons.Default.Close, "Suche leeren", tint = C.secondary, modifier = Modifier.clickable { query = "" })
+                        }
+                    }
+                }
+                if (visible.isEmpty()) item { InfoCard(when { terms.isNotEmpty() -> "Nichts gefunden für „${query.trim()}“."; favoritesOnly -> "Noch keine Favoriten — tippe auf den Stern einer Karte."; else -> "Keine Einträge." }) }
                 itemsIndexed(visible, key = { _, p -> p.id }) { _, p ->
                     PlaceCard(p, p.id == selectedId, p.id in favorites, { Favorites.toggle(p.id) }, openUrl, openIntent) {
                         selectedId = p.id; if (!showsMap) { showsMap = true; Store.setBool("island.showsMap", true) }
@@ -155,3 +169,7 @@ private fun VolunteerInfoCard(openUrl: (String) -> Unit, dismiss: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp).clickable { openUrl("https://www.freiwilligenserver.de/ehrenamtskarte/faq/voraussetzungen-fuer-den-erhalt") })
     }
 }
+
+/** Für die Suche: klein, ohne Akzente („Café“ findet „cafe“). */
+private fun String.fold(): String =
+    java.text.Normalizer.normalize(lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")

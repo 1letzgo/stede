@@ -35,6 +35,17 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
     public let external: [ExternalLink]?
     /// Ratsinformationssystem (Baustein `politics`).
     public let ris: RisConfig?
+    /// Seepunkt vor der Insel für Wind und Seegang (`marine_forecasts`, Cron `sync-marine`).
+    public let marine: MarineConfig?
+
+    /// `{"lat": 53.80, "lon": 7.48, "name": "Seegebiet vor Langeoog"}`.
+    public nonisolated struct MarineConfig: Codable, Sendable, Hashable {
+        public let lat: Double
+        public let lon: Double
+        public let name: String?
+
+        public init(lat: Double, lon: Double, name: String?) { self.lat = lat; self.lon = lon; self.name = name }
+    }
 
     /// ALLRIS-net-Bürgerinfo der Gemeinde, `{"url": "https://ris.westerstede.de/bi/"}`.
     public nonisolated struct RisConfig: Codable, Sendable, Hashable {
@@ -98,7 +109,7 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
     public init(slug: String, tenantID: UUID?, municipality: String, region: String? = nil, center: [Double], bbox: [Double], stations: [Station],
                 defaultStation: String, wasteTownID: Int, busDefaultStop: String, features: FeatureSet? = nil,
                 ferry: FerryConfig? = nil, tides: TideConfig? = nil, airStation: String? = nil,
-                notes: [String: String]? = nil, external: [ExternalLink]? = nil, ris: RisConfig? = nil) {
+                notes: [String: String]? = nil, external: [ExternalLink]? = nil, ris: RisConfig? = nil, marine: MarineConfig? = nil) {
         self.slug = slug
         self.tenantID = tenantID
         self.municipality = municipality
@@ -116,6 +127,7 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
         self.notes = notes
         self.external = external
         self.ris = ris
+        self.marine = marine
     }
 
     /// Gemeinden ohne Bahn, Bus oder Abfuhr lassen deren Felder weg.
@@ -138,6 +150,7 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
         notes = try c.decodeIfPresent([String: String].self, forKey: .notes)
         external = try c.decodeIfPresent([ExternalLink].self, forKey: .external)
         ris = try c.decodeIfPresent(RisConfig.self, forKey: .ris)
+        marine = try c.decodeIfPresent(MarineConfig.self, forKey: .marine)
     }
 
     public nonisolated struct Station: Codable, Sendable, Hashable, Identifiable {
@@ -247,8 +260,9 @@ public nonisolated enum Tenants {
             let notes: [String: String]?
             let external: [TenantConfig.ExternalLink]?
             let ris: TenantConfig.RisConfig?
+            let marine: TenantConfig.MarineConfig?
             enum CodingKeys: String, CodingKey {
-                case center, bbox, stations, features, ferry, tides, notes, external, ris
+                case center, bbox, stations, features, ferry, tides, notes, external, ris, marine
                 case airStation = "air_station"
                 case defaultStation = "default_station"
                 case wasteTownId = "waste_town_id"
@@ -268,7 +282,7 @@ public nonisolated enum Tenants {
                 return TenantConfig(slug: row.slug, tenantID: row.id, municipality: row.municipality, region: AppBrand.current.region, center: center, bbox: bbox,
                                     stations: c.stations ?? [], defaultStation: c.defaultStation ?? "", wasteTownID: c.wasteTownId ?? 0,
                                     busDefaultStop: c.busDefaultStop ?? "", features: c.features,
-                                    ferry: c.ferry, tides: c.tides, airStation: c.airStation, notes: c.notes, external: c.external, ris: c.ris)
+                                    ferry: c.ferry, tides: c.tides, airStation: c.airStation, notes: c.notes, external: c.external, ris: c.ris, marine: c.marine)
             }
             guard !list.isEmpty else { return }
             try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)

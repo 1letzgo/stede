@@ -532,7 +532,12 @@
     "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335"
    }
   ],
-  "tenantID": "edd930d3-7382-42b3-a724-54395af72bbd"
+  "tenantID": "edd930d3-7382-42b3-a724-54395af72bbd",
+  "marine": {
+   "lat": 53.8,
+   "lon": 7.48,
+   "name": "Seegebiet vor Langeoog"
+  }
  },
  {
   "slug": "spiekeroog",
@@ -592,7 +597,12 @@
    "gauge_name": "Spiekeroog"
   },
   "airStation": "DENI058",
-  "tenantID": "faf847fe-9b06-4438-afd8-d699c6ce22b7"
+  "tenantID": "faf847fe-9b06-4438-afd8-d699c6ce22b7",
+  "marine": {
+   "lat": 53.82,
+   "lon": 7.69,
+   "name": "Seegebiet vor Spiekeroog"
+  }
  },
  {
   "slug": "wangerooge",
@@ -649,6 +659,11 @@
    "gauge": "70039212-c8a8-43fc-82a5-150d95831772",
    "gauge_name": "Wangerooge West"
   },
-  "airStation": "DENI058"
+  "airStation": "DENI058",
+  "marine": {
+   "lat": 53.83,
+   "lon": 7.9,
+   "name": "Seegebiet vor Wangerooge"
+  }
  }
 ]

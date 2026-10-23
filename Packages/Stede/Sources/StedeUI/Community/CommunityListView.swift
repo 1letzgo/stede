@@ -59,7 +59,7 @@ struct CommunityListView: View {
                         .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                         Button { showsEditor = true } label: {
                             JoinRow(symbol: "plus", color: StedeTheme.duneGreen, title: "Gruppe gründen",
-                                    detail: "Für Verein, Nachbarschaft oder Chor – die Gemeinde gibt sie frei.")
+                                    detail: "Für Verein, Nachbarschaft oder Chor – der Betreiber gibt sie frei.")
                         }
                         .buttonStyle(StedeCardButtonStyle()).foregroundStyle(.primary)
                     }
@@ -318,7 +318,7 @@ struct CommunityEditorView: View {
                     Text("Die Gruppe und ihre öffentlichen Termine erscheinen dann in allen \(AppBrand.current.regionName)-Gemeinden, nicht nur in \(Tenants.current.municipality).")
                 }
                 if existing == nil {
-                    Section { Text("Nach dem Antrag gibt die Gemeinde-App die Gruppe frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
+                    Section { Text("Nach dem Antrag gibt der Betreiber die Gruppe frei. Du bist dann die Leitung.").font(.footnote).foregroundStyle(.secondary) }
                 }
                 if let error { Section { Text(error).font(.footnote).foregroundStyle(StedeTheme.harborRed) } }
             }

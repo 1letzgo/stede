@@ -1,8 +1,8 @@
 import Foundation
 import Supabase
 
-/// Fahrten der Gemeinde-Fähre (`tenants.config.ferry`) über api.langeoog.de — wie alle Live-Dienste
-/// über die Edge Function `upstream`.
+/// Fahrten der Gemeinde-Fähre (`tenants.config.ferry`): Live-Fahrten aus `ferry_days` (Cron
+/// `sync-ferry` holt api.langeoog.de), feste Fahrpläne aus der PDF-Datei (`sync-ferry-pdf`).
 public nonisolated struct FerryClient: Sendable {
     let http: HTTPClient
 
@@ -13,16 +13,21 @@ public nonisolated struct FerryClient: Sendable {
     public func trips(on day: Date) async throws -> [FerryTrip] {
         guard let ferry = Tenants.current.ferry else { return [] }
         if ferry.isTimetable { return try await timetable(ferry, on: day) }
-        let date = IslandTime.isoDate(day)
-        var byID: [Int: FerryTrip] = [:]
-        for route in ferry.routes ?? [] {
-            guard let url = URL(string: "https://api.langeoog.de/fahrten/\(route)/\(date)") else { throw AppError.invalidURL }
-            let payload: [FerryTripDTO] = try await http.get(url)
-            for dto in payload {
-                byID[dto.fahrtnummer] = dto.asTrip(mainland: ferry.mainland ?? "")
-            }
-        }
-        return byID.values.sorted { $0.abfahrt < $1.abfahrt }
+        // Der Server holt die Fahrten per Cron (`sync-ferry`) in `ferry_days`; die App fragt nie die Reederei.
+        guard let tenant = Tenants.current.tenantID else { return [] }
+        let data = try await Backend.client.from("ferry_days")
+            .select("trips")
+            .eq("tenant_id", value: tenant.uuidString)
+            .eq("day", value: IslandTime.isoDate(day))
+            .execute().data
+        let rows = try JSONDecoder.api.decode([FerryDayRow].self, from: data)
+        return (rows.first?.trips ?? [])
+            .map { $0.asTrip(mainland: ferry.mainland ?? "") }
+            .sorted { $0.abfahrt < $1.abfahrt }
+    }
+
+    nonisolated struct FerryDayRow: Decodable, Sendable {
+        let trips: [FerryTripDTO]
     }
 
     /// Fester Fahrplan aus dem PDF der Reederei: der Server legt ihn als Datei ab (`sync-ferry-pdf`),

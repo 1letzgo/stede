@@ -116,7 +116,7 @@ fun CommunityScreen(open: (Screen) -> Unit) {
             if (Session.signedIn) {
                 item { SectionHeader("Mitmachen", Icons.Default.AddCircle) }
                 item { JoinRow(Icons.Default.Key, C.teal, "Einladungscode eingeben", "Du hast einen Code für eine Gruppe bekommen.") { code = ""; codeError = null; showInvite = true } }
-                item { JoinRow(Icons.Default.Add, C.green, "Gruppe gründen", "Für Verein, Nachbarschaft oder Chor – die Gemeinde gibt sie frei.") { showNew = true } }
+                item { JoinRow(Icons.Default.Add, C.green, "Gruppe gründen", "Für Verein, Nachbarschaft oder Chor – der Betreiber gibt sie frei.") { showNew = true } }
             }
             error?.let { item { Text(it, color = C.red, fontSize = 13.sp) } }
         }
