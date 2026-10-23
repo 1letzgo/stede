@@ -21,7 +21,7 @@ android {
         create("stede") {
             dimension = "brand"
             applicationId = "de.letzgo.stede"
-            versionCode = 15
+            versionCode = 16
             versionName = "1.0"
             buildConfigField("String", "BRAND", "\"stede\"")
             resValue("string", "app_name", "stede")
