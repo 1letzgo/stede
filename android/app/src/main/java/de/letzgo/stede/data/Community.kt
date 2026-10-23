@@ -252,8 +252,9 @@ object CommunityApi {
         if (communityIds.isEmpty()) return emptyList()
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()
     }
-    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration")) {
-        filter { ownOrTargeted(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
+    /** `regionWide`: alle öffentlichen Termine der Region (Einstellung „Termine der Region“). */
+    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String, regionWide: Boolean = false) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration")) {
+        filter { if (regionWide) eq("region", Brand.current.region) else ownOrTargeted(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
     }.decodeList<PublicEvent>()
 
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }

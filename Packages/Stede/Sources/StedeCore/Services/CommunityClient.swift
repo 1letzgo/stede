@@ -206,12 +206,15 @@ public nonisolated struct CommunityClient: Sendable {
 
     /// Seitenweise zu 1000 — mit den übernommenen Gemeinde-Terminen kommen über Monate mehr zusammen,
     /// als PostgREST in einer Antwort liefert.
-    public func publicEvents(tenantID: UUID, from: Date, to: Date) async throws -> [PublicEvent] {
+    /// `regionWide`: alle öffentlichen Termine der Region (Einstellung „Termine der Region“), sonst nur
+    /// die der eigenen Gemeinde und die für sie bestimmten kreisweiten.
+    public func publicEvents(tenantID: UUID, from: Date, to: Date, regionWide: Bool = false) async throws -> [PublicEvent] {
         let page = 1000
         var all: [PublicEvent] = []
         while true {
-            let rows: [PublicEvent] = try await client.from("v_public_events").select()
-                .or(Self.ownOrTargeted(tenantID))
+            let base = client.from("v_public_events").select()
+            let scoped = regionWide ? base.eq("region", value: AppBrand.current.region) : base.or(Self.ownOrTargeted(tenantID))
+            let rows: [PublicEvent] = try await scoped
                 .gte("starts_at", value: from.ISO8601Format()).lt("starts_at", value: to.ISO8601Format())
                 .order("starts_at").order("id").range(from: all.count, to: all.count + page - 1).execute().value
             all += rows

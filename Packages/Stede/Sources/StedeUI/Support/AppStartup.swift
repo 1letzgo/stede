@@ -28,6 +28,12 @@ public enum AppStartup {
 
     public static func run() async {
         CacheMaintenance.purgeExpired()
+        // Seit 10/2026 kennt stede nur noch Westerstede: wer eine andere Gemeinde gewählt hatte,
+        // landet dort und verliert deren Straße, Haltestelle und Bahnhof.
+        if !AppBrand.current.choosesTenant, let stored = UserDefaults.standard.string(forKey: Tenants.slugKey),
+           stored != AppBrand.current.defaultTenant {
+            Tenants.select(AppBrand.current.defaultTenant)
+        }
         Task { await Tenants.refresh() }
         // Vor der ersten Gemeindewahl gibt es nichts nachzuladen.
         guard Tenants.hasChosen else { return }

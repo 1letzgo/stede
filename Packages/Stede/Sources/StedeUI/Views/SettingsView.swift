@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     @AppStorage("train.station") private var stationID = ""
     @State private var showsTenants = false
+    @AppStorage(RegionEvents.key) private var regionEvents = false
     @State private var showsStreets = false
     @State private var showsStops = false
 
@@ -97,6 +98,17 @@ struct SettingsView: View {
                 }
                 .buttonStyle(StedeCardButtonStyle())
                 .foregroundStyle(.primary)
+
+                if AppBrand.current.offersRegionEvents, Features.has(.calendar) {
+                    StedeSectionHeader(title: "Kalender", symbol: "calendar")
+                    SettingsCard {
+                        toggleRow("Termine der Region", symbol: "map.fill", tint: StedeTheme.seaTeal, isOn: $regionEvents)
+                    }
+                    Text("Zeigt im Kalender zusätzlich die öffentlichen Termine aller Gemeinden im \(AppBrand.current.regionName).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
 
                 if Features.has(.waste) {
                     StedeSectionHeader(title: "Zuhause", symbol: "house.fill")

@@ -87,14 +87,14 @@ fun CalendarScreen() {
         val tenant = Tenants.current()
         val own = if (groups) CommunityApi.events(memberIds, f, t).map { EventInfo.of(it) } else emptyList()
         val ownIds = own.map { it.id }.toSet()
-        return own + CommunityApi.publicEvents(tenant.id, f, t).filter { it.id !in ownIds }.map { EventInfo.of(it) }
+        return own + CommunityApi.publicEvents(tenant.id, f, t, RegionEvents.isOn).filter { it.id !in ownIds }.map { EventInfo.of(it) }
     }
     suspend fun refreshHelpers() { runCatching { helpers = CommunityApi.helperCounts(community.filter { it.helpersNeeded > 0 }.map { it.id }) } }
     // Kommentarzahlen nur für interne Termine mit eingeschalteten Kommentaren (öffentliche haben keine).
     suspend fun refreshComments() { runCatching { commentCounts = CommunityApi.commentCounts(community.filter { it.commentsEnabled }.map { it.id }) } }
 
     // Ganzer geladener Bereich — beim Start, bei An-/Abmeldung und nach Änderungen.
-    LaunchedEffect(userId, memberIds, Changes.version) {
+    LaunchedEffect(userId, memberIds, Changes.version, RegionEvents.isOn) {
         error = null
         runCatching { CityEvents.range(start, end, cacheAs = if (start == today) "feed" else null) }
             .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }

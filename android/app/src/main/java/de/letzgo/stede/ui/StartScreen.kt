@@ -192,6 +192,7 @@ private fun externalIcon(symbol: String): ImageVector = when {
     symbol.startsWith("ferry") -> Icons.Default.DirectionsBoat
     symbol.startsWith("bicycle") -> Icons.Default.DirectionsBike
     symbol.startsWith("ticket") -> Icons.Default.ConfirmationNumber
+    symbol.startsWith("newspaper") -> Icons.Default.Newspaper
     else -> Icons.Default.OpenInNew
 }
 

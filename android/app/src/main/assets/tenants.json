@@ -531,6 +531,11 @@
     "title": "Strandkörbe",
     "symbol": "beach.umbrella.fill",
     "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335"
+   },
+   {
+    "url": "https://www.langeoognews.de/",
+    "title": "Langeoog News",
+    "symbol": "newspaper.fill"
    }
   ],
   "tenantID": "edd930d3-7382-42b3-a724-54395af72bbd",

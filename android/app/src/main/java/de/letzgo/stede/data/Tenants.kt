@@ -112,7 +112,16 @@ object Tenants {
     private val listSerializer = ListSerializer(TenantConfig.serializer())
 
     /** Gewählte Gemeinde; null, solange beim ersten Start noch keine gewählt ist. Compose beobachtet den Wert. */
-    var chosen by mutableStateOf(if (Brand.current.choosesTenant) Store.prefs.getString(KEY, null) else Brand.current.defaultTenant); private set
+    var chosen by mutableStateOf(if (Brand.current.choosesTenant) Store.prefs.getString(KEY, null) else Brand.current.defaultTenant.also { migrateToDefault() }); private set
+
+    /** Seit 10/2026 kennt stede nur Westerstede: eine früher gewählte andere Gemeinde samt Straße, Haltestelle und Bahnhof verwerfen. */
+    private fun migrateToDefault() {
+        val stored = Store.prefs.getString(KEY, null) ?: return
+        if (stored == Brand.current.defaultTenant) return
+        val edit = Store.prefs.edit().putString(KEY, Brand.current.defaultTenant)
+        perTenantKeys.forEach { edit.remove(it) }
+        edit.apply()
+    }
 
     val slug: String get() = chosen ?: DEFAULT
     val hasChosen get() = chosen != null

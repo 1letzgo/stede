@@ -125,6 +125,15 @@ fun SettingsScreen() {
                     enabled = Store.string("home.order", "").isNotEmpty() || hidden != setOf(HomeTileId.Volunteer) || Store.string("home.tiles", "").isNotEmpty()) { Text("Standard wiederherstellen") }
             }
 
+            if (Brand.current.offersRegionEvents && Features.has(Feature.Calendar)) {
+                item { SectionHeader("Kalender", Icons.Default.CalendarMonth) }
+                item {
+                    StedeCard {
+                        WasteOptionRow(Icons.Default.Map, C.teal, "Termine der Region", RegionEvents.on) { RegionEvents.set(it) }
+                    }
+                }
+                item { Text("Zeigt im Kalender zusätzlich die öffentlichen Termine aller Gemeinden im ${Brand.current.regionName}.", fontSize = 13.sp, color = C.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }
+            }
             if (Features.has(Feature.Waste)) item { SectionHeader("Zuhause", Icons.Default.Home) }
             if (Features.has(Feature.Waste)) item {
                 StedeCard {

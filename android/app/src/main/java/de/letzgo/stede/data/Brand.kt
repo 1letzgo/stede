@@ -78,6 +78,9 @@ data class Brand(
     val bikesInShopping: Boolean,
     val privacyUrl: String?,
 ) {
+    /** „Termine der Region“ — bisher nur stede (die übrigen Ammerland-Gemeinden werden per Cron weiter importiert). */
+    val offersRegionEvents get() = id == "stede"
+
     /** „loog+“ — Name des Bausteins `plus`. */
     val plusName get() = "$displayName+"
 
@@ -86,7 +89,8 @@ data class Brand(
         val islandDirectories = setOf("gastro", "health", "leisure", "sights", "playgrounds", "trips", "bikes")
 
         // brands: start
-        val stede = Brand("stede", "stede", "ammerland", "Ammerland", "stede", true,
+        /** Westerstede (seit 10/2026 nur noch diese Gemeinde; die übrigen Ammerland-Gemeinden bekommen eigene Apps). */
+        val stede = Brand("stede", "stede", "ammerland", "Ammerland", "stede", false,
             FeatureSet(Feature.entries.toSet(), allDirectories),
             FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Train, Feature.Bus, Feature.Waste, Feature.Groups), allDirectories),
             "Stadt", true, null)
@@ -141,4 +145,12 @@ object Features {
     }
     fun has(feature: Feature) = feature in current.enabled
     fun hasPlaces(vararg directories: String) = directories.any { it in current.places }
+}
+
+/** Einstellung „Termine der Region“ (Pref `events.region`, gleicher Schlüssel wie iOS). */
+object RegionEvents {
+    const val KEY = "events.region"
+    var on by androidx.compose.runtime.mutableStateOf(Store.bool(KEY, false)); private set
+    val isOn get() = Brand.current.offersRegionEvents && on
+    fun set(value: Boolean) { Store.setBool(KEY, value); on = value }
 }

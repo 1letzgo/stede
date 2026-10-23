@@ -32,6 +32,10 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     /// Datenschutzerklärung (Plus-Seite).
     public let privacyURL: URL?
 
+    /// „Termine der Region“: zeigt im Kalender die öffentlichen Termine aller Gemeinden der Region.
+    /// Bisher nur stede (Westerstede plus die übrigen Ammerland-Gemeinden, die per Cron weiter importiert werden).
+    public var offersRegionEvents: Bool { id == "stede" }
+
     /// Push gibt es bisher nur für stede: `push-send` schickt an das APNs-Topic `de.letzgo.stede`,
     /// die Insel-Apps haben weder `aps-environment` noch ein eigenes Topic.
     public var hasPush: Bool { id == "stede" }
@@ -46,9 +50,10 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
 
     // Neue Marken fügt der Skill `new-region-app` zwischen den Markern ein.
     // brands: start
+    /// Westerstede (seit 10/2026 nur noch diese Gemeinde; die übrigen Ammerland-Gemeinden bekommen eigene Apps).
     public static let stede = AppBrand(
         id: "stede", displayName: "stede", region: "ammerland", regionName: "Ammerland",
-        defaultTenant: "stede", choosesTenant: true, urlScheme: "stede", palette: "Stede",
+        defaultTenant: "stede", choosesTenant: false, urlScheme: "stede", palette: "Stede",
         allowedFeatures: FeatureSet(Set(Feature.allCases), places: allDirectories),
         defaultFeatures: FeatureSet([.weather, .calendar, .train, .bus, .waste, .groups], places: allDirectories),
         placesTitle: "Stadt", bikesInShopping: true, privacyURL: nil

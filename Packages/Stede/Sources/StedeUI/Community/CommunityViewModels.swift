@@ -218,7 +218,7 @@ final class CommunityCalendarModel {
         defer { didLoad = true }
         guard let tenantID else { return }
         do {
-            async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end)
+            async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end, regionWide: RegionEvents.isOn)
             async let memberTask = client.events(communityIDs: memberCommunityIDs, from: start, to: end)
             publicEvents = try await publicTask
             memberEvents = try await memberTask

@@ -106,3 +106,12 @@ public nonisolated enum Features {
     /// Mindestens eines der Verzeichnisse ist an.
     public static func hasPlaces(_ directories: Set<String>) -> Bool { !current.places.isDisjoint(with: directories) }
 }
+
+/// Einstellung „Termine der Region“ (`UserDefaults` `events.region`), nur wo die Marke sie anbietet.
+public nonisolated enum RegionEvents {
+    public static let key = "events.region"
+
+    public static var isOn: Bool {
+        AppBrand.current.offersRegionEvents && UserDefaults.standard.bool(forKey: key)
+    }
+}
