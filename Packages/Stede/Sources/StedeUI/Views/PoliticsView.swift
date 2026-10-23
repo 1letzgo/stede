@@ -70,13 +70,19 @@ struct CouncilSessionsView: View {
     }
 }
 
-private struct CouncilSessionCard: View {
+struct CouncilSessionCard: View {
     let session: CouncilSession
     let isNext: Bool
+    /// Im Kalender steht das Datum schon über dem Tag — dort ein Symbol statt der Datumskachel.
+    var showsDate = true
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            CouncilDateChip(date: session.start)
+            if showsDate {
+                CouncilDateChip(date: session.start)
+            } else {
+                StedeIconChip(symbol: "building.columns.fill", color: StedeTheme.seaTeal)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.committee)
                     .font(.headline)

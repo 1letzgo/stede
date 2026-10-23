@@ -88,7 +88,7 @@ struct AudiencePickerView: View {
             let extras = [(Feature.waste, "Abfuhr"), (.politics, "Politik"), (.groups, "Gruppen")]
                 .filter { allowed.contains($0.0) }.map(\.1)
             return extras.isEmpty ? "Alles für den Alltag vor Ort."
-                : "Alles für Gäste und zusätzlich \(extras.formatted(.list(type: .and)))."
+                : "Alles für Gäste und zusätzlich \(extras.formatted(.list(type: .and).locale(IslandTime.germanLocale)))."
         }
     }
 }

@@ -47,7 +47,9 @@ enum class HomeTileId(val key: String, val section: HomeSection, val category: S
         Discover -> Features.hasPlaces("sights", "leisure", "trips"); Gastro -> Features.hasPlaces("gastro")
         Shopping -> Features.hasPlaces("gastro", "bikes"); Bikes -> Features.hasPlaces("bikes") && !Brand.current.bikesInShopping
         Playgrounds -> Features.hasPlaces("playgrounds"); Health -> Features.hasPlaces("health"); Volunteer -> Features.hasPlaces("volunteer")
-        Sessions, Papers -> Council.isAvailable
+        // Sitzungen stehen seit 10/2026 im Kalender (mit Tagesordnung); auf Start bleiben die Vorlagen.
+        Sessions -> false
+        Papers -> Council.isAvailable
     }
 
     companion object { val available get() = entries.filter { it.isAvailable } }

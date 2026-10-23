@@ -30,6 +30,14 @@ sealed class CalendarEntry {
             ?: !day.plusDays(1).atStartOfDay(Town.zone).isAfter(Town.now())
     }
     data class Community(val e: EventInfo) : CalendarEntry() { override val day: LocalDate = e.starts.withZoneSameInstant(Town.zone).toLocalDate(); override val sortKey = e.starts.toInstant().toString(); override val isOver get() = e.isOver }
+    /** Ratssitzung aus dem Ratsinfo (Baustein `politics`) mit Uhrzeit, Raum und Tagesordnung. */
+    data class Council(val s: CouncilSession) : CalendarEntry() { override val day: LocalDate = s.startTime.toLocalDate(); override val sortKey = s.startTime.toInstant().toString(); override val isOver get() = s.isOver }
+}
+
+/** Ist ein importierter Termin (westerstede.de) dieselbe Sitzung? Gleicher Tag und gleicher Titel bzw. Gremium im Titel. */
+private fun List<CouncilSession>.matches(e: EventInfo): Boolean {
+    val day = e.starts.withZoneSameInstant(Town.zone).toLocalDate()
+    return any { s -> s.startTime.toLocalDate() == day && (e.title.equals(s.title, ignoreCase = true) || e.title.contains(s.committee, ignoreCase = true)) }
 }
 
 /** Zeilen der fortlaufenden Liste — flach, damit „Heute“ einen festen Index hat. */
@@ -37,7 +45,7 @@ private sealed class CalendarRow(val key: String) {
     data object Earlier : CalendarRow("earlier")
     data class Header(val day: LocalDate) : CalendarRow("h$day")
     data class NoneToday(val day: LocalDate) : CalendarRow("n$day")
-    data class Entry(val entry: CalendarEntry) : CalendarRow(when (entry) { is CalendarEntry.City -> "c${entry.e.externalId}${entry.e.day}"; is CalendarEntry.Community -> "m${entry.e.id}" })
+    data class Entry(val entry: CalendarEntry) : CalendarRow(when (entry) { is CalendarEntry.City -> "c${entry.e.externalId}${entry.e.day}"; is CalendarEntry.Community -> "m${entry.e.id}"; is CalendarEntry.Council -> "r${entry.s.id}" })
     data class Later(val end: LocalDate) : CalendarRow("later$end")
     data object Footer : CalendarRow("footer")
     data object Locked : CalendarRow("locked")
@@ -49,7 +57,7 @@ private const val HORIZON_DAYS = 365L
 /** Kalender wie EventView: fortlaufende Liste ab heute, Filterzeile oben, nach unten
  *  lädt sie selbst weiter, frühere Termine auf Tipp, „Heute“ in der Leiste springt zurück. */
 @Composable
-fun CalendarScreen() {
+fun CalendarScreen(open: (de.letzgo.stede.Screen) -> Unit = {}) {
     val today = Town.today()
     // Startet heute — Vergangenes nur über „Frühere Termine“.
     var start by remember { mutableStateOf(today) }
@@ -77,6 +85,19 @@ fun CalendarScreen() {
     var earlierAnchor by remember { mutableStateOf<String?>(null) }
     val openUrl = rememberOpenUrl()
     val userId = Session.userId
+    // Sitzungen der sichtbaren Monate aus dem Ratsinfo; vergangene Monate bleiben im Speicher.
+    var council by remember { mutableStateOf<List<CouncilSession>>(emptyList()) }
+    val councilMonths = remember { mutableMapOf<java.time.YearMonth, List<CouncilSession>>() }
+    LaunchedEffect(start, end) {
+        if (!Council.isAvailable) return@LaunchedEffect
+        val now = java.time.YearMonth.now(Town.zone)
+        var m = java.time.YearMonth.from(start)
+        while (!m.isAfter(java.time.YearMonth.from(end))) {
+            if (m !in councilMonths || !m.isBefore(now)) runCatching { Council.sessions(m.year, m.monthValue) }.onSuccess { councilMonths[m] = it }
+            m = m.plusMonths(1)
+        }
+        council = councilMonths.values.flatten().distinctBy { it.id }.sortedBy { it.start }
+    }
     val memberIds = Session.activeCommunityIds
     val scope = rememberCoroutineScope()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -137,9 +158,12 @@ fun CalendarScreen() {
     // Gemeinde-Termine kommen als übernommene Termine der Gruppe „stede Veranstaltungen“; die Rohdaten
     // (city_events, offline im Cache) nur, solange davon nichts geladen ist — ohne Netz oder vor dem Import.
     val showsRawCity = community.none { it.isImported }
+    // Ratssitzungen gehören zu den Gemeinde-Terminen; den Import derselben Sitzung ersetzen sie.
+    val sessions = if (filter == CalendarFilter.All || filter == CalendarFilter.City) council else emptyList()
     val entries = buildList {
         if ((filter == CalendarFilter.All || filter == CalendarFilter.City) && showsRawCity) city?.forEach { add(CalendarEntry.City(it)) }
-        community.forEach { e ->
+        sessions.forEach { add(CalendarEntry.Council(it)) }
+        community.filter { !it.isImported || !sessions.matches(it) }.forEach { e ->
             val mine = MyParticipation.byEvent[e.id]?.status.let { it == "going" || it == "maybe" } || e.createdBy == userId
             val show = when (filter) { CalendarFilter.All -> true; CalendarFilter.City -> e.isImported; CalendarFilter.Communities -> !e.isImported; CalendarFilter.Mine -> mine }
             if (show) add(CalendarEntry.Community(e))
@@ -192,6 +216,7 @@ fun CalendarScreen() {
                             is CalendarRow.NoneToday -> Text("Heute keine Termine", color = C.tertiary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp))
                             is CalendarRow.Entry -> when (val entry = row.entry) {
                                 is CalendarEntry.City -> CityEventRow(entry.e) { entry.e.detailUrl?.let(openUrl) }
+                                is CalendarEntry.Council -> CouncilSessionCard(entry.s, false) { open(de.letzgo.stede.Screen.CouncilSessionDetail(entry.s)) }
                                 is CalendarEntry.Community -> EventCard(entry.e, helpers[entry.e.id], onSignIn = { showAccount = true },
                                     commentCount = commentCounts[entry.e.id] ?: 0, onComments = { commenting = entry.e }, showsMenu = true) { open = entry.e }
                             }

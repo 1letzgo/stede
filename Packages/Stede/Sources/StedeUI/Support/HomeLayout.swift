@@ -107,7 +107,9 @@ enum HomeTileID: String, CaseIterable, Identifiable {
         case .playgrounds: Features.hasPlaces(["playgrounds"])
         case .health: Features.hasPlaces(["health"])
         case .volunteer: Features.hasPlaces(["volunteer"])
-        case .sessions, .papers: Features.has(.politics) && Tenants.current.ris != nil
+        // Sitzungen stehen seit 10/2026 im Kalender (mit Tagesordnung); auf Start bleiben die Vorlagen.
+        case .sessions: false
+        case .papers: Features.has(.politics) && Tenants.current.ris != nil
         }
     }
 

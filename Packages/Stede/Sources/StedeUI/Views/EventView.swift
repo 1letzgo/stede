@@ -41,6 +41,9 @@ struct EventView: View {
     @State private var openedEvent: CommunityEventInfo?
     @State private var commentingEvent: CommunityEventInfo?
     @State private var editingEvent: CommunityEvent?
+    /// Ratssitzungen aus dem Ratsinfo (Baustein `politics`) mit Uhrzeit, Raum und Tagesordnung.
+    @State private var council = CouncilCalendarModel()
+    @State private var openedSession: CouncilSession?
 
     /// Ohne Gruppen gibt es nur die Gemeinde-Termine — keine Filter.
     private var filter: Filter { Features.has(.groups) ? Filter(rawValue: filterRaw) ?? .all : .all }
@@ -78,6 +81,12 @@ struct EventView: View {
                                         case .city(let event): CityEventRow(event: event)
                                         case .community(let event): communityCard(CommunityEventInfo(event))
                                         case .publicEvent(let event): communityCard(CommunityEventInfo(event))
+                                        case .council(let session):
+                                            Button { openedSession = session } label: {
+                                                CouncilSessionCard(session: session, isNext: false, showsDate: false)
+                                            }
+                                            .buttonStyle(StedeCardButtonStyle())
+                                            .foregroundStyle(.primary)
                                         }
                                     }
                                 }
@@ -113,6 +122,19 @@ struct EventView: View {
             await loadCommunity()
         }
         .onAppear { Task { await loadCommunity() } }
+        .task(id: "\(IslandTime.isoDate(model.start))|\(IslandTime.isoDate(model.end))") {
+            await council.load(from: model.start, to: model.end)
+        }
+        .sheet(item: $openedSession) { session in
+            NavigationStack {
+                CouncilSessionDetailView(session: session)
+                    .navigationDestination(for: HomeDestination.self) { destination in
+                        if case let .councilPaper(id, number) = destination {
+                            CouncilPaperDetailView(id: id, number: number)
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showsAccount) { AccountView() }
         .sheet(item: $commentingEvent, onDismiss: { Task { await community.loadCommentCounts() } }) { info in
             CommentsSheet(title: info.title, target: .event(info.id), canModerate: canEdit(info))
@@ -283,8 +305,12 @@ struct EventView: View {
             result += model.events.map(CalendarEntry.city)
         }
         let memberIDs = Set(community.memberEvents.map(\.id))
-        let member = community.memberEvents.filter { $0.cancelledAt == nil }
-        let publicOnly = community.publicEvents.filter { !memberIDs.contains($0.id) }
+        // Ratssitzungen gehören zu den Gemeinde-Terminen; den Import derselben Sitzung ersetzen sie.
+        let sessions = (filter == .all || filter == .city) ? council.sessions : []
+        let isDuplicate: (String, Date) -> Bool = { title, date in !sessions.isEmpty && council.matches(title: title, at: date) }
+        result += sessions.map(CalendarEntry.council)
+        let member = community.memberEvents.filter { $0.cancelledAt == nil && ($0.externalKey == nil || !isDuplicate($0.title, $0.startsAt)) }
+        let publicOnly = community.publicEvents.filter { !memberIDs.contains($0.id) && (!$0.origin.isImported || !isDuplicate($0.title, $0.startsAt)) }
         switch filter {
         case .city:
             result += member.filter { $0.externalKey != nil }.map(CalendarEntry.community)
@@ -372,9 +398,11 @@ private enum CalendarEntry: Identifiable {
     case city(StedeEvent)
     case community(CommunityEvent)
     case publicEvent(PublicEvent)
+    case council(CouncilSession)
 
     var id: String {
         switch self {
+        case .council(let s): "council-\(s.id)"
         case .city(let e): "city-\(e.id)"
         case .community(let e): "community-\(e.id.uuidString)"
         case .publicEvent(let e): "public-\(e.id.uuidString)"
@@ -386,6 +414,7 @@ private enum CalendarEntry: Identifiable {
         case .city(let e): e.time
         case .community(let e): e.startsAt
         case .publicEvent(let e): e.startsAt
+        case .council(let s): s.start
         }
     }
 
@@ -394,6 +423,7 @@ private enum CalendarEntry: Identifiable {
         case .city(let e): e.isOver
         case .community(let e): e.isOver
         case .publicEvent(let e): e.isOver
+        case .council(let s): (s.end ?? s.start.addingTimeInterval(3 * 3600)) < Date()
         }
     }
 
@@ -402,6 +432,7 @@ private enum CalendarEntry: Identifiable {
         case .city: nil
         case .community(let e): e.id
         case .publicEvent(let e): e.id
+        case .council: nil
         }
     }
 }

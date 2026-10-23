@@ -78,7 +78,7 @@ fun CouncilSessionsScreen(open: (Screen) -> Unit, onBack: () -> Unit) {
 }
 
 @Composable
-private fun CouncilSessionCard(s: CouncilSession, isNext: Boolean, onClick: () -> Unit) {
+fun CouncilSessionCard(s: CouncilSession, isNext: Boolean, onClick: () -> Unit) {
     StedeCard(Modifier.alpha(if (s.isOver) 0.6f else 1f), highlighted = isNext, onClick = onClick) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconChip(Icons.Default.Groups, C.teal)

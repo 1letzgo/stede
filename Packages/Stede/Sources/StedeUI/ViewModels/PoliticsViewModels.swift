@@ -217,3 +217,42 @@ final class CouncilDocumentOpener {
         }
     }
 }
+
+/// Ratssitzungen für den Kalender: lädt die Monate des sichtbaren Bereichs aus dem Ratsinfo
+/// (nur mit dem Baustein `politics`) und merkt sie sich für die Sitzung.
+@Observable
+final class CouncilCalendarModel {
+    private(set) var sessions: [CouncilSession] = []
+    private var loadedMonths: Set<Int> = []
+
+    func load(from start: Date, to end: Date) async {
+        guard Features.has(.politics), let client = CouncilClient.current else { sessions = []; return }
+        let current = CouncilSessionsModel.monthIndex(Date())
+        let months = CouncilSessionsModel.monthIndex(start)...CouncilSessionsModel.monthIndex(end)
+        // Vergangene Monate ändern sich nicht mehr; laufende und künftige je Aufruf frisch.
+        let needed = months.filter { !loadedMonths.contains($0) || $0 >= current }
+        guard !needed.isEmpty else { return }
+        var fresh: [Int: [CouncilSession]] = [:]
+        await withTaskGroup(of: (Int, [CouncilSession]?).self) { group in
+            for month in needed {
+                let (year, monthOfYear) = CouncilSessionsModel.yearMonth(month)
+                group.addTask { (month, try? await client.sessions(year: year, month: monthOfYear)) }
+            }
+            for await (month, list) in group { if let list { fresh[month] = list } }
+        }
+        let kept = sessions.filter { fresh[CouncilSessionsModel.monthIndex($0.start)] == nil }
+        sessions = (kept + fresh.values.flatMap { $0 }).sorted { $0.start < $1.start }
+        loadedMonths.formUnion(fresh.keys)
+    }
+
+    /// Ist ein importierter Termin (westerstede.de) dieselbe Sitzung? Gleicher Tag und gleicher Titel
+    /// bzw. Gremium im Titel — dann zeigt der Kalender nur die Sitzung aus dem Ratsinfo.
+    func matches(title: String, at date: Date) -> Bool {
+        let day = IslandTime.startOfDay(date)
+        return sessions.contains { session in
+            IslandTime.startOfDay(session.start) == day
+                && (title.localizedCaseInsensitiveCompare(session.title) == .orderedSame
+                    || title.localizedCaseInsensitiveContains(session.committee))
+        }
+    }
+}

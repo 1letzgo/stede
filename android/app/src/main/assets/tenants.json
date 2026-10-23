@@ -528,14 +528,22 @@
   },
   "external": [
    {
+    "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335",
     "title": "Strandkörbe",
-    "symbol": "beach.umbrella.fill",
-    "url": "https://app.strandbutler.de/b/Langeoog/Langeoog/Hauptstrand/335"
+    "symbol": "beach.umbrella.fill"
    },
    {
     "url": "https://www.langeoognews.de/",
     "title": "Langeoog News",
-    "symbol": "newspaper.fill"
+    "symbol": "newspaper.fill",
+    "tint": "sea"
+   },
+   {
+    "url": "https://gemeinde.langeoog.de",
+    "title": "Gemeinde",
+    "symbol": "building.columns.fill",
+    "tint": "dune",
+    "audience": "resident"
    }
   ],
   "tenantID": "edd930d3-7382-42b3-a724-54395af72bbd",

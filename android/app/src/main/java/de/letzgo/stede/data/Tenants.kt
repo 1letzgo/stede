@@ -77,7 +77,10 @@ import kotlinx.serialization.json.JsonObject
     val file: String, val path: String, val gauge: String? = null, @SerialName("gauge_name") val gaugeName: String = "",
 )
 
-@Serializable data class ExternalLink(val title: String, val symbol: String, val url: String)
+/** `tint`: Farbrolle („sea“, „dune“ …, sonst rot); `audience`: nur für „resident“ oder „tourist“ — wie iOS. */
+@Serializable data class ExternalLink(val title: String, val symbol: String, val url: String, val tint: String? = null, val audience: String? = null) {
+    val isVisible get() = audience == null || audience == (Audience.current ?: Audience.Resident).key
+}
 
 /** ALLRIS-net-Bürgerinfo der Gemeinde, `{"url": "https://ris.westerstede.de/bi/"}`. */
 @Serializable data class RisConfig(val url: String)

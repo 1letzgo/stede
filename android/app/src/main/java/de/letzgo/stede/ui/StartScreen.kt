@@ -45,7 +45,7 @@ fun StartScreen(open: (Screen) -> Unit) {
     var papers by remember { mutableStateOf(Council.cachedPapers()) }
     LaunchedEffect(Unit) {
         if (!Council.isAvailable) return@LaunchedEffect
-        if (sessions == null || !Council.isFresh("sessions.json")) runCatching { Council.upcomingSessions() }.onSuccess { sessions = it }
+        if (HomeTileId.Sessions.isAvailable && (sessions == null || !Council.isFresh("sessions.json"))) runCatching { Council.upcomingSessions() }.onSuccess { sessions = it }
         if (papers == null || !Council.isFresh("papers.json")) runCatching { Council.papers().items.also(Council::savePapers) }.onSuccess { papers = it }
     }
     val openUrl = rememberOpenUrl()
@@ -165,14 +165,15 @@ fun StartScreen(open: (Screen) -> Unit) {
                 }
             }
             // Angebote, die auf fremden Seiten gebucht werden (Strandkörbe …).
-            Tenants.config.external?.takeIf { it.isNotEmpty() }?.let { links ->
+            Tenants.config.external?.filter { it.isVisible }?.takeIf { it.isNotEmpty() }?.let { links ->
                 item(key = "external-header") { SectionHeader("Externe Anbieter", Icons.Default.OpenInNew) }
                 links.chunked(4).forEachIndexed { i, row ->
                     item(key = "external-$i") {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                             row.forEach { link ->
-                                Tile(C.red, Modifier.weight(1f).height(CompactTileHeight), externalIcon(link.symbol), onClick = { openUrl(link.url) }) {
-                                    Text(link.title, color = C.red, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 2, lineHeight = 14.sp,
+                                val tint = roleColor(link.tint)
+                                Tile(tint, Modifier.weight(1f).height(CompactTileHeight), externalIcon(link.symbol), onClick = { openUrl(link.url) }) {
+                                    Text(link.title, color = tint, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 2, lineHeight = 14.sp,
                                         style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto, localeList = androidx.compose.ui.text.intl.LocaleList("de-DE")))
                                 }
                             }
@@ -186,6 +187,13 @@ fun StartScreen(open: (Screen) -> Unit) {
     }
 }
 
+/** Farbrolle aus der Backend-Konfiguration wie `StedeTheme.role` in iOS; sonst rot. */
+@Composable
+private fun roleColor(name: String?) = when (name) {
+    "sea" -> C.teal; "dune" -> C.green; "sun" -> C.amber; "heather" -> C.heather; "mudflat" -> C.mudflat; "ink" -> C.ink
+    else -> C.red
+}
+
 /** SF-Symbol-Namen aus `tenants.config.external` auf Material-Symbole. */
 private fun externalIcon(symbol: String): ImageVector = when {
     symbol.startsWith("beach") -> Icons.Default.BeachAccess
@@ -193,6 +201,7 @@ private fun externalIcon(symbol: String): ImageVector = when {
     symbol.startsWith("bicycle") -> Icons.Default.DirectionsBike
     symbol.startsWith("ticket") -> Icons.Default.ConfirmationNumber
     symbol.startsWith("newspaper") -> Icons.Default.Newspaper
+    symbol.startsWith("building") -> Icons.Default.AccountBalance
     else -> Icons.Default.OpenInNew
 }
 

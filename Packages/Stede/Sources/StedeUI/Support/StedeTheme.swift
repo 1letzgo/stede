@@ -29,6 +29,19 @@ public enum StedeTheme {
     static let heather = brand("Heather")
     static let mudflat = brand("Mudflat")
 
+    /// Farbrolle aus Backend-Konfiguration („sea“, „dune“ …), etwa für externe Kacheln; sonst rot.
+    static func role(_ name: String?) -> Color {
+        switch name {
+        case "sea": seaTeal
+        case "dune": duneGreen
+        case "sun": sunAmber
+        case "heather": heather
+        case "mudflat": mudflat
+        case "ink": ink
+        default: harborRed
+        }
+    }
+
     /// Farbe aus der Palette der Marke (`StedeSand`, `LoogSand` …).
     private static func brand(_ name: String) -> Color {
         Color("\(AppBrand.current.palette)\(name)", bundle: .module)

@@ -60,6 +60,16 @@ public nonisolated struct TenantConfig: Codable, Sendable, Hashable, Identifiabl
         /// SF Symbol.
         public let symbol: String
         public let url: String
+        /// Farbrolle der Kachel: „sea“, „dune“, „sun“, „heather“, „mudflat“; ohne Angabe „harbor“ (rot).
+        public let tint: String?
+        /// „resident“ / „tourist“: Kachel nur für diese Ansicht; ohne Angabe für alle.
+        public let audience: String?
+
+        /// Sichtbar in der gewählten Ansicht (Tourist oder Einwohner)?
+        public var isVisible: Bool {
+            guard let audience else { return true }
+            return audience == (Audience.current ?? .resident).rawValue
+        }
     }
 
     /// Fährverbindung über api.langeoog.de: `routes` sind die Pfade „von/nach“ (beide Richtungen),

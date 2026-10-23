@@ -74,7 +74,7 @@ struct HomeView: View {
                         }
                     }
 
-                    if let external = Tenants.current.external, !external.isEmpty {
+                    if let external = Tenants.current.external?.filter(\.isVisible), !external.isEmpty {
                         // Angebote, die auf fremden Seiten gebucht werden.
                         StedeSectionHeader(title: "Externe Anbieter", symbol: "arrow.up.forward.app")
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: StedeTheme.cardSpacing), count: 4),
@@ -83,7 +83,7 @@ struct HomeView: View {
                                 Button {
                                     page = URL(string: link.url).map(BrowserPage.init(url:))
                                 } label: {
-                                    HomeCompactTile(title: link.title, symbol: link.symbol, tint: StedeTheme.harborRed)
+                                    HomeCompactTile(title: link.title, symbol: link.symbol, tint: StedeTheme.role(link.tint))
                                 }
                                 .buttonStyle(StedeCardButtonStyle())
                                 .accessibilityLabel("\(link.title) – öffnet \(URL(string: link.url)?.host ?? "die Website")")
@@ -117,10 +117,8 @@ struct HomeView: View {
             await loadTrains(day: IslandTime.startOfDay(Date()), force: false)
         }
         .task {
-            guard HomeTileID.sessions.isAvailable else { return }
-            async let sessions: Void = council.load(force: false)
-            async let papers: Void = councilPapers.loadLatest()
-            _ = await (sessions, papers)
+            guard HomeTileID.papers.isAvailable else { return }
+            await councilPapers.loadLatest()
         }
         .task(id: wasteSelection?.cacheKey ?? "") {
             guard Features.has(.waste) else { return }

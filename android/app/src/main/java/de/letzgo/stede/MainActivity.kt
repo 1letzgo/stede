@@ -129,7 +129,7 @@ private fun StedeTabs(tab: AppTab, setTab: (AppTab) -> Unit) {
             when (val top = stack.lastOrNull()) {
                 null -> when (tab) {
                     AppTab.Start -> StartScreen(open)
-                    AppTab.Calendar -> CalendarScreen()
+                    AppTab.Calendar -> CalendarScreen(open)
                     AppTab.Community -> CommunityScreen(open)
                     AppTab.Settings -> SettingsScreen()
                 }
