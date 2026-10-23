@@ -60,7 +60,7 @@ fun StartScreen(open: (Screen) -> Unit) {
     Scaffold(topBar = { StedeTopBar(Brand.current.displayName) }, containerColor = C.sand) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             item {
-                Tile(tint, Modifier.height(120.dp), onClick = { open(Screen.Weather) }, icon = weatherIcon(current?.icon, current?.condition)) {
+                Tile(tint, Modifier.height(CompactTileHeight), onClick = { open(Screen.Weather) }, icon = weatherIcon(current?.icon, current?.condition)) {
                     Row(Modifier.fillMaxSize()) {
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
                             Text("Moin!", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = tint)
@@ -121,9 +121,9 @@ fun StartScreen(open: (Screen) -> Unit) {
                     HomeSection.Home -> item(key = "home-tiles") {
                         val next = waste?.firstOrNull()
                         val street = Waste.street(Store.int("waste.street"))
-                        if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", height = 112.dp) { open(Screen.Waste) }
+                        if (selection == null) HomeTile("Abfuhr", Icons.Default.Delete, C.green, Modifier.fillMaxWidth(), "Straße wählen", if (street == null) "Abfuhrkalender für deine Straße" else "Abschnitt von ${street.name} wählen", compact = true) { open(Screen.Waste) }
                         else HomeTile("Abfuhr", next?.let { wasteIcon(it.kind) } ?: Icons.Default.Delete, next?.let { wasteColor(it.kind) } ?: C.green, Modifier.fillMaxWidth(),
-                            next?.let { n -> "${n.day.format(Town.dayShort)} · ${waste.orEmpty().filter { it.date == n.date }.joinToString(", ") { it.label }}" } ?: "–", street?.name, height = 112.dp) { open(Screen.Waste) }
+                            next?.let { n -> "${n.day.format(Town.dayShort)} · ${waste.orEmpty().filter { it.date == n.date }.joinToString(", ") { it.label }}" } ?: "–", street?.name, compact = true) { open(Screen.Waste) }
                     }
                     HomeSection.Politics -> item(key = "politics-tiles") {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
@@ -149,14 +149,14 @@ fun StartScreen(open: (Screen) -> Unit) {
                         val small = tiles.drop(2).mapNotNull { it.category }
                         if (large.isNotEmpty()) item(key = "city-large") {
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                                large.forEach { c -> CategoryTile(c, Modifier.weight(1f), 150.dp) { open(Screen.Category(c)) } }
+                                large.forEach { c -> CategoryTile(c, Modifier.weight(1f), TileHeight) { open(Screen.Category(c)) } }
                             }
                         }
                         // Kleine Kacheln in Viererreihen, damit auch fünf und mehr lesbar bleiben.
                         small.chunked(4).forEachIndexed { i, row ->
                             item(key = "city-small-$i") {
                                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
-                                    row.forEach { c -> CategoryTile(c, Modifier.weight(1f), 86.dp, small = true) { open(Screen.Category(c)) } }
+                                    row.forEach { c -> CategoryTile(c, Modifier.weight(1f), CompactTileHeight, small = true) { open(Screen.Category(c)) } }
                                     if (small.size > 4) repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
                                 }
                             }
@@ -171,7 +171,7 @@ fun StartScreen(open: (Screen) -> Unit) {
                     item(key = "external-$i") {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing)) {
                             row.forEach { link ->
-                                Tile(C.red, Modifier.weight(1f).height(86.dp), externalIcon(link.symbol), onClick = { openUrl(link.url) }) {
+                                Tile(C.red, Modifier.weight(1f).height(CompactTileHeight), externalIcon(link.symbol), onClick = { openUrl(link.url) }) {
                                     Text(link.title, color = C.red, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 2, lineHeight = 14.sp,
                                         style = androidx.compose.ui.text.TextStyle(hyphens = androidx.compose.ui.text.style.Hyphens.Auto, localeList = androidx.compose.ui.text.intl.LocaleList("de-DE")))
                                 }
@@ -195,6 +195,10 @@ private fun externalIcon(symbol: String): ImageVector = when {
     else -> Icons.Default.OpenInNew
 }
 
+/** Die beiden Kachelhöhen der Startseite — gleiche Werte wie `HomeTileMetrics` in iOS (pt = dp). */
+val TileHeight = 138.dp
+val CompactTileHeight = 104.dp
+
 /** Kachel mit blasser Füllung, Rand in der Bereichsfarbe und großem Symbol in der Ecke. */
 @Composable
 fun Tile(color: Color, modifier: Modifier = Modifier, icon: ImageVector? = null, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
@@ -205,12 +209,12 @@ fun Tile(color: Color, modifier: Modifier = Modifier, icon: ImageVector? = null,
 }
 
 @Composable
-private fun HomeTile(title: String, icon: ImageVector, color: Color, modifier: Modifier, headline: String, detail: String?, height: Dp = 130.dp, onClick: () -> Unit) {
-    Tile(color, modifier.height(height), icon, onClick) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+private fun HomeTile(title: String, icon: ImageVector, color: Color, modifier: Modifier, headline: String, detail: String?, compact: Boolean = false, onClick: () -> Unit) {
+    Tile(color, modifier.height(if (compact) CompactTileHeight else TileHeight), icon, onClick) {
+        Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)) {
             Text(title, color = color, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-            Text(headline, color = C.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            detail?.let { Text(it, color = C.secondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            Text(headline, color = C.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
+            detail?.let { Text(it, color = C.secondary, fontSize = 13.sp, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis) }
         }
     }
 }

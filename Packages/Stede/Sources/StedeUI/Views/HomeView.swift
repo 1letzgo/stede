@@ -40,7 +40,8 @@ struct HomeView: View {
     @AppStorage(HomeLayout.hiddenKey) private var homeHidden = HomeLayout.defaultHidden
     @AppStorage(HomeLayout.tilesKey) private var homeTiles = ""
 
-    @ScaledMetric(relativeTo: .caption) private var gastroRowHeight = 172.0
+    /// Große Stadt-Kacheln so hoch wie die übrigen großen Kacheln — Start kennt nur zwei Höhen.
+    @ScaledMetric(relativeTo: .headline) private var gastroRowHeight = HomeTileMetrics.height
 
 
     var body: some View {
@@ -541,8 +542,9 @@ private struct HomeHeader: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: tileHeight, alignment: .topLeading)
+        // Höhe außen gemessen, Innenabstand inklusive — wie die übrigen Kacheln.
         .padding(12)
+        .frame(height: tileHeight, alignment: .topLeading)
         // Das Wettersymbol blass und angeschnitten wie bei den Kacheln.
         .background(alignment: .bottomLeading) {
             Image(systemName: hour?.symbolName ?? daypart.symbol)
@@ -613,10 +615,12 @@ private struct Daypart {
 /// Kachel auf dem Start: getönte Fläche, Titel und Symbol oben, darunter
 /// die Kernaussage, eine Zusatzzeile und die Aktionszeile am Fuß.
 /// Gemeinsame Kachelhöhe — Gruß und Bereichskacheln bleiben gleich hoch.
+/// Die beiden Kachelhöhen der Startseite (Android `TileHeight`/`CompactTileHeight` gleich in dp).
 enum HomeTileMetrics {
+    /// Kacheln mit Inhalt (Bahn, Bus, Gezeiten, Fähre, Politik) und die großen Stadt-Kacheln.
     static let height = 138.0
-    /// Kleine Kacheln (Gastro, Stadt) und die Moin-Karte.
-    static let compactHeight = 92.0
+    /// Moin-Karte, Abfuhr und die kleinen Stadt-Kacheln. Beide Höhen sind Außenmaße.
+    static let compactHeight = 104.0
 }
 
 struct HomeTile: View {
@@ -659,8 +663,9 @@ struct HomeTile: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .frame(height: compact ? compactHeight : tileHeight)
+        // Höhe außen gemessen, Innenabstand inklusive.
         .padding(12)
+        .frame(height: compact ? compactHeight : tileHeight, alignment: .topLeading)
         // Großes, blasses Symbol in der Ecke; `stedeCard` schneidet den
         // Überstand an der Kartenkante ab.
         .background(alignment: .bottomTrailing) {
