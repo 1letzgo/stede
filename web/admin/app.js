@@ -432,10 +432,13 @@ async function renderOrganizers(view) {
   const t = state.tenant;
   const [rows, groups, aliases] = await Promise.all([
     run(sb.from("organizers").select("*, community_events(count)").eq("tenant_id", t.id).order("name")),
-    run(sb.from("communities").select("id, name").order("name")),
+    run(sb.from("v_community_overview").select("id, name, tenant_id, countywide, status")
+      .or(`tenant_id.eq.${t.id},and(countywide.is.true,region.eq.${t.region})`).order("name")),
     run(sb.from("organizer_aliases").select("*").eq("tenant_id", t.id).order("name")),
   ]);
   const groupName = Object.fromEntries(groups.map((g) => [g.id, g.name]));
+  // wählbar: freigegebene Gruppen der Gemeinde und kreisweite der Region, ohne die Sammelgruppe
+  const linkable = groups.filter((g) => g.status === "approved" && g.id !== t.config?.events_group);
   const aliasesOf = (id) => aliases.filter((a) => a.organizer_id === id);
   const selected = new Set();
   view.innerHTML = `
@@ -474,7 +477,7 @@ async function renderOrganizers(view) {
     $("#o-rows").querySelectorAll("[data-sel]").forEach((box) => {
       box.onchange = () => { box.checked ? selected.add(box.dataset.sel) : selected.delete(box.dataset.sel); updateButton(); };
     });
-    $("#o-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editOrganizer(rows.find((r) => r.id === tr.dataset.id), aliasesOf(tr.dataset.id))));
+    $("#o-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editOrganizer(rows.find((r) => r.id === tr.dataset.id), aliasesOf(tr.dataset.id), linkable)));
   };
   ["#o-q", "#o-filter"].forEach((s) => ($(s).oninput = draw));
   $("#o-ignore").onclick = async () => {
@@ -490,7 +493,7 @@ async function renderOrganizers(view) {
   draw();
 }
 
-function editOrganizer(o, aliases) {
+function editOrganizer(o, aliases, linkable) {
   const extra = aliases.length ? `
     <div class="full">
       <label>Aliase – Importe mit diesen Namen landen hier</label>
@@ -508,13 +511,22 @@ function editOrganizer(o, aliases) {
         } }];
   const form = openEditor({
     title: o.name, buttons,
-    hint: "Der Name ist nur die Anzeige; die Zuordnung zum Import bleibt erhalten und neue Termine übernehmen ihn. Termine an eine Gruppe übertragen geht in der App („An Gruppe übertragen“).",
-    fields: [{ key: "name", label: "Name", full: true }, { key: "website", label: "Website", full: true }],
+    hint: "Der Name ist nur die Anzeige; die Zuordnung zum Import bleibt erhalten und neue Termine übernehmen ihn. Mit einer Gruppe verknüpft, erscheinen die Termine als Termine dieser Gruppe (Mitglieder werden nicht benachrichtigt).",
+    fields: [
+      { key: "name", label: "Name", full: true },
+      { key: "website", label: "Website", full: true },
+      { key: "community_id", label: "Gruppe – kommende und neue Termine landen dort", type: "select", full: true,
+        options: [["", "— Sammelgruppe (nicht verknüpft) —"], ...linkable.map((g) => [g.id, g.name + (g.countywide ? " (kreisweit)" : "")])] },
+    ],
     values: o, extra,
     onSave: async (v) => {
       if (!v.name) { toast("Name fehlt", true); throw new Error("Name fehlt"); }
-      await run(sb.from("organizers").update(v).eq("id", o.id));
-      toast("Gespeichert");
+      const { community_id: group, ...patch } = v;
+      await run(sb.from("organizers").update(patch).eq("id", o.id));
+      if ((group ?? null) !== (o.community_id ?? null)) {
+        const moved = await run(sb.rpc("link_organizer", { p_organizer: o.id, p_target: group }));
+        toast(group ? `Mit Gruppe verknüpft – ${moved} Termine verschoben` : `Verknüpfung gelöst – ${moved} Termine zurück in der Sammelgruppe`);
+      } else toast("Gespeichert");
       render();
     },
   });
