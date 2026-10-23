@@ -36,10 +36,6 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     /// Bisher nur stede (Westerstede plus die übrigen Ammerland-Gemeinden, die per Cron weiter importiert werden).
     public var offersRegionEvents: Bool { id == "stede" }
 
-    /// Push gibt es bisher nur für stede: `push-send` schickt an das APNs-Topic `de.letzgo.stede`,
-    /// die Insel-Apps haben weder `aps-environment` noch ein eigenes Topic.
-    public var hasPush: Bool { id == "stede" }
-
     /// „loog+“ — Name des Bausteins `plus`, immer klein wie der App-Name.
     public var plusName: String { "\(displayName)+" }
 

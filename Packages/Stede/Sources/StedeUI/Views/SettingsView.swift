@@ -51,7 +51,7 @@ struct SettingsView: View {
                         .foregroundStyle(.primary)
 
                         #if os(iOS)
-                        if auth.isSignedIn, AppBrand.current.hasPush {
+                        if auth.isSignedIn {
                             NavigationLink {
                                 NotificationSettingsView()
                             } label: {

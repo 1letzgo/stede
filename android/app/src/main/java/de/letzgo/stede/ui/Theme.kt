@@ -36,11 +36,11 @@ data class Palette(
             deep = Tone(0xFF1B4182, 0xFF233D66), bar = Tone(0xFF1B4182, 0xFF233D66), ink = Tone(0xFF1B4182, 0xFFCCE0F5),
             heather = Tone(0xFF8B579C, 0xFFCAA3DB), mudflat = Tone(0xFF8B6B4B, 0xFFD5B793),
         )
-        /** spoog: Palette `Spoog*` (Skill new-region-app). */
+        /** spoog: Palette `Spoog*` aus dem Icon (10/2026): Waldgrün #244937, Salbei. */
         val spoog = Palette(
-            sand = Tone(0xFFEFEFE9, 0xFF0B2D24), surface = Tone(0xFFFFFFFF, 0xFF133C31), harbor = Tone(0xFFC4453B, 0xFFE88074),
-            dune = Tone(0xFF3E7C4F, 0xFF7FC08F), sun = Tone(0xFFD98E2B, 0xFFF2B95C), sea = Tone(0xFF00A855, 0xFF28FF95),
-            deep = Tone(0xFF00773D, 0xFF00592E), bar = Tone(0xFF00773D, 0xFF00592E), ink = Tone(0xFF00773D, 0xFF91FFC9),
+            sand = Tone(0xFFEEF1EF, 0xFF0E1813), surface = Tone(0xFFFFFFFF, 0xFF17241E), harbor = Tone(0xFFC4453B, 0xFFE88074),
+            dune = Tone(0xFF3E7C4F, 0xFF7FC08F), sun = Tone(0xFFD98E2B, 0xFFF2B95C), sea = Tone(0xFF4E7D6A, 0xFF9CB8AB),
+            deep = Tone(0xFF244937, 0xFF1A3528), bar = Tone(0xFF244937, 0xFF1A3528), ink = Tone(0xFF244937, 0xFFA8C4B7),
             heather = Tone(0xFF8B579C, 0xFFCAA3DB), mudflat = Tone(0xFF8B6B4B, 0xFFD5B793),
         )
         /** wooge: Palette `Wooge*` (Skill new-region-app). */

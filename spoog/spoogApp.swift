@@ -6,7 +6,8 @@ import SwiftUI
 @main
 struct spoogApp: App {
     #if os(iOS)
-    // Ohne Gruppen kein Push.
+    /// Push: Token von APNs, Banner im Vordergrund, Tipp auf eine Nachricht — wie in stede.
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
     #endif
 
     init() {

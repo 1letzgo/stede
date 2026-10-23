@@ -17,10 +17,12 @@ public nonisolated struct PushClient: Sendable {
             let platform: String
             let environment: String
             let tenant_id: UUID?
+            /// Bundle-ID = APNs-Topic, damit `push-send` jede App (stede, Loog, spoog, wooge) erreicht.
+            let app: String
             let updated_at: Date
         }
         let row = Row(token: token, user_id: userID, platform: "ios", environment: sandbox ? "sandbox" : "production",
-                      tenant_id: tenantID, updated_at: Date())
+                      tenant_id: tenantID, app: Bundle.main.bundleIdentifier ?? "de.letzgo.stede", updated_at: Date())
         try await client.from("push_tokens").upsert(row, onConflict: "token").execute()
     }
 

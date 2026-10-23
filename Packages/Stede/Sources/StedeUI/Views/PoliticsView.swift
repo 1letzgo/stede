@@ -313,7 +313,12 @@ struct CouncilPapersView: View {
                 }
             }
         }
+        // Suchfeld dauerhaft wie bei Gastro — die Liste steckt in LoadStateView, sonst klappte es weg.
+        #if os(iOS)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Betreff durchsuchen")
+        #else
         .searchable(text: $searchText, prompt: "Betreff durchsuchen")
+        #endif
         .onSubmit(of: .search) { Task { await model.search(searchText) } }
         .onChange(of: searchText) { _, new in
             // Leeres Suchfeld zeigt wieder alle Vorlagen.
