@@ -430,37 +430,100 @@ function editEvent(ev) {
 
 async function renderOrganizers(view) {
   const t = state.tenant;
-  const [rows, groups] = await Promise.all([
-    run(sb.from("organizers").select("*").eq("tenant_id", t.id).order("name")),
+  const [rows, groups, aliases] = await Promise.all([
+    run(sb.from("organizers").select("*, community_events(count)").eq("tenant_id", t.id).order("name")),
     run(sb.from("communities").select("id, name").order("name")),
+    run(sb.from("organizer_aliases").select("*").eq("tenant_id", t.id).order("name")),
   ]);
   const groupName = Object.fromEntries(groups.map((g) => [g.id, g.name]));
+  const aliasesOf = (id) => aliases.filter((a) => a.organizer_id === id);
+  const selected = new Set();
   view.innerHTML = `
-    <div class="toolbar"><input id="o-q" type="search" placeholder="Veranstalter suchen …"><span class="muted">${rows.length} Veranstalter</span></div>
-    <table><thead><tr><th>Name</th><th class="hide-sm">Website</th><th>Gruppe</th></tr></thead><tbody id="o-rows"></tbody></table>`;
+    <div class="toolbar">
+      <input id="o-q" type="search" placeholder="Veranstalter suchen …">
+      <span class="muted">${rows.length} Veranstalter</span>
+      <span class="spacer"></span>
+      <button id="o-merge" disabled>Zusammenführen</button>
+    </div>
+    <p class="muted">Doppelte Veranstalter anhaken und zusammenführen. Die übrigen Namen bleiben als Alias: neue Termine mit diesem Namen landen beim behaltenen Veranstalter.</p>
+    <table><thead><tr><th></th><th>Name</th><th>Termine</th><th class="hide-sm">Website</th><th>Gruppe</th></tr></thead><tbody id="o-rows"></tbody></table>`;
+  const updateButton = () => {
+    const b = $("#o-merge");
+    b.disabled = selected.size < 2;
+    b.textContent = selected.size >= 2 ? `${selected.size} zusammenführen` : "Zusammenführen";
+  };
   const draw = () => {
     const q = $("#o-q").value.toLowerCase();
-    $("#o-rows").innerHTML = rows.filter((o) => !q || o.name.toLowerCase().includes(q)).map((o) => `
-      <tr data-id="${o.id}"><td>${esc(o.name)}</td><td class="hide-sm">${esc(o.website)}</td>
-      <td>${o.community_id ? `<span class="pill green">${esc(groupName[o.community_id] ?? "Gruppe")}</span>` : '<span class="muted">Sammelgruppe</span>'}</td></tr>`).join("");
-    $("#o-rows").querySelectorAll("tr").forEach((tr) => (tr.onclick = () => {
-      const o = rows.find((r) => r.id === tr.dataset.id);
-      openEditor({
-        title: o.name,
-        hint: "Der Name ist nur die Anzeige; die Zuordnung zum Import bleibt erhalten. Termine an eine Gruppe übertragen geht in der App („An Gruppe übertragen“).",
-        fields: [{ key: "name", label: "Name", full: true }, { key: "website", label: "Website", full: true }],
-        values: o,
-        onSave: async (v) => {
-          if (!v.name) { toast("Name fehlt", true); throw new Error("Name fehlt"); }
-          await run(sb.from("organizers").update(v).eq("id", o.id));
-          toast("Gespeichert");
-          render();
-        },
-      });
-    }));
+    const list = rows.filter((o) => !q || o.name.toLowerCase().includes(q) || aliasesOf(o.id).some((a) => a.key.includes(q)));
+    $("#o-rows").innerHTML = list.map((o) => `
+      <tr data-id="${o.id}">
+        <td><input type="checkbox" data-sel="${o.id}" ${selected.has(o.id) ? "checked" : ""}></td>
+        <td>${esc(o.name)}${aliasesOf(o.id).map((a) => ` <span class="pill">${esc(a.name)}</span>`).join("")}</td>
+        <td>${o.community_events?.[0]?.count ?? 0}</td>
+        <td class="hide-sm">${esc(o.website)}</td>
+        <td>${o.community_id ? `<span class="pill green">${esc(groupName[o.community_id] ?? "Gruppe")}</span>` : '<span class="muted">Sammelgruppe</span>'}</td>
+      </tr>`).join("") || `<tr><td colspan="5" class="muted">Keine Veranstalter</td></tr>`;
+    $("#o-rows").querySelectorAll("[data-sel]").forEach((box) => {
+      box.onclick = (e) => e.stopPropagation();
+      box.onchange = () => { box.checked ? selected.add(box.dataset.sel) : selected.delete(box.dataset.sel); updateButton(); };
+    });
+    $("#o-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editOrganizer(rows.find((r) => r.id === tr.dataset.id), aliasesOf(tr.dataset.id))));
   };
   $("#o-q").oninput = draw;
+  $("#o-merge").onclick = () => mergeOrganizers(rows.filter((o) => selected.has(o.id)), aliasesOf);
   draw();
+}
+
+function editOrganizer(o, aliases) {
+  const extra = aliases.length ? `
+    <div class="full">
+      <label>Aliase – Importe mit diesen Namen landen hier</label>
+      <div class="list">${aliases.map((a) => `<div class="row"><span class="grow">${esc(a.name)}</span><button type="button" class="ghost small" data-unalias="${esc(a.key)}">Lösen</button></div>`).join("")}</div>
+    </div>` : "";
+  const form = openEditor({
+    title: o.name,
+    hint: "Der Name ist nur die Anzeige; die Zuordnung zum Import bleibt erhalten und neue Termine übernehmen ihn. Termine an eine Gruppe übertragen geht in der App („An Gruppe übertragen“).",
+    fields: [{ key: "name", label: "Name", full: true }, { key: "website", label: "Website", full: true }],
+    values: o, extra,
+    onSave: async (v) => {
+      if (!v.name) { toast("Name fehlt", true); throw new Error("Name fehlt"); }
+      await run(sb.from("organizers").update(v).eq("id", o.id));
+      toast("Gespeichert");
+      render();
+    },
+  });
+  form.querySelectorAll("[data-unalias]").forEach((b) => (b.onclick = async () => {
+    if (!confirm("Alias lösen? Der nächste Import legt den Namen wieder als eigenen Veranstalter an und ordnet seine neuen Termine dort zu.")) return;
+    await run(sb.rpc("remove_organizer_alias", { p_tenant: o.tenant_id, p_key: b.dataset.unalias }));
+    $("#editor").close();
+    toast("Alias gelöst");
+    render();
+  }));
+}
+
+function mergeOrganizers(list, aliasesOf) {
+  const count = (o) => o.community_events?.[0]?.count ?? 0;
+  const sorted = [...list].sort((a, b) => count(b) - count(a));
+  const extra = `
+    <div class="full">
+      <label>Welcher Veranstalter bleibt?</label>
+      <div class="list">${sorted.map((o, i) => `
+        <label class="check"><input type="radio" name="target" value="${o.id}" ${i === 0 ? "checked" : ""}>
+          ${esc(o.name)} <span class="muted">· ${count(o)} Termine${aliasesOf(o.id).length ? ` · ${aliasesOf(o.id).length} Aliase` : ""}</span></label>`).join("")}</div>
+    </div>`;
+  openEditor({
+    title: "Veranstalter zusammenführen",
+    hint: "Termine der anderen wandern zum behaltenen Veranstalter, ihre Namen werden Aliase. Website und Gruppen-Verknüpfung werden übernommen, wenn der behaltene keine hat.",
+    fields: [{ key: "name", label: "Neuer Name (leer = Name des behaltenen)", full: true }],
+    values: {}, extra,
+    onSave: async (v, form) => {
+      const target = form.querySelector("input[name=target]:checked").value;
+      if (v.name) await run(sb.from("organizers").update({ name: v.name }).eq("id", target));
+      const moved = await run(sb.rpc("merge_organizers", { p_target: target, p_sources: list.map((o) => o.id).filter((id) => id !== target) }));
+      toast(`Zusammengeführt – ${moved} Termine umgehängt`);
+      render();
+    },
+  });
 }
 
 // ---------- Gruppen-Moderation ----------
