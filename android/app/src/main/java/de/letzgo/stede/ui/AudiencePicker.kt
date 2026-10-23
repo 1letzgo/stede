@@ -39,11 +39,12 @@ fun AudienceOptions(onboarding: Boolean = false) {
         Audience.entries.forEach { a ->
             val selected = !onboarding && Audience.current == a
             StedeCard(highlighted = selected, onClick = { Audience.select(a) }) {
-                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = if (onboarding) Alignment.Top else Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     IconChip(if (a == Audience.Tourist) Icons.Default.Luggage else Icons.Default.Home, if (a == Audience.Tourist) C.teal else C.green)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(a.title, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                        Text(detail(a), fontSize = 14.sp, color = C.secondary)
+                        // Erklärung nur im Wizard; in den Einstellungen genügt der Titel.
+                        if (onboarding) Text(detail(a), fontSize = 14.sp, color = C.secondary)
                     }
                     if (selected) Icon(Icons.Default.Check, null, tint = C.ink)
                 }

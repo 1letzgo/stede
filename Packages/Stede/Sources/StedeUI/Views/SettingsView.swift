@@ -15,6 +15,7 @@ struct SettingsView: View {
     @AppStorage("train.station") private var stationID = ""
     @State private var showsTenants = false
     @AppStorage(RegionEvents.key) private var regionEvents = false
+    @AppStorage(Audience.key) private var audienceRaw = ""
     @State private var showsStreets = false
     @State private var showsStops = false
 
@@ -32,47 +33,33 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: StedeTheme.cardSpacing) {
-                // Baustein `plus`: große Kachel ganz oben, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
+                // Reihenfolge: Plus · Ansicht · Konto · Zuhause · Unterwegs · Kalender · Startseite · App.
                 if Features.has(.plus) {
                     PlusSection()
                 }
 
                 StedeSectionHeader(title: "Ansicht", symbol: "person.2.fill")
-                AudiencePickerView()
-
-                if Features.has(.groups) {
-                    StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
-                    NavigationLink {
-                        AccountView(embedded: true)
-                    } label: {
-                        HStack(spacing: 12) {
-                            accountRow
-                            Spacer(minLength: 0)
-                            SettingsChevron()
-                        }
-                        .stedeRowCard()
-                    }
-                    .buttonStyle(StedeCardButtonStyle())
-                    .foregroundStyle(.primary)
-
-                    #if os(iOS)
-                    if auth.isSignedIn, AppBrand.current.hasPush {
-                        StedeSectionHeader(title: "Benachrichtigungen", symbol: "bell.fill")
-                        NavigationLink {
-                            NotificationSettingsView()
+                SettingsCard {
+                    ForEach(Audience.allCases, id: \.self) { audience in
+                        Button {
+                            withAnimation(.snappy) { audienceRaw = audience.rawValue }
                         } label: {
                             HStack(spacing: 12) {
-                                SettingsIcon(symbol: "bell.fill", tint: StedeTheme.sunAmber)
-                                Text("Benachrichtigungen")
-                                Spacer(minLength: 0)
-                                SettingsChevron()
+                                SettingsIcon(symbol: audience.symbol, tint: audience == .tourist ? StedeTheme.seaTeal : StedeTheme.duneGreen)
+                                Text(audience.title)
+                                Spacer(minLength: 8)
+                                if audienceRaw == audience.rawValue {
+                                    Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(StedeTheme.ink)
+                                }
                             }
+                            .frame(minHeight: 32)
+                            .contentShape(Rectangle())
                             .stedeRowCard()
                         }
                         .buttonStyle(StedeCardButtonStyle())
                         .foregroundStyle(.primary)
+                        .accessibilityAddTraits(audienceRaw == audience.rawValue ? .isSelected : [])
                     }
-                    #endif
                 }
 
                 if AppBrand.current.choosesTenant {
@@ -84,30 +71,41 @@ struct SettingsView: View {
                     }
                 }
 
-                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
-                NavigationLink {
-                    HomeLayoutSettings()
-                } label: {
-                    HStack(spacing: 12) {
-                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
-                        Text("Startseite anpassen")
-                        Spacer(minLength: 0)
-                        SettingsChevron()
-                    }
-                    .stedeRowCard()
-                }
-                .buttonStyle(StedeCardButtonStyle())
-                .foregroundStyle(.primary)
-
-                if AppBrand.current.offersRegionEvents, Features.has(.calendar) {
-                    StedeSectionHeader(title: "Kalender", symbol: "calendar")
+                if Features.has(.groups) {
+                    StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                     SettingsCard {
-                        toggleRow("Termine der Region", symbol: "map.fill", tint: StedeTheme.seaTeal, isOn: $regionEvents)
+                        NavigationLink {
+                            AccountView(embedded: true)
+                        } label: {
+                            HStack(spacing: 12) {
+                                accountRow
+                                Spacer(minLength: 0)
+                                SettingsChevron()
+                            }
+                            .stedeRowCard()
+                        }
+                        .buttonStyle(StedeCardButtonStyle())
+                        .foregroundStyle(.primary)
+
+                        #if os(iOS)
+                        if auth.isSignedIn, AppBrand.current.hasPush {
+                            NavigationLink {
+                                NotificationSettingsView()
+                            } label: {
+                                HStack(spacing: 12) {
+                                    SettingsIcon(symbol: "bell.fill", tint: StedeTheme.sunAmber)
+                                    Text("Benachrichtigungen")
+                                    Spacer(minLength: 0)
+                                    SettingsChevron()
+                                }
+                                .frame(minHeight: 32)
+                                .stedeRowCard()
+                            }
+                            .buttonStyle(StedeCardButtonStyle())
+                            .foregroundStyle(.primary)
+                        }
+                        #endif
                     }
-                    Text("Zeigt im Kalender zusätzlich die öffentlichen Termine aller Gemeinden im \(AppBrand.current.regionName).")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
                 }
 
                 if Features.has(.waste) {
@@ -161,6 +159,28 @@ struct SettingsView: View {
                     }
                 }
 
+                if AppBrand.current.offersRegionEvents, Features.has(.calendar) {
+                    StedeSectionHeader(title: "Kalender", symbol: "calendar")
+                    SettingsCard {
+                        toggleRow("Termine der Region", symbol: "map.fill", tint: StedeTheme.seaTeal, isOn: $regionEvents)
+                    }
+                }
+
+                StedeSectionHeader(title: "Startseite", symbol: "square.grid.2x2.fill")
+                NavigationLink {
+                    HomeLayoutSettings()
+                } label: {
+                    HStack(spacing: 12) {
+                        SettingsIcon(symbol: "square.grid.2x2.fill", tint: StedeTheme.ink)
+                        Text("Startseite anpassen")
+                        Spacer(minLength: 0)
+                        SettingsChevron()
+                    }
+                    .stedeRowCard()
+                }
+                .buttonStyle(StedeCardButtonStyle())
+                .foregroundStyle(.primary)
+
                 StedeSectionHeader(title: "App", symbol: "info.circle.fill")
                 HStack {
                     Text("Version")
@@ -205,16 +225,10 @@ struct SettingsView: View {
         HStack(spacing: 12) {
             if auth.isSignedIn {
                 PersonAvatar(url: auth.profile?.avatarURL, name: auth.profile?.displayName ?? "?", side: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(auth.profile?.displayName ?? "Konto").font(.headline)
-                    Text("Profil, Kalender-Abo, Abmelden").font(.subheadline).foregroundStyle(.secondary)
-                }
+                Text(auth.profile?.displayName ?? "Konto").font(.headline)
             } else {
                 StedeIconChip(symbol: "person.crop.circle", color: StedeTheme.ink, side: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Anmelden").font(.headline)
-                    Text("Für Gruppen und ihre Termine").font(.subheadline).foregroundStyle(.secondary)
-                }
+                Text("Anmelden").font(.headline)
             }
         }
         .padding(.vertical, 2)
@@ -285,7 +299,6 @@ private struct HomeLayoutSettings: View {
                     }
                     .frame(minHeight: 32)
                 }
-                SettingsFootnote("Zum Verschieben am Griff ≡ ziehen.")
 
                 ForEach(order) { section in
                     let tiles = HomeLayout.tiles(in: section, order: tilesRaw)
@@ -303,7 +316,6 @@ private struct HomeLayoutSettings: View {
                         }
                         .frame(minHeight: 32)
                     }
-                    if section == .city { SettingsFootnote("Die ersten beiden sichtbaren Kacheln erscheinen groß.") }
                 }
 
                 Button {
@@ -466,16 +478,6 @@ private struct SettingsMenu<Value: Hashable>: View {
 private struct SettingsChevron: View {
     var body: some View {
         Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-    }
-}
-
-/// Kleiner Hinweis unter einer Karte.
-private struct SettingsFootnote: View {
-    let text: String
-    init(_ text: String) { self.text = text }
-
-    var body: some View {
-        Text(text).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.top, -4)
     }
 }
 

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import de.letzgo.stede.data.*
 import kotlinx.coroutines.launch
 
-/** Tab „Einstellungen“ wie SettingsView: Konto, Straße und Haltestelle, Aufbau der Startseite. */
+/** Tab „Einstellungen“ wie SettingsView: Plus, Ansicht, Gemeinde, Konto, Zuhause, Unterwegs, Kalender, Startseite, App. */
 @Composable
 fun SettingsScreen() {
     var streetId by remember { mutableIntStateOf(Store.int("waste.street")) }
@@ -64,76 +64,23 @@ fun SettingsScreen() {
             if (Features.has(Feature.Plus)) item { PlusCard() }
             item { SectionHeader("Ansicht", Icons.Default.People) }
             item { AudienceOptions() }
-            if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
-            if (Features.has(Feature.Groups)) item {
-                RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
-                    val profile = Session.profile
-                    if (Session.signedIn) PersonAvatar(profile?.avatar, profile?.displayName ?: "?", size = 44.dp)
-                    else IconChip(Icons.Default.AccountCircle, C.ink, 44.dp)
-                    Column(Modifier.weight(1f)) {
-                        Text(if (Session.signedIn) profile?.displayName ?: "Konto" else "Anmelden", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
-                        Text(if (Session.signedIn) "Profil, Kalender-Abo, Abmelden" else "Für Gruppen und ihre Termine", color = C.secondary, fontSize = 14.sp)
-                    }
-                    Chevron()
-                }
-            }
 
             if (Brand.current.choosesTenant) item { SectionHeader("Gemeinde", Icons.Default.Place) }
             if (Brand.current.choosesTenant) item {
                 StedeCard { ValueRow(Icons.Default.Place, C.ink, "Gemeinde", tenant.municipality) { showTenants = true } }
             }
 
-            item { SectionHeader("Startseite", Icons.Default.GridView) }
-            item {
-                StedeCard {
-                    Text("Reihenfolge", fontSize = 13.sp, color = C.secondary)
-                    order.forEachIndexed { index, section ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            SmallIcon(section.icon, C.ink)
-                            Text(section.title, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
-                            IconButton(onClick = { order = order.swapped(index, index - 1); HomeLayout.setOrder(order) }, enabled = index > 0) { Icon(Icons.Default.KeyboardArrowUp, "Nach oben") }
-                            IconButton(onClick = { order = order.swapped(index, index + 1); HomeLayout.setOrder(order) }, enabled = index < order.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Nach unten") }
-                        }
-                    }
+            if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
+            if (Features.has(Feature.Groups)) item {
+                RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {
+                    val profile = Session.profile
+                    if (Session.signedIn) PersonAvatar(profile?.avatar, profile?.displayName ?: "?", size = 44.dp)
+                    else IconChip(Icons.Default.AccountCircle, C.ink, 44.dp)
+                    Text(if (Session.signedIn) profile?.displayName ?: "Konto" else "Anmelden", Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = C.text)
+                    Chevron()
                 }
-            }
-            order.forEach { section ->
-                item(key = "tiles-${section.key}") {
-                    StedeCard {
-                        Text(section.title, fontSize = 13.sp, color = C.secondary)
-                        val tiles = tileOrder.filter { it.section == section && it.isAvailable }
-                        tiles.forEachIndexed { index, tile ->
-                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                SmallIcon(tile.icon, tile.color)
-                                Text(tile.title, Modifier.weight(1f).padding(start = 8.dp), color = C.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                if (tiles.size > 1) {
-                                    IconButton(onClick = { HomeLayout.moveTile(tile, -1); tileOrder = HomeLayout.tileOrder() }, enabled = index > 0) { Icon(Icons.Default.KeyboardArrowUp, "Nach oben") }
-                                    IconButton(onClick = { HomeLayout.moveTile(tile, 1); tileOrder = HomeLayout.tileOrder() }, enabled = index < tiles.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Nach unten") }
-                                }
-                                Switch(tile !in hidden, { visible ->
-                                    hidden = if (visible) hidden - tile else hidden + tile
-                                    HomeLayout.setHidden(hidden)
-                                }, colors = SwitchDefaults.colors(checkedTrackColor = C.ink))
-                            }
-                        }
-                        if (section == HomeSection.City) Text("Die ersten beiden sichtbaren Kacheln erscheinen groß.", fontSize = 12.sp, color = C.secondary, modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
-            }
-            item {
-                TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
-                    enabled = Store.string("home.order", "").isNotEmpty() || hidden != setOf(HomeTileId.Volunteer) || Store.string("home.tiles", "").isNotEmpty()) { Text("Standard wiederherstellen") }
             }
 
-            if (Brand.current.offersRegionEvents && Features.has(Feature.Calendar)) {
-                item { SectionHeader("Kalender", Icons.Default.CalendarMonth) }
-                item {
-                    StedeCard {
-                        WasteOptionRow(Icons.Default.Map, C.teal, "Termine der Region", RegionEvents.on) { RegionEvents.set(it) }
-                    }
-                }
-                item { Text("Zeigt im Kalender zusätzlich die öffentlichen Termine aller Gemeinden im ${Brand.current.regionName}.", fontSize = 13.sp, color = C.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }
-            }
             if (Features.has(Feature.Waste)) item { SectionHeader("Zuhause", Icons.Default.Home) }
             if (Features.has(Feature.Waste)) item {
                 StedeCard {
@@ -181,6 +128,55 @@ fun SettingsScreen() {
                         Switcher(TrainDirection.entries, direction, { it.short(station) }) { direction = it; Store.setString("train.direction", it.name.lowercase()) }
                     }
                 }
+            }
+
+            if (Brand.current.offersRegionEvents && Features.has(Feature.Calendar)) {
+                item { SectionHeader("Kalender", Icons.Default.CalendarMonth) }
+                item {
+                    StedeCard {
+                        WasteOptionRow(Icons.Default.Map, C.teal, "Termine der Region", RegionEvents.on) { RegionEvents.set(it) }
+                    }
+                }
+            }
+            item { SectionHeader("Startseite", Icons.Default.GridView) }
+            item {
+                StedeCard {
+                    Text("Reihenfolge", fontSize = 13.sp, color = C.secondary)
+                    order.forEachIndexed { index, section ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SmallIcon(section.icon, C.ink)
+                            Text(section.title, Modifier.weight(1f), color = C.text, fontSize = 16.sp)
+                            IconButton(onClick = { order = order.swapped(index, index - 1); HomeLayout.setOrder(order) }, enabled = index > 0) { Icon(Icons.Default.KeyboardArrowUp, "Nach oben") }
+                            IconButton(onClick = { order = order.swapped(index, index + 1); HomeLayout.setOrder(order) }, enabled = index < order.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Nach unten") }
+                        }
+                    }
+                }
+            }
+            order.forEach { section ->
+                item(key = "tiles-${section.key}") {
+                    StedeCard {
+                        Text(section.title, fontSize = 13.sp, color = C.secondary)
+                        val tiles = tileOrder.filter { it.section == section && it.isAvailable }
+                        tiles.forEachIndexed { index, tile ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                SmallIcon(tile.icon, tile.color)
+                                Text(tile.title, Modifier.weight(1f).padding(start = 8.dp), color = C.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (tiles.size > 1) {
+                                    IconButton(onClick = { HomeLayout.moveTile(tile, -1); tileOrder = HomeLayout.tileOrder() }, enabled = index > 0) { Icon(Icons.Default.KeyboardArrowUp, "Nach oben") }
+                                    IconButton(onClick = { HomeLayout.moveTile(tile, 1); tileOrder = HomeLayout.tileOrder() }, enabled = index < tiles.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Nach unten") }
+                                }
+                                Switch(tile !in hidden, { visible ->
+                                    hidden = if (visible) hidden - tile else hidden + tile
+                                    HomeLayout.setHidden(hidden)
+                                }, colors = SwitchDefaults.colors(checkedTrackColor = C.ink))
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                TextButton(onClick = { HomeLayout.reset(); order = HomeLayout.order(); hidden = HomeLayout.hidden(); tileOrder = HomeLayout.tileOrder() },
+                    enabled = Store.string("home.order", "").isNotEmpty() || hidden != setOf(HomeTileId.Volunteer) || Store.string("home.tiles", "").isNotEmpty()) { Text("Standard wiederherstellen") }
             }
 
             item {
