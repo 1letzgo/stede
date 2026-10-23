@@ -53,6 +53,8 @@ public struct ContentView: View {
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     /// Gewählte Gemeinde; leer, solange beim ersten Start noch keine gewählt ist.
     @AppStorage(Tenants.slugKey) private var tenantSlug = ""
+    /// Tourist oder Einwohner; leer, solange der Wizard noch nicht beantwortet ist.
+    @AppStorage(Audience.key) private var audienceRaw = ""
     /// Favoriten der Rubrik „Insel" — Kacheln auf Start und Kategorie-Ansichten
     /// müssen denselben Stand sehen. Übernimmt die früheren getrennten Listen.
     @State private var favorites = PlaceFavorites(
@@ -64,9 +66,11 @@ public struct ContentView: View {
         Group {
             if tenantSlug.isEmpty && AppBrand.current.choosesTenant {
                 TenantPickerView(onboarding: true)
+            } else if Audience(rawValue: audienceRaw) == nil {
+                AudiencePickerView(onboarding: true)
             } else {
-                // Neue Gemeinde → alle Screens und ViewModels frisch.
-                tabs.id(tenantSlug)
+                // Neue Gemeinde oder andere Ansicht → alle Screens und ViewModels frisch.
+                tabs.id("\(tenantSlug)-\(audienceRaw)")
             }
         }
         .environment(dateStore)

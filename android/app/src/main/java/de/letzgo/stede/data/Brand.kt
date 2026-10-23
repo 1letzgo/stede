@@ -1,6 +1,8 @@
 package de.letzgo.stede.data
 
 import de.letzgo.stede.BuildConfig
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -90,20 +92,20 @@ data class Brand(
             "Stadt", true, null)
 
         val loog = Brand("loog", "loog", "langeoog", "Langeoog", "loog", false,
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), islandDirectories),
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), islandDirectories),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), islandDirectories),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), islandDirectories),
             "Insel", true, "https://loog.shelf.am/datenschutz.html")
 
         /** Spiekeroog (Skill new-region-app). */
         val spoog = Brand("spoog", "spoog", "spiekeroog", "Spiekeroog", "spiekeroog", false,
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
             "Insel", false, "https://loog.shelf.am/datenschutz.html")
 
         /** Wangerooge (Skill new-region-app). */
         val wooge = Brand("wooge", "wooge", "wangerooge", "Wangerooge", "wangerooge", false,
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
-            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
+            FeatureSet(setOf(Feature.Weather, Feature.Calendar, Feature.Ferry, Feature.Tides, Feature.Air, Feature.Plus, Feature.Groups), setOf("gastro", "health", "leisure", "playgrounds", "sights")),
             "Insel", false, "https://loog.shelf.am/datenschutz.html")
 
         val all = listOf(stede, loog, spoog, wooge)
@@ -113,9 +115,30 @@ data class Brand(
     }
 }
 
-/** Die Bausteine der laufenden App: Gemeinde ∩ Marke. */
+/**
+ * Wer die App nutzt — wie `Audience` in iOS: Touristen sehen alles Öffentliche, aber keine Abfuhr,
+ * keine Politik und keine Gruppen; Einwohner alles, was die Gemeinde hat. Gewählt im Onboarding,
+ * änderbar unter Einstellungen (Pref `audience`, gleicher Schlüssel wie iOS).
+ */
+enum class Audience(val key: String, val title: String, val hidden: Set<Feature>) {
+    Tourist("tourist", "Zu Besuch", setOf(Feature.Waste, Feature.Politics, Feature.Groups)),
+    Resident("resident", "Ich wohne hier", emptySet());
+
+    companion object {
+        private const val PREF = "audience"
+        /** null, solange noch nicht gewählt — dann erscheint der Wizard. Beobachtbar für Compose. */
+        var current by androidx.compose.runtime.mutableStateOf(Store.string(PREF, "").let { k -> entries.firstOrNull { it.key == k } }); private set
+        fun select(audience: Audience) { Store.setString(PREF, audience.key); current = audience }
+    }
+}
+
+/** Die Bausteine der laufenden App: Gemeinde ∩ Marke, ohne was die gewählte Ansicht ausblendet. */
 object Features {
-    val current: FeatureSet get() = (Tenants.config.features ?: Brand.current.defaultFeatures).intersect(Brand.current.allowedFeatures)
+    val current: FeatureSet get() {
+        val set = (Tenants.config.features ?: Brand.current.defaultFeatures).intersect(Brand.current.allowedFeatures)
+        // Ohne Wahl gilt Einwohner — der Wizard fragt ohnehin, bevor jemand etwas sieht.
+        return FeatureSet(set.enabled - (Audience.current ?: Audience.Resident).hidden, set.places)
+    }
     fun has(feature: Feature) = feature in current.enabled
     fun hasPlaces(vararg directories: String) = directories.any { it in current.places }
 }

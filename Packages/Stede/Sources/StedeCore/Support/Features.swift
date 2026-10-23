@@ -52,10 +52,53 @@ public nonisolated struct FeatureSet: Codable, Sendable, Hashable {
 }
 
 /// Die Bausteine der laufenden App: Gemeinde ∩ Marke.
+/// Wer die App nutzt: Touristen sehen alles Öffentliche, aber keine Abfuhr, keine Politik
+/// und keine Gruppen; Einwohner alles, was die Gemeinde hat. Gewählt im Onboarding,
+/// änderbar unter Einstellungen (`UserDefaults` `audience`).
+public nonisolated enum Audience: String, CaseIterable, Sendable {
+    case tourist, resident
+
+    public static let key = "audience"
+
+    /// nil, solange der Nutzer noch nicht gewählt hat — dann erscheint der Wizard.
+    public static var current: Audience? {
+        UserDefaults.standard.string(forKey: key).flatMap(Audience.init(rawValue:))
+    }
+
+    public static func select(_ audience: Audience) {
+        UserDefaults.standard.set(audience.rawValue, forKey: key)
+    }
+
+    public var title: String {
+        switch self {
+        case .tourist: "Zu Besuch"
+        case .resident: "Ich wohne hier"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .tourist: "suitcase.rolling.fill"
+        case .resident: "house.fill"
+        }
+    }
+
+    /// Bausteine, die diese Ansicht nie zeigt.
+    public var hiddenFeatures: Set<Feature> {
+        switch self {
+        case .tourist: [.waste, .politics, .groups]
+        case .resident: []
+        }
+    }
+}
+
 public nonisolated enum Features {
     public static var current: FeatureSet {
         let brand = AppBrand.current
-        return (Tenants.current.features ?? brand.defaultFeatures).intersection(brand.allowedFeatures)
+        var set = (Tenants.current.features ?? brand.defaultFeatures).intersection(brand.allowedFeatures)
+        // Ohne Wahl gilt Einwohner — der Wizard fragt ohnehin, bevor jemand etwas sieht.
+        set.enabled.subtract((Audience.current ?? .resident).hiddenFeatures)
+        return set
     }
 
     public static func has(_ feature: Feature) -> Bool { current.enabled.contains(feature) }

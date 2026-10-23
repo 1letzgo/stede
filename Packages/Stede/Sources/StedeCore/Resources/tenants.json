@@ -500,7 +500,8 @@
     "playgrounds",
     "sights",
     "trips"
-   ]
+   ],
+   "groups": true
   },
   "ferry": {
    "routes": [
@@ -566,7 +567,8 @@
     "leisure",
     "playgrounds",
     "sights"
-   ]
+   ],
+   "groups": true
   },
   "notes": {
    "health": "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117.",
@@ -631,7 +633,8 @@
     "leisure",
     "playgrounds",
     "sights"
-   ]
+   ],
+   "groups": true
   },
   "notes": {
    "health": "Notruf 112 · Ärztlicher Bereitschaftsdienst 116117.",

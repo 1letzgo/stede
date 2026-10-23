@@ -62,6 +62,8 @@ fun SettingsScreen() {
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
             // Baustein `plus`: große Kachel ganz oben, Kauf direkt hier — kein eigener Tab, keine Unteransicht.
             if (Features.has(Feature.Plus)) item { PlusCard() }
+            item { SectionHeader("Ansicht", Icons.Default.People) }
+            item { AudienceOptions() }
             if (Features.has(Feature.Groups)) item { SectionHeader("Konto", Icons.Default.Person) }
             if (Features.has(Feature.Groups)) item {
                 RowCard(Modifier.fillMaxWidth().clickable { showAccount = true }) {

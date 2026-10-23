@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import de.letzgo.stede.data.Audience
 import de.letzgo.stede.data.Backend
 import de.letzgo.stede.data.Brand
 import de.letzgo.stede.data.CouncilSession
@@ -90,8 +91,10 @@ fun StedeApp() {
 
     // Beim ersten Start fragt die App nach der Gemeinde.
     if (!Tenants.hasChosen) { TenantOnboardingScreen(); return }
-    // Neue Gemeinde → alle Screens und ihr Zustand frisch.
-    key(slug) { StedeTabs(tab) { tab = it } }
+    // Danach: Tourist oder Einwohner — bestimmt, welche Bausteine sichtbar sind.
+    val audience = Audience.current ?: run { AudienceOnboardingScreen(); return }
+    // Neue Gemeinde oder andere Ansicht → alle Screens und ihr Zustand frisch.
+    key(slug, audience) { StedeTabs(if (AppTab.Community == tab && !tab.isAvailable) AppTab.Settings else tab) { tab = it } }
     AppUpdateCheck()
 }
 

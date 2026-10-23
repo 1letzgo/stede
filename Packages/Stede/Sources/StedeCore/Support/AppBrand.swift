@@ -32,6 +32,10 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     /// Datenschutzerklärung (Plus-Seite).
     public let privacyURL: URL?
 
+    /// Push gibt es bisher nur für stede: `push-send` schickt an das APNs-Topic `de.letzgo.stede`,
+    /// die Insel-Apps haben weder `aps-environment` noch ein eigenes Topic.
+    public var hasPush: Bool { id == "stede" }
+
     /// „loog+“ — Name des Bausteins `plus`, immer klein wie der App-Name.
     public var plusName: String { "\(displayName)+" }
 
@@ -50,12 +54,12 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
         placesTitle: "Stadt", bikesInShopping: true, privacyURL: nil
     )
 
-    /// Langeoog: eine Gemeinde, keine Wahl, keine Gruppen; Fähre, Gezeiten, Luft und loog+.
+    /// Langeoog: eine Gemeinde, keine Wahl; Fähre, Gezeiten, Luft, Gruppen und loog+.
     public static let loog = AppBrand(
         id: "loog", displayName: "loog", region: "langeoog", regionName: "Langeoog",
         defaultTenant: "loog", choosesTenant: false, urlScheme: "loog", palette: "Loog",
-        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: islandDirectories),
-        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: islandDirectories),
+        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: islandDirectories),
+        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: islandDirectories),
         placesTitle: "Insel", bikesInShopping: true,
         privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
@@ -64,8 +68,8 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     public static let spoog = AppBrand(
         id: "spoog", displayName: "spoog", region: "spiekeroog", regionName: "Spiekeroog",
         defaultTenant: "spiekeroog", choosesTenant: false, urlScheme: "spoog", palette: "Spoog",
-        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
-        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
         placesTitle: "Insel", bikesInShopping: false, privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 
@@ -73,8 +77,8 @@ public nonisolated struct AppBrand: Sendable, Hashable, Identifiable {
     public static let wooge = AppBrand(
         id: "wooge", displayName: "wooge", region: "wangerooge", regionName: "Wangerooge",
         defaultTenant: "wangerooge", choosesTenant: false, urlScheme: "wooge", palette: "Wooge",
-        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
-        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        allowedFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
+        defaultFeatures: FeatureSet([.weather, .calendar, .ferry, .tides, .air, .plus, .groups], places: ["gastro", "health", "leisure", "playgrounds", "sights"]),
         placesTitle: "Insel", bikesInShopping: false, privacyURL: URL(string: "https://loog.shelf.am/datenschutz.html")
     )
 

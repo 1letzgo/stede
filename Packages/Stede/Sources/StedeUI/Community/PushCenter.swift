@@ -29,6 +29,7 @@ final class PushCenter {
 
     /// Nach der Anmeldung, wenn es etwas zu benachrichtigen gibt. Fragt nur beim ersten Mal.
     func enable(userID: UUID, tenantID: UUID?) async {
+        guard AppBrand.current.hasPush else { return }
         self.userID = userID
         self.tenantID = tenantID
         let center = UNUserNotificationCenter.current()

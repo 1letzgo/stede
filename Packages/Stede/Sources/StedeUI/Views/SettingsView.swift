@@ -36,6 +36,9 @@ struct SettingsView: View {
                     PlusSection()
                 }
 
+                StedeSectionHeader(title: "Ansicht", symbol: "person.2.fill")
+                AudiencePickerView()
+
                 if Features.has(.groups) {
                     StedeSectionHeader(title: "Konto", symbol: "person.crop.circle")
                     NavigationLink {
@@ -52,7 +55,7 @@ struct SettingsView: View {
                     .foregroundStyle(.primary)
 
                     #if os(iOS)
-                    if auth.isSignedIn {
+                    if auth.isSignedIn, AppBrand.current.hasPush {
                         StedeSectionHeader(title: "Benachrichtigungen", symbol: "bell.fill")
                         NavigationLink {
                             NotificationSettingsView()
