@@ -27,7 +27,8 @@ label { display: block; font-size: 13px; color: var(--muted); }
 label > input, label > select, label > textarea { margin-top: 3px; color: var(--ink); }
 label.check { display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: 14px; }
 label.check input { width: auto; margin: 0; }
-#login-form { display: flex; gap: 8px; }
+#login-form { margin-bottom: 12px; }
+a { color: var(--blue); }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
 .tabs button { background: var(--surface); color: var(--ink); }
 .tabs button.active { background: var(--bar); color: #fff; }
