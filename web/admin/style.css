@@ -27,6 +27,20 @@ label { display: block; font-size: 13px; color: var(--muted); }
 label > input, label > select, label > textarea { margin-top: 3px; color: var(--ink); }
 label.check { display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: 14px; }
 label.check input { width: auto; margin: 0; }
+/* selbst gezeichnet: Safari ignoriert width/height bei nativen Checkboxen */
+input[type=checkbox], input[type=radio] {
+  -webkit-appearance: none; appearance: none; width: 22px; height: 22px; min-width: 22px; padding: 0; margin: 0;
+  border: 2px solid #9aa4a8; border-radius: 6px; background: #fff center / 14px no-repeat; cursor: pointer; flex: none;
+}
+input[type=radio] { border-radius: 50%; }
+input[type=checkbox]:checked {
+  background-color: var(--bar); border-color: var(--bar);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+input[type=radio]:checked { border-color: var(--bar); box-shadow: inset 0 0 0 4px #fff; background-color: var(--bar); }
+input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+td.sel { width: 1%; padding: 0; }
+td.sel label { display: flex; align-items: center; justify-content: center; padding: 10px 14px; cursor: pointer; }
 #login-form { margin-bottom: 12px; }
 a { color: var(--blue); }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }

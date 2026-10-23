@@ -457,14 +457,15 @@ async function renderOrganizers(view) {
     const list = rows.filter((o) => !q || o.name.toLowerCase().includes(q) || aliasesOf(o.id).some((a) => a.key.includes(q)));
     $("#o-rows").innerHTML = list.map((o) => `
       <tr data-id="${o.id}">
-        <td><input type="checkbox" data-sel="${o.id}" ${selected.has(o.id) ? "checked" : ""}></td>
+        <td class="sel"><label><input type="checkbox" data-sel="${o.id}" ${selected.has(o.id) ? "checked" : ""}></label></td>
         <td>${esc(o.name)}${aliasesOf(o.id).map((a) => ` <span class="pill">${esc(a.name)}</span>`).join("")}</td>
         <td>${o.community_events?.[0]?.count ?? 0}</td>
         <td class="hide-sm">${esc(o.website)}</td>
         <td>${o.community_id ? `<span class="pill green">${esc(groupName[o.community_id] ?? "Gruppe")}</span>` : '<span class="muted">Sammelgruppe</span>'}</td>
       </tr>`).join("") || `<tr><td colspan="5" class="muted">Keine Veranstalter</td></tr>`;
+    // ganze Zelle schaltet das Häkchen, ohne den Editor zu öffnen
+    $("#o-rows").querySelectorAll("td.sel").forEach((td) => (td.onclick = (e) => e.stopPropagation()));
     $("#o-rows").querySelectorAll("[data-sel]").forEach((box) => {
-      box.onclick = (e) => e.stopPropagation();
       box.onchange = () => { box.checked ? selected.add(box.dataset.sel) : selected.delete(box.dataset.sel); updateButton(); };
     });
     $("#o-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editOrganizer(rows.find((r) => r.id === tr.dataset.id), aliasesOf(tr.dataset.id))));
