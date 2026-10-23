@@ -199,7 +199,7 @@ async function setSession(session) {
 
   const admins = await run(sb.from("tenant_admins").select("tenant_id").eq("user_id", state.user.id));
   const ids = admins.map((a) => a.tenant_id);
-  state.tenants = ids.length ? await run(sb.from("tenants").select("*").in("id", ids).order("name")) : [];
+  state.tenants = ids.length ? await run(sb.from("tenants").select("*").in("id", ids).order("municipality")) : [];
   $("#noadmin").hidden = state.tenants.length > 0;
   $("#app").hidden = state.tenants.length === 0;
   if (!state.tenants.length) return;
@@ -207,9 +207,14 @@ async function setSession(session) {
   const saved = localStorage.getItem("admin.tenant");
   state.tenant = state.tenants.find((t) => t.slug === saved) ?? state.tenants[0];
   const sel = $("#tenant");
-  sel.innerHTML = state.tenants.map((t) => `<option value="${t.slug}">${esc(t.name)}</option>`).join("");
+  sel.innerHTML = state.tenants.map((t) => `<option value="${t.slug}">${esc(t.municipality || t.name)}</option>`).join("");
   sel.value = state.tenant.slug;
   sel.hidden = state.tenants.length < 2;
+  // Nutzer-Tab nur für Hauptadmins (bootstrap_admins), geprüft von der Edge Function
+  const me = await sb.functions.invoke("admin-users", { body: { action: "me" } });
+  state.isSuper = !!me.data?.super;
+  document.querySelector('.tabs [data-tab="users"]').hidden = !state.isSuper;
+  if (state.tab === "users" && !state.isSuper) state.tab = "places";
   render();
 }
 
@@ -243,7 +248,7 @@ document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => {
 function render() {
   const view = $("#view");
   view.innerHTML = `<p class="muted">Lädt …</p>`;
-  ({ places: renderPlaces, events: renderEvents, organizers: renderOrganizers, groups: renderGroups, config: renderConfig })[state.tab](view)
+  ({ places: renderPlaces, events: renderEvents, organizers: renderOrganizers, groups: renderGroups, config: renderConfig, users: renderUsers })[state.tab](view)
     .catch((e) => { console.error(e); view.innerHTML = `<p class="muted">Fehler: ${esc(e.message)}</p>`; });
 }
 
@@ -559,6 +564,92 @@ async function renderConfig(view) {
     state.tenant = { ...state.tenant, name: $("#c-name").value.trim(), config: c };
     toast("Konfiguration gespeichert");
   };
+}
+
+// ---------- Nutzer (nur Hauptadmins, über Edge Function admin-users) ----------
+
+async function adminCall(body) {
+  const { data, error } = await sb.functions.invoke("admin-users", { body });
+  if (error) {
+    let msg = error.message;
+    try { msg = (await error.context.json()).error || msg; } catch { /* kein JSON */ }
+    toast(msg, true);
+    throw error;
+  }
+  return data;
+}
+
+async function renderUsers(view) {
+  const { users } = await adminCall({ action: "list" });
+  const slugOf = Object.fromEntries(state.tenants.map((t) => [t.id, t.slug]));
+  users.sort((a, b) => (b.last_sign_in_at ?? "").localeCompare(a.last_sign_in_at ?? ""));
+  view.innerHTML = `
+    <div class="toolbar">
+      <input id="u-q" type="search" placeholder="Name oder E-Mail …">
+      <select id="u-filter"><option value="">Alle</option><option value="admin">Admins</option><option value="banned">Gesperrt</option></select>
+      <span class="muted">${users.length} Konten</span>
+    </div>
+    <table><thead><tr><th>Name</th><th class="hide-sm">E-Mail</th><th>Rollen</th><th class="hide-sm">Zuletzt</th></tr></thead><tbody id="u-rows"></tbody></table>`;
+  const banned = (u) => u.banned_until && new Date(u.banned_until) > new Date();
+  const draw = () => {
+    const q = $("#u-q").value.toLowerCase(), f = $("#u-filter").value;
+    const list = users.filter((u) => (!q || [u.display_name, u.email].some((s) => s?.toLowerCase().includes(q))) &&
+      (f !== "admin" || u.super || u.admin_tenants.length) && (f !== "banned" || banned(u)));
+    $("#u-rows").innerHTML = list.map((u) => `
+      <tr data-id="${u.id}" class="${banned(u) ? "gone" : ""}">
+        <td>${esc(u.display_name || "–")}<div class="muted hide-sm" style="font-size:12px">${esc(u.providers.join(", "))} · seit ${fmt(u.created_at, false)}</div></td>
+        <td class="hide-sm">${esc(u.email)}</td>
+        <td>${u.super ? '<span class="pill blue">Hauptadmin</span>' : ""}
+          ${u.admin_tenants.length && !u.super ? `<span class="pill green">Admin: ${esc(u.admin_tenants.map((id) => slugOf[id] ?? "?").join(", "))}</span>` : ""}
+          ${u.groups.length ? `<span class="pill">${u.groups.length} Gruppe${u.groups.length === 1 ? "" : "n"}</span>` : ""}
+          ${banned(u) ? '<span class="pill red">gesperrt</span>' : ""}</td>
+        <td class="hide-sm">${fmt(u.last_sign_in_at)}</td>
+      </tr>`).join("") || `<tr><td colspan="4" class="muted">Keine Konten</td></tr>`;
+    $("#u-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editUser(users.find((u) => u.id === tr.dataset.id), banned)));
+  };
+  ["#u-q", "#u-filter"].forEach((s) => ($(s).oninput = draw));
+  draw();
+}
+
+function editUser(u, banned) {
+  const self = u.id === state.user.id;
+  const avatar = u.avatar_url ? `${cfg.supabaseUrl}/storage/v1/object/public/avatars/${u.avatar_url}` : null;
+  const extra = `
+    <div class="full">
+      ${avatar ? `<img class="photo" style="max-width:96px" src="${esc(avatar)}" alt="">` : ""}
+      <p class="muted">${esc(u.email)} · ${esc(u.providers.join(", "))} · angelegt ${fmt(u.created_at)} · zuletzt ${fmt(u.last_sign_in_at) || "nie"}</p>
+      ${u.groups.length ? `<p class="muted">Gruppen: ${u.groups.map((g) => esc(`${g.name} (${g.role})`)).join(", ")}</p>` : ""}
+      <label>Gemeinde-Admin${u.super ? " (Hauptadmin – wird bei neuen Gemeinden automatisch eingetragen)" : ""}</label>
+      <div class="toolbar">${state.tenants.map((t) => `<label class="check"><input type="checkbox" data-admin="${t.id}" ${u.admin_tenants.includes(t.id) ? "checked" : ""}> ${esc(t.municipality || t.name)}</label>`).join("")}</div>
+    </div>`;
+  const buttons = self ? [] : [
+    banned(u)
+      ? { label: "Entsperren", cls: "ok", onClick: async () => { await adminCall({ action: "ban", user_id: u.id, on: false }); toast("Entsperrt"); render(); } }
+      : { label: "Sperren", cls: "danger", confirm: `${u.email} sperren? Anmelden ist dann nicht mehr möglich.`,
+          onClick: async () => { await adminCall({ action: "ban", user_id: u.id, on: true }); toast("Gesperrt"); render(); } },
+    { label: "Löschen", cls: "danger", confirm: `${u.email} endgültig löschen? Profil, Mitgliedschaften und Teilnahmen gehen verloren, Gruppen mit nur diesem Owner werden archiviert, eigene Termine bleiben ohne Ersteller.`,
+      onClick: async () => { await adminCall({ action: "delete", user_id: u.id }); toast("Konto gelöscht"); render(); } },
+  ];
+  const form = openEditor({
+    title: u.display_name || u.email,
+    fields: [
+      { key: "display_name", label: "Anzeigename", full: true },
+      ...(u.avatar_url ? [{ key: "remove_avatar", label: "Profilbild entfernen", type: "check", full: true }] : []),
+    ],
+    values: { display_name: u.display_name },
+    extra, buttons,
+    onSave: async (v) => {
+      if ((v.display_name && v.display_name !== u.display_name) || v.remove_avatar) {
+        await adminCall({ action: "set_profile", user_id: u.id, display_name: v.display_name, remove_avatar: !!v.remove_avatar });
+      }
+      for (const box of form.querySelectorAll("[data-admin]")) {
+        const was = u.admin_tenants.includes(box.dataset.admin);
+        if (box.checked !== was) await adminCall({ action: "set_admin", user_id: u.id, tenant_id: box.dataset.admin, on: box.checked });
+      }
+      toast("Gespeichert");
+      render();
+    },
+  });
 }
 
 start();
