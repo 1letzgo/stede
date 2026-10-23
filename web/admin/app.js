@@ -441,24 +441,30 @@ async function renderOrganizers(view) {
   view.innerHTML = `
     <div class="toolbar">
       <input id="o-q" type="search" placeholder="Veranstalter suchen …">
+      <select id="o-filter"><option value="">Alle</option><option value="active">Nicht ignoriert</option><option value="ignored">Ignoriert</option></select>
       <span class="muted">${rows.length} Veranstalter</span>
       <span class="spacer"></span>
+      <button id="o-ignore" class="danger" disabled>Ignorieren</button>
       <button id="o-merge" disabled>Zusammenführen</button>
     </div>
-    <p class="muted">Doppelte Veranstalter anhaken und zusammenführen. Die übrigen Namen bleiben als Alias: neue Termine mit diesem Namen landen beim behaltenen Veranstalter.</p>
+    <p class="muted">Doppelte Veranstalter anhaken und zusammenführen. Die übrigen Namen bleiben als Alias: neue Termine mit diesem Namen landen beim behaltenen Veranstalter. Ignorierte Veranstalter verlieren ihre kommenden Termine und werden nicht mehr importiert.</p>
     <table><thead><tr><th></th><th>Name</th><th>Termine</th><th class="hide-sm">Website</th><th>Gruppe</th></tr></thead><tbody id="o-rows"></tbody></table>`;
   const updateButton = () => {
     const b = $("#o-merge");
     b.disabled = selected.size < 2;
     b.textContent = selected.size >= 2 ? `${selected.size} zusammenführen` : "Zusammenführen";
+    const i = $("#o-ignore");
+    i.disabled = selected.size < 1;
+    i.textContent = selected.size ? `${selected.size} ignorieren` : "Ignorieren";
   };
   const draw = () => {
-    const q = $("#o-q").value.toLowerCase();
-    const list = rows.filter((o) => !q || o.name.toLowerCase().includes(q) || aliasesOf(o.id).some((a) => a.key.includes(q)));
+    const q = $("#o-q").value.toLowerCase(), f = $("#o-filter").value;
+    const list = rows.filter((o) => (!f || (f === "ignored") === o.ignored) &&
+      (!q || o.name.toLowerCase().includes(q) || aliasesOf(o.id).some((a) => a.key.includes(q))));
     $("#o-rows").innerHTML = list.map((o) => `
-      <tr data-id="${o.id}">
+      <tr data-id="${o.id}" class="${o.ignored ? "gone" : ""}">
         <td class="sel"><label><input type="checkbox" data-sel="${o.id}" ${selected.has(o.id) ? "checked" : ""}></label></td>
-        <td>${esc(o.name)}${aliasesOf(o.id).map((a) => ` <span class="pill">${esc(a.name)}</span>`).join("")}</td>
+        <td>${esc(o.name)}${o.ignored ? ' <span class="pill red">ignoriert</span>' : ""}${aliasesOf(o.id).map((a) => ` <span class="pill">${esc(a.name)}</span>`).join("")}</td>
         <td>${o.community_events?.[0]?.count ?? 0}</td>
         <td class="hide-sm">${esc(o.website)}</td>
         <td>${o.community_id ? `<span class="pill green">${esc(groupName[o.community_id] ?? "Gruppe")}</span>` : '<span class="muted">Sammelgruppe</span>'}</td>
@@ -470,7 +476,16 @@ async function renderOrganizers(view) {
     });
     $("#o-rows").querySelectorAll("tr[data-id]").forEach((tr) => (tr.onclick = () => editOrganizer(rows.find((r) => r.id === tr.dataset.id), aliasesOf(tr.dataset.id))));
   };
-  $("#o-q").oninput = draw;
+  ["#o-q", "#o-filter"].forEach((s) => ($(s).oninput = draw));
+  $("#o-ignore").onclick = async () => {
+    const list = rows.filter((o) => selected.has(o.id) && !o.ignored);
+    if (!list.length) return toast("Schon alle ignoriert");
+    if (!confirm(`${list.map((o) => o.name).join(", ")} ignorieren? Kommende importierte Termine verschwinden, neue werden nicht mehr übernommen.`)) return;
+    let n = 0;
+    for (const o of list) n += await run(sb.rpc("set_organizer_ignored", { p_organizer: o.id, p_ignored: true }));
+    toast(`Ignoriert – ${n} Termine entfernt`);
+    render();
+  };
   $("#o-merge").onclick = () => mergeOrganizers(rows.filter((o) => selected.has(o.id)), aliasesOf);
   draw();
 }
@@ -481,8 +496,18 @@ function editOrganizer(o, aliases) {
       <label>Aliase – Importe mit diesen Namen landen hier</label>
       <div class="list">${aliases.map((a) => `<div class="row"><span class="grow">${esc(a.name)}</span><button type="button" class="ghost small" data-unalias="${esc(a.key)}">Lösen</button></div>`).join("")}</div>
     </div>` : "";
+  const buttons = [o.ignored
+    ? { label: "Nicht mehr ignorieren", cls: "ok", onClick: async () => {
+        await run(sb.rpc("set_organizer_ignored", { p_organizer: o.id, p_ignored: false }));
+        toast("Wird wieder importiert – Termine kommen mit dem nächsten Lauf"); render();
+      } }
+    : { label: "Ignorieren", cls: "danger", confirm: `${o.name} ignorieren? Kommende importierte Termine verschwinden, neue werden nicht mehr übernommen.`,
+        onClick: async () => {
+          const n = await run(sb.rpc("set_organizer_ignored", { p_organizer: o.id, p_ignored: true }));
+          toast(`Ignoriert – ${n} Termine entfernt`); render();
+        } }];
   const form = openEditor({
-    title: o.name,
+    title: o.name, buttons,
     hint: "Der Name ist nur die Anzeige; die Zuordnung zum Import bleibt erhalten und neue Termine übernehmen ihn. Termine an eine Gruppe übertragen geht in der App („An Gruppe übertragen“).",
     fields: [{ key: "name", label: "Name", full: true }, { key: "website", label: "Website", full: true }],
     values: o, extra,
