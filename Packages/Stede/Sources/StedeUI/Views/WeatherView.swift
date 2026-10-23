@@ -24,13 +24,6 @@ struct WeatherView: View {
                                 overview: WeatherDayOverview(summary: summary)
                             )
 
-                            // Inseln: Wind und Seegang vor der Küste gleich unter dem Kopf.
-                            if let wind = marine.hour(near: selected.timestamp) {
-                                StedeSectionHeader(title: "Wind & See", symbol: "wind")
-                                MarineWindCard(hour: wind, day: marine.hours(on: dateStore.selectedDate),
-                                               place: Tenants.current.marine?.name)
-                            }
-
                             StedeSectionHeader(title: "Stündlich", symbol: "clock")
                             WeatherHourStrip(
                                 hours: summary.hours,
@@ -38,6 +31,13 @@ struct WeatherView: View {
                                 currentID: dateStore.isToday ? weather.currentAnchor() : nil
                             ) { id in
                                 withAnimation(.snappy) { selectedHourID = id }
+                            }
+
+                            // Inseln: Wind und Seegang vor der Küste als dritte Karte, nach der Stundenleiste.
+                            if let wind = marine.hour(near: selected.timestamp) {
+                                StedeSectionHeader(title: "Wind & See", symbol: "wind")
+                                MarineWindCard(hour: wind, day: marine.hours(on: dateStore.selectedDate),
+                                               place: Tenants.current.marine?.name)
                             }
 
                             StedeSectionHeader(title: "Tagesverlauf", symbol: "chart.xyaxis.line")

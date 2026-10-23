@@ -19,6 +19,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,12 +64,12 @@ fun WeatherScreen(onBack: () -> Unit) {
             LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(Spacing)) {
                 if (w == null || selected == null) { item { if (error != null) InfoCard(error!!) else Loading() }; return@LazyColumn }
                 item { WeatherHero(selected, if (isToday && selected.timestamp == anchor?.timestamp) "Jetzt" else selected.time.format(Town.hm), w) }
+                item { SectionHeader("Stündlich", Icons.Default.Schedule) }
+                item { HourStrip(w.hours, selected.timestamp, if (isToday) anchor?.timestamp else null) { selectedHour = it } }
                 wind?.let { m ->
                     item { SectionHeader("Wind & See", Icons.Default.Air) }
                     item { MarineCard(m, marine.filter { it.time.toLocalDate() == day }, Tenants.config.marine?.name) }
                 }
-                item { SectionHeader("Stündlich", Icons.Default.Schedule) }
-                item { HourStrip(w.hours, selected.timestamp, if (isToday) anchor?.timestamp else null) { selectedHour = it } }
                 item { SectionHeader("Tagesverlauf", Icons.Default.ShowChart) }
                 item { StedeCard { DayChart(w, selected) } }
                 item { SectionHeader("Details um ${selected.time.format(Town.hm)}", Icons.Default.GridView) }
@@ -215,7 +217,9 @@ private fun DetailGrid(h: WeatherHour, w: WeatherDay, air: List<AirHour>) {
 private fun DayChart(w: WeatherDay, selected: WeatherHour) {
     val temps = w.hours.map { it.temperature }
     val rain = w.hours.map { it.precipitation ?: 0.0 }
-    val lo = (temps.filterNotNull().minOrNull() ?: 0.0) - 1; val hi = (temps.filterNotNull().maxOrNull() ?: 1.0) + 1
+    // Achse auf volle Fünfer gerundet, mindestens 10 Grad hoch — wie das Diagramm in iOS.
+    val lo = kotlin.math.floor(((temps.filterNotNull().minOrNull() ?: 0.0) - 1) / 5) * 5
+    val hi = maxOf(kotlin.math.ceil(((temps.filterNotNull().maxOrNull() ?: 1.0) + 1) / 5) * 5, lo + 10)
     val maxRain = maxOf(rain.maxOrNull() ?: 0.0, 2.0)
     val line = C.amber; val bars = C.teal; val marker = C.ink
     val index = w.hours.indexOfFirst { it.timestamp == selected.timestamp }
@@ -223,8 +227,23 @@ private fun DayChart(w: WeatherDay, selected: WeatherHour) {
         Text("Max ${temp(w.max)} · Min ${temp(w.min)}", fontSize = 12.sp, color = C.secondary)
         Text("${selected.time.format(Town.hm)}: ${temp(selected.temperature)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = C.text)
     }
+    val axisColor = C.secondary; val gridColor = C.tertiary.copy(alpha = 0.3f)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val labelPx = with(density) { 11.sp.toPx() }
+    val axisWidth = 32.dp
+    // Y-Achse wie in iOS: Temperaturen in Fünferschritten mit Hilfslinien.
+    val ticks = (lo.toInt()..hi.toInt() step 5).toList()
     Canvas(Modifier.fillMaxWidth().height(140.dp).padding(top = 8.dp)) {
         if (temps.isEmpty()) return@Canvas
+        val left = axisWidth.toPx()
+        val paint = android.graphics.Paint().apply { color = android.graphics.Color.argb((axisColor.alpha * 255).toInt(), (axisColor.red * 255).toInt(), (axisColor.green * 255).toInt(), (axisColor.blue * 255).toInt()); textSize = labelPx; isAntiAlias = true }
+        ticks.forEach { t ->
+            val y = (size.height - (t - lo) / (hi - lo) * size.height).toFloat()
+            drawLine(gridColor, Offset(left, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+            drawContext.canvas.nativeCanvas.drawText("$t°", 0f, y + labelPx / 3, paint)
+        }
+        translate(left = left) {
+        val size = androidx.compose.ui.geometry.Size(this.size.width - left, this.size.height)
         val step = size.width / (temps.size - 1).coerceAtLeast(1)
         rain.forEachIndexed { i, r ->
             val h = (r / maxRain * size.height * 0.5).toFloat()
@@ -242,8 +261,9 @@ private fun DayChart(w: WeatherDay, selected: WeatherHour) {
             drawLine(marker.copy(alpha = 0.5f), Offset(index * step, 0f), Offset(index * step, size.height), strokeWidth = 1.5.dp.toPx())
             temps[index]?.let { t -> drawCircle(line, 5.dp.toPx(), Offset(index * step, (size.height - (t - lo) / (hi - lo) * size.height).toFloat())) }
         }
+        }
     }
-    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp, start = axisWidth), horizontalArrangement = Arrangement.SpaceBetween) {
         listOf("0", "6", "12", "18", "24").forEach { Text(it, fontSize = 11.sp, color = C.secondary) }
     }
 }
