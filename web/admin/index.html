@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>stede Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <strong>stede Admin</strong>
+    <select id="tenant" hidden></select>
+    <span class="spacer"></span>
+    <span id="who" class="muted"></span>
+    <button id="logout" class="ghost" hidden>Abmelden</button>
+  </header>
+
+  <main id="login" class="card narrow" hidden>
+    <h2>Anmelden</h2>
+    <p class="muted">Für Gemeinde-Admins. Du bekommst einen Anmeldelink per E-Mail.</p>
+    <form id="login-form">
+      <input id="email" type="email" placeholder="E-Mail-Adresse" required autocomplete="email">
+      <button type="submit">Link senden</button>
+    </form>
+    <p id="login-msg" class="muted"></p>
+  </main>
+
+  <main id="noadmin" class="card narrow" hidden>
+    <h2>Keine Berechtigung</h2>
+    <p class="muted">Dieses Konto ist für keine Gemeinde als Admin eingetragen.</p>
+  </main>
+
+  <main id="app" hidden>
+    <nav class="tabs">
+      <button data-tab="places" class="active">Orte</button>
+      <button data-tab="events">Termine</button>
+      <button data-tab="organizers">Veranstalter</button>
+      <button data-tab="groups">Gruppen</button>
+      <button data-tab="config">Konfiguration</button>
+    </nav>
+    <section id="view"></section>
+  </main>
+
+  <dialog id="editor"><form method="dialog" id="editor-form"></form></dialog>
+  <div id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
