@@ -106,20 +106,22 @@ fun CalendarScreen(open: (de.letzgo.stede.Screen) -> Unit = {}) {
     suspend fun communityRange(from: LocalDate, through: LocalDate): List<EventInfo> {
         val f = from.atStartOfDay(Town.zone).toOffsetDateTime().toString(); val t = through.plusDays(1).atStartOfDay(Town.zone).toOffsetDateTime().toString()
         val tenant = Tenants.current()
-        // Auf andere Gemeinden beschränkte Gruppentermine (etwa der Sammelgruppe) nur mit „Termine der Region“.
-        val regionWide = RegionEvents.isOn
+        // Auf andere Gemeinden beschränkte Gruppentermine (etwa der Sammelgruppe) nur für die eigene und die
+        // unter „Termine der Region“ gewählten Gemeinden.
+        val extra = RegionEvents.tenantIds
+        val shown = (extra + tenant.id.lowercase()).toSet()
         val own = if (groups) CommunityApi.events(memberIds, f, t)
-            .filter { e -> regionWide || e.targetTenants?.contains(tenant.id) ?: true }
+            .filter { e -> e.targetTenants?.any { it.lowercase() in shown } ?: true }
             .map { EventInfo.of(it) } else emptyList()
         val ownIds = own.map { it.id }.toSet()
-        return own + CommunityApi.publicEvents(tenant.id, f, t, RegionEvents.isOn).filter { it.id !in ownIds }.map { EventInfo.of(it) }
+        return own + CommunityApi.publicEvents(tenant.id, f, t, extra).filter { it.id !in ownIds }.map { EventInfo.of(it) }
     }
     suspend fun refreshHelpers() { runCatching { helpers = CommunityApi.helperCounts(community.filter { it.helpersNeeded > 0 }.map { it.id }) } }
     // Kommentarzahlen nur für interne Termine mit eingeschalteten Kommentaren (öffentliche haben keine).
     suspend fun refreshComments() { runCatching { commentCounts = CommunityApi.commentCounts(community.filter { it.commentsEnabled }.map { it.id }) } }
 
     // Ganzer geladener Bereich — beim Start, bei An-/Abmeldung und nach Änderungen.
-    LaunchedEffect(userId, memberIds, Changes.version, RegionEvents.isOn) {
+    LaunchedEffect(userId, memberIds, Changes.version, RegionEvents.slugs) {
         error = null
         runCatching { CityEvents.range(start, end, cacheAs = if (start == today) "feed" else null) }
             .onSuccess { city = it }.onFailure { if (city == null) error = "Termine konnten nicht geladen werden." }

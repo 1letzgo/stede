@@ -107,11 +107,44 @@ public nonisolated enum Features {
     public static func hasPlaces(_ directories: Set<String>) -> Bool { !current.places.isDisjoint(with: directories) }
 }
 
-/// Einstellung „Termine der Region“ (`UserDefaults` `events.region`), nur wo die Marke sie anbietet.
+/// Einstellung „Termine der Region“: zusätzliche Gemeinden der Region, deren öffentliche Termine der Kalender
+/// zeigt (`UserDefaults` `events.tenants`, Slugs mit Komma), nur wo die Marke sie anbietet. Der frühere
+/// Schalter `events.region` (alle oder keine) wird beim ersten Lesen in „alle Gemeinden“ übersetzt.
 public nonisolated enum RegionEvents {
-    public static let key = "events.region"
+    public static let key = "events.tenants"
+    private static let legacyKey = "events.region"
 
-    public static var isOn: Bool {
-        AppBrand.current.offersRegionEvents && UserDefaults.standard.bool(forKey: key)
+    /// Gewählte Gemeinden (Slugs), ohne die eigene.
+    public static var slugs: Set<String> {
+        guard AppBrand.current.offersRegionEvents else { return [] }
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: key) == nil, defaults.bool(forKey: legacyKey) {
+            let all = others.map(\.slug)
+            defaults.set(all.joined(separator: ","), forKey: key)
+            defaults.removeObject(forKey: legacyKey)
+        }
+        return decode(defaults.string(forKey: key) ?? "")
+    }
+
+    /// Die anderen Gemeinden der Region, wählbar in den Einstellungen.
+    public static var others: [TenantConfig] {
+        Tenants.all.filter { $0.slug != Tenants.currentSlug && $0.tenantID != nil }
+    }
+
+    /// `tenants.id` der gewählten Gemeinden.
+    public static var tenantIDs: [UUID] {
+        let chosen = slugs
+        return others.filter { chosen.contains($0.slug) }.compactMap(\.tenantID)
+    }
+
+    public static func decode(_ raw: String) -> Set<String> {
+        Set(raw.split(separator: ",").map(String.init).filter { !$0.isEmpty })
+    }
+
+    /// Neuer Wert für `key` nach dem Umschalten einer Gemeinde.
+    public static func toggled(_ slug: String, on: Bool, in raw: String) -> String {
+        var set = decode(raw)
+        if on { set.insert(slug) } else { set.remove(slug) }
+        return set.sorted().joined(separator: ",")
     }
 }

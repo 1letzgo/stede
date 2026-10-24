@@ -35,6 +35,8 @@ public enum AppStartup {
             Tenants.select(AppBrand.current.defaultTenant)
         }
         Task { await Tenants.refresh() }
+        // Alter Schalter „Termine der Region“ (alle oder keine) → Auswahl je Gemeinde.
+        _ = RegionEvents.slugs
         // Vor der ersten Gemeindewahl gibt es nichts nachzuladen.
         guard Tenants.hasChosen else { return }
         Task {

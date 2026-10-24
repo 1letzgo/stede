@@ -130,11 +130,14 @@ fun SettingsScreen() {
                 }
             }
 
-            if (Brand.current.offersRegionEvents && Features.has(Feature.Calendar)) {
-                item { SectionHeader("Kalender", Icons.Default.CalendarMonth) }
+            val regionTenants = RegionEvents.others
+            if (Brand.current.offersRegionEvents && Features.has(Feature.Calendar) && regionTenants.isNotEmpty()) {
+                item { SectionHeader("Termine der Region", Icons.Default.CalendarMonth) }
                 item {
                     StedeCard {
-                        WasteOptionRow(Icons.Default.Map, C.teal, "Termine der Region", RegionEvents.on) { RegionEvents.set(it) }
+                        regionTenants.forEach { t ->
+                            WasteOptionRow(Icons.Default.Map, C.teal, t.municipality, t.slug in RegionEvents.slugs) { RegionEvents.set(t.slug, it) }
+                        }
                     }
                 }
             }

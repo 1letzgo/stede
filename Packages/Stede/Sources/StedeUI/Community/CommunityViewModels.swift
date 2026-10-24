@@ -218,14 +218,14 @@ final class CommunityCalendarModel {
         defer { didLoad = true }
         guard let tenantID else { return }
         do {
-            async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end, regionWide: RegionEvents.isOn)
+            let shown = Set([tenantID] + RegionEvents.tenantIDs)
+            async let publicTask = client.publicEvents(tenantID: tenantID, from: start, to: end, extraTenants: RegionEvents.tenantIDs)
             async let memberTask = client.events(communityIDs: memberCommunityIDs, from: start, to: end)
             publicEvents = try await publicTask
             // Gruppentermine, die auf andere Gemeinden beschränkt sind (etwa übernommene Termine der
-            // Sammelgruppe), nur mit „Termine der Region“ — sonst sähen Mitglieder den ganzen Kreis.
-            let regionWide = RegionEvents.isOn
+            // Sammelgruppe), nur für die eigene und die unter „Termine der Region“ gewählten Gemeinden.
             memberEvents = try await memberTask.filter { event in
-                regionWide || event.targetTenants.map { $0.contains(tenantID) } ?? true
+                event.targetTenants.map { !shown.isDisjoint(with: $0) } ?? true
             }
             if let userID {
                 let mine = try await client.myParticipations(userID: userID)

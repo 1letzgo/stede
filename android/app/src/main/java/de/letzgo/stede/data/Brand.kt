@@ -148,9 +148,32 @@ object Features {
 }
 
 /** Einstellung „Termine der Region“ (Pref `events.region`, gleicher Schlüssel wie iOS). */
+/** „Termine der Region“: zusätzliche Gemeinden der Region, deren öffentliche Termine der Kalender zeigt
+ *  (Prefs `events.tenants`, Slugs mit Komma) — wie iOS `RegionEvents`. Der frühere Schalter `events.region`
+ *  (alle oder keine) wird beim ersten Lesen in „alle Gemeinden“ übersetzt. */
 object RegionEvents {
-    const val KEY = "events.region"
-    var on by androidx.compose.runtime.mutableStateOf(Store.bool(KEY, false)); private set
-    val isOn get() = Brand.current.offersRegionEvents && on
-    fun set(value: Boolean) { Store.setBool(KEY, value); on = value }
+    const val KEY = "events.tenants"
+    private const val LEGACY = "events.region"
+
+    var slugs by androidx.compose.runtime.mutableStateOf(load()); private set
+
+    private fun load(): Set<String> {
+        if (!Brand.current.offersRegionEvents) return emptySet()
+        if (Store.prefs.getString(KEY, null) == null && Store.bool(LEGACY, false)) {
+            Store.setString(KEY, others.joinToString(",") { it.slug })
+            Store.prefs.edit().remove(LEGACY).apply()
+        }
+        return Store.string(KEY, "").split(",").filter { it.isNotEmpty() }.toSet()
+    }
+
+    /** Die anderen Gemeinden der Region, wählbar in den Einstellungen. */
+    val others get() = Tenants.all.filter { it.slug != Tenants.slug && it.tenantID != null }
+
+    /** `tenants.id` der gewählten Gemeinden. */
+    val tenantIds get() = others.filter { it.slug in slugs }.mapNotNull { it.tenantID?.lowercase() }
+
+    fun set(slug: String, on: Boolean) {
+        slugs = if (on) slugs + slug else slugs - slug
+        Store.setString(KEY, slugs.sorted().joinToString(","))
+    }
 }

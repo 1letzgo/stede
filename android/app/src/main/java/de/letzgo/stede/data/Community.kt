@@ -189,6 +189,15 @@ object CommunityApi {
     }
 
     /** Termine: eigene Gemeinde, sonst kreisweite Gruppen — sofern der Termin nicht auf andere Gemeinden beschränkt ist (`target_tenants`). */
+    /** Wie [ownOrTargeted], aber für mehrere Gemeinden auf einmal. */
+    private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.anyTargeted(ids: List<String>) {
+        or {
+            and { eq("countywide", false); isIn("tenant_id", ids) }
+            and { eq("countywide", true); eq("region", Brand.current.region); exact("target_tenants", null) }
+            and { eq("countywide", true); overlaps("target_tenants", ids) }
+        }
+    }
+
     private fun io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder.ownOrTargeted(tenantId: String) {
         val id = tenantId.lowercase()
         // Gruppe nur für ihre Gemeinde · kreisweit ohne Auswahl · kreisweit mit dieser Gemeinde in der Auswahl
@@ -252,9 +261,9 @@ object CommunityApi {
         if (communityIds.isEmpty()) return emptyList()
         return db.from("community_events").select(Columns.raw(EVENT)) { filter { isIn("community_id", communityIds); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING) }.decodeList()
     }
-    /** `regionWide`: alle öffentlichen Termine der Region (Einstellung „Termine der Region“). */
-    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String, regionWide: Boolean = false) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration")) {
-        filter { if (regionWide) eq("region", Brand.current.region) else ownOrTargeted(tenantId); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
+    /** `extraTenants`: weitere Gemeinden aus „Termine der Region“, behandelt wie die eigene. */
+    suspend fun publicEvents(tenantId: String, fromIso: String, toIso: String, extraTenants: List<String> = emptyList()) = db.from("v_public_events").select(Columns.raw("id,community_name,community_logo_path,title,description,starts_at,ends_at,location,image_path,helpers_needed,rsvp_enabled,all_day,organizer,category,source_url,source_name,image_credit,price,registration")) {
+        filter { if (extraTenants.isEmpty()) ownOrTargeted(tenantId) else anyTargeted(listOf(tenantId.lowercase()) + extraTenants); gte("starts_at", fromIso); lt("starts_at", toIso) }; order("starts_at", Order.ASCENDING)
     }.decodeList<PublicEvent>()
 
     suspend fun createEvent(d: EventDraft) { db.from("community_events").insert(d) }

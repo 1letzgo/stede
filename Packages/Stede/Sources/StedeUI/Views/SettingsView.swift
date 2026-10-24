@@ -14,7 +14,7 @@ struct SettingsView: View {
     @AppStorage("train.direction") private var direction: TrainDirection = .oldenburg
     @AppStorage("train.station") private var stationID = ""
     @State private var showsTenants = false
-    @AppStorage(RegionEvents.key) private var regionEvents = false
+    @AppStorage(RegionEvents.key) private var regionTenants = ""
     @AppStorage(Audience.key) private var audienceRaw = ""
     @State private var showsStreets = false
     @State private var showsStops = false
@@ -159,10 +159,15 @@ struct SettingsView: View {
                     }
                 }
 
-                if AppBrand.current.offersRegionEvents, Features.has(.calendar) {
-                    StedeSectionHeader(title: "Kalender", symbol: "calendar")
+                if AppBrand.current.offersRegionEvents, Features.has(.calendar), !RegionEvents.others.isEmpty {
+                    StedeSectionHeader(title: "Termine der Region", symbol: "calendar")
                     SettingsCard {
-                        toggleRow("Termine der Region", symbol: "map.fill", tint: StedeTheme.seaTeal, isOn: $regionEvents)
+                        ForEach(RegionEvents.others, id: \.slug) { tenant in
+                            toggleRow(tenant.municipality, symbol: "map.fill", tint: StedeTheme.seaTeal, isOn: Binding(
+                                get: { RegionEvents.decode(regionTenants).contains(tenant.slug) },
+                                set: { regionTenants = RegionEvents.toggled(tenant.slug, on: $0, in: regionTenants) }
+                            ))
+                        }
                     }
                 }
 

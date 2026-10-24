@@ -5,8 +5,8 @@ import SwiftUI
 /// mit Terminen, Stadt- und Gruppen-Termine gemischt. Nach unten lädt sie von selbst
 /// weiter, frühere Termine auf Tipp; „Heute“ in der Leiste springt zurück.
 struct EventView: View {
-    /// Einstellung „Termine der Region“ — lädt beim Umschalten neu.
-    @AppStorage(RegionEvents.key) private var regionEvents = false
+    /// Einstellung „Termine der Region“ (gewählte Gemeinden) — lädt beim Umschalten neu.
+    @AppStorage(RegionEvents.key) private var regionTenants = ""
     private enum Filter: String, CaseIterable {
         case all, city, communities, mine
 
@@ -118,7 +118,7 @@ struct EventView: View {
             }
         }
         .task { await model.load() }
-        .task(id: "\(IslandTime.isoDate(model.start))|\(IslandTime.isoDate(model.end))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())|\(regionEvents)") {
+        .task(id: "\(IslandTime.isoDate(model.start))|\(IslandTime.isoDate(model.end))|\(auth.tenant?.id.uuidString ?? "")|\(auth.userID?.uuidString ?? "")|\(memberCommunityIDs.map(\.uuidString).joined())|\(regionTenants)") {
             await loadCommunity()
         }
         .onAppear { Task { await loadCommunity() } }
